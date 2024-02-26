@@ -1,0 +1,4 @@
+schedule
+paho.mqtt
+certifi
+requests
