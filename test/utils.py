@@ -77,8 +77,9 @@ def log_it(summary):
     print(Colors.DARK_GRAY + _location + _calling + summary + _trailer + '\x1b[0m')
 
 def get_broker_name():
+    return 'localhost'
     #return 'test.mosquitto.org'
-    return 'groseille.back.internal'
+    #return 'groseille.back.internal'
 
 init_logger(logging.getLogger('test'), debug=False)
 init_logger(logging.getLogger('iotlib'), debug=False)

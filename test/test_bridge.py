@@ -50,6 +50,8 @@ class TestSurrogate(unittest.TestCase):
     def test_init(self):
         log_it(f'Testing init Surrogate')
         mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client.start()
+
         device_name = 'test_device'
         b = MockSurrogate(mqtt_client, device_name)
         time.sleep(2)
@@ -61,6 +63,8 @@ class TestSurrogate(unittest.TestCase):
     def test_handle_availability(self):
         log_it(f'Testing availability message handling')
         mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client.start()
+
         device_name = 'test_device'
         mock = MockSurrogate(mqtt_client, device_name)
         time.sleep(2)
@@ -74,6 +78,8 @@ class TestSurrogate(unittest.TestCase):
     def test_handle_property(self):
         log_it(f'Testing property message handling')
         mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client.start()
+
         device_name = 'test_device'
         mock = MockSurrogate(mqtt_client, device_name)
         time.sleep(2)

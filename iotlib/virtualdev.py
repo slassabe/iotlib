@@ -1,13 +1,26 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-from enum import Enum
+import enum
 import threading
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
 
 from . import package_level_logger
 from iotlib.processor import VirtualDeviceProcessor
 from iotlib.devconfig import PropertyConfig, ButtonValues
+
+
+class ResultType(enum.IntEnum):
+    SUCCESS = 0
+    ECHO = 1
+
+@dataclass
+class ProcessingResult:
+    type: ResultType
+    property: str
+    value: Any
 
 class VirtualDevice(ABC):
     """VirtualDevice is the base class for all virtual devices.
@@ -74,7 +87,7 @@ class VirtualDevice(ABC):
     def get_property(self) -> str:
         raise NotImplementedError
 
-    def handle_new_value(self, value) -> list:
+    def handle_new_value(self, value) -> ProcessingResult:
         """Handles a new value received from device manager for the virtual device.
 
         Checks if the value should be ignored based on previous value and 
@@ -93,12 +106,17 @@ class VirtualDevice(ABC):
             return None, self.value
         if (self.value == value) and self._quiet_mode:
             # Value is the same as before, ignore
-            return None, self.value
-        # Else set value and call event handler to process
-        self.value = value
-        self._on_event()
-        # Return tuple of (property name, property value)
-        return self.get_property().property_name, self.value
+            return ProcessingResult(ResultType.ECHO,
+                                    property=self.get_property().property_name,
+                                    value = self.value)
+        else:
+            # Else set value and call event handler to process
+            self.value = value
+            self._on_event()
+            # Return tuple of (property name, property value)
+            return ProcessingResult(type=ResultType.SUCCESS,
+                                    property=self.get_property().property_name,
+                                    value = self.value)
 
     def processor_append(self, processor):
         """Appends a Processor to the processor list"""
@@ -121,7 +139,6 @@ class VirtualDevice(ABC):
         """
         for _processor in self._processor_list:
             _processor.handle_device_update(self)
-
 
 class Sensor(VirtualDevice):
     def __init__(self, friendly_name=None, quiet_mode=False):
@@ -287,7 +304,7 @@ class Operable(VirtualDevice):
             self._logger.debug('[%s] is already "on" -> no action required',
                                self)
             return False
-        self._logger.info('[%s] is "off" -> request to turn it "on"', self)
+        self._logger.debug('[%s] is "off" -> request to turn it "on"', self)
         if self._device_id is None:
             self.concrete_device.change_state(True)
         else:
@@ -300,7 +317,7 @@ class Operable(VirtualDevice):
         Returns:
             bool: returns True if switch state is ON  when method called    
         '''
-        self._logger.info('[%s] stop switch and reset stop timer', self)
+        self._logger.debug('[%s] stop switch and reset stop timer', self)
         self._stop_timer = None
 
         if not self.value:
@@ -342,7 +359,7 @@ class Operable(VirtualDevice):
         self._stop_timer.start()
 
 
-class Melodies(Enum):
+class Melodies(enum.IntEnum):
     MELO_01 = 1
     DING_DONG1 = 2
     DING_DONG2 = 3
@@ -363,7 +380,7 @@ class Melodies(Enum):
     DING_DONG4 = 18
 
 
-class Level(Enum):
+class Level(enum.Enum):
     LOW = 'low'
     MEDIUM = 'medium'
     HIGH = 'high'

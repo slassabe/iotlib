@@ -164,7 +164,7 @@ class MQTTClientBase():
         ''' Define the default disconnect callback implementation. 
         '''
         if reason_code == 0:
-            self._logger.warning('Disconnection occures - rc : %s -> stop loop',
+            self._logger.info('Disconnection occures - rc : %s -> stop loop',
                                  reason_code)
             self.connected = False
             self.client.loop_stop()

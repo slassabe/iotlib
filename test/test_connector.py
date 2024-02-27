@@ -45,9 +45,10 @@ class MockProtocole(Connector):
 class TestConnector(unittest.TestCase):
     target = get_broker_name()
 
-    def X_test_connected(self):
+    def test_connected(self):
         log_it("Testing Connector init")
         mqtt_client = MQTTClientBase('', self.target)
+        mqtt_client.start()
         mock = MockProtocole(mqtt_client, 'fake_device')
         time.sleep(2)
         self.assertTrue(mqtt_client.connected)
@@ -55,6 +56,7 @@ class TestConnector(unittest.TestCase):
     def test_decode_property_pl(self):
         log_it("Testing Connector decode_property_pl")
         mqtt_client = MQTTClientBase('', self.target)
+        mqtt_client.start()
         mock = MockProtocole(mqtt_client, 'device_name')
         time.sleep(3)
         mock.client.publish(mock.PROPERTY_TOPIC,

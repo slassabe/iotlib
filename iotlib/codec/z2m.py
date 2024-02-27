@@ -10,7 +10,7 @@ from abc import abstractmethod, ABCMeta
 from .. import package_level_logger
 from ..config import MQTTConfig
 from ..client import MQTTClient
-from ..bridge import Surrogate, Connector, EncodingException
+from ..bridge import Surrogate, Connector, DecodingException
 from ..virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                           TemperatureSensor, VirtualDevice)
 
@@ -72,49 +72,20 @@ class DeviceOnZigbee2MQTT(Connector):
         # false = {"state":"online"} / {"state":"offline"}
 
         if payload != 'online' and payload != 'offline' and payload is not None:
-            raise EncodingException(f'Payload value error: {payload}')
+            raise DecodingException(f'Payload value error: {payload}')
         else:
             return payload == 'online'
 
-    def _decode_values(self, topic: str, payload: str) -> list:
-        """Decode a message payload using registered handlers.
-
-        Iterate through the registered handlers, call the decoder
-        function and update the virtual device.
-        Return a list of (node, property, value) tuples for any matches.
-
-        Args:
-            topic (str): The message topic.
-            payload (str): The message payload.
-
-        Returns:
-            list: A list of (node, property, value) tuples.
-
-        Raises:
-            EncodingException: If an error occurs decoding the payload.
-
+    @staticmethod
+    def fit_payload(payload) -> str:
+        """Adjust payload to be decoded, that is fit in string
         """
-
         try:
-            _decoded_values = list()
-            for _decoder, _virtual_device, _node in self._get_message_handlers(topic):
-                _decoded_value = _decoder(self, json.loads(payload))
-                if _decoded_value is None:
-                    # No decoder set to decode payload
-                    # ex. ; {"battery":100,"linkquality":192,"voltage":3000}
-                    self._logger.debug('[Topic: %s] Decoder returned None on payload %s',
-                                       topic, payload)
-                _vdev_tuple = _virtual_device.handle_new_value(_decoded_value)
-                if _vdev_tuple is None:
-                    raise ValueError(
-                        f'handle_new_value for {_virtual_device} returned None')
-                _property, _value = _vdev_tuple
-                if _property is not None:
-                    _decoded_values.append((_node, _property, _value))
-            return _decoded_values
+            return json.loads(payload)
         except JSONDecodeError as exp:
-            raise EncodingException(
+            raise DecodingException(
                 f'Exception occured while decoding : "{payload}"') from exp
+
 
 
 class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
@@ -141,26 +112,26 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                                   v_humi,
                                   'sensor')
 
-    def _decode_temp_pl(self, payload: dict) -> float:
+    def _decode_temp_pl(self, topic, payload: dict) -> float:
         _value = payload.get('temperature')
         if _value is None:
-            raise EncodingException(
+            raise DecodingException(
                 f'No "temperature" key in payload : {payload}')
         else:
             return float(_value)
 
     @abstractmethod
-    def _decode_humi_pl(self, payload) -> int:
+    def _decode_humi_pl(self, topic, payload) -> int:
         raise NotImplementedError
 
 
 class SonoffSnzb02(SensorOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/SNZB-02.html#sonoff-snzb-02 '''
 
-    def _decode_humi_pl(self, payload: dict) -> int:
+    def _decode_humi_pl(self, topic, payload: dict) -> int:
         _value = payload.get('humidity')
         if _value is None:
-            raise EncodingException(
+            raise DecodingException(
                 f'No "humidity" key in payload : {payload}')
         else:
             return int(_value)
@@ -169,7 +140,7 @@ class SonoffSnzb02(SensorOnZigbee):
 class Ts0601Soil(SensorOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/TS0601_soil.html '''
 
-    def _decode_humi_pl(self, payload: dict) -> int:
+    def _decode_humi_pl(self, topic, payload: dict) -> int:
         _value = payload.get('soil_moisture')
         if _value is None:
             raise ValueError(f'No "soil_moisture" key in payload : {payload}')
@@ -202,7 +173,7 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 class SonoffSnzb01(ButtonOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/SNZB-01.html#sonoff-snzb-01 '''
 
-    def _decode_action_pl(self, payload) -> str:
+    def _decode_action_pl(self, topic, payload) -> str:
         _pl = payload.get('action')
         if _pl is None:
             return None
@@ -213,7 +184,7 @@ class SonoffSnzb01(ButtonOnZigbee):
         elif _pl == 'long':
             return BUTTON_LONG_ACTION
         else:
-            raise EncodingException(
+            raise DecodingException(
                 f'Received erroneous Action value : "{_pl}"')
 
 
@@ -235,17 +206,17 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                                   'sensor')
 
     @abstractmethod
-    def _decode_motion_pl(self, payload) -> dict:
+    def _decode_motion_pl(self, topic, payload) -> dict:
         raise NotImplementedError
 
 
 class SonoffSnzb3(MotionOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/SNZB-03.html#sonoff-snzb-03 '''
 
-    def _decode_motion_pl(self, payload) -> bool:
+    def _decode_motion_pl(self, topic, payload) -> bool:
         _value = payload.get('occupancy')
         if _value is None:
-            raise EncodingException(
+            raise DecodingException(
                 f'No "occupancy" key in payload : {payload}')
         else:
             return _value
@@ -305,7 +276,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def _decode_state_pl(self, payload) -> bool:
+    def _decode_state_pl(self, topic, payload) -> bool:
         """Decode state payload."""
         raise NotImplementedError
 
@@ -367,10 +338,10 @@ class NeoNasAB02B2(AlarmOnZigbee):
         self._logger.debug('Publishing payload : %s', _set)
         return json.dumps(_set)
 
-    def _decode_state_pl(self, payload) -> bool:
+    def _decode_state_pl(self, topic, payload) -> bool:
         _pl = payload.get(self._key_alarm)
         if not issubclass(type(_pl), bool):
-            raise EncodingException(
+            raise DecodingException(
                 f'Received erroneous payload : "{payload}"')
         return _pl
 
@@ -434,7 +405,7 @@ Features
                           qos=1,
                           retain=False)
 
-    def _decode_state_pl(self, payload) -> bool:
+    def _decode_state_pl(self, topic, payload) -> bool:
         raise NotImplementedError
 
     def _encode_state_pl(self, is_on: bool) -> json:
@@ -452,14 +423,14 @@ class SonoffZbminiL(SwitchOnZigbee):
             _set = {self._key_power: STATE_OFF}
         return json.dumps(_set)
 
-    def _decode_state_pl(self, payload) -> bool:
+    def _decode_state_pl(self, topic, payload) -> bool:
         _pl = payload.get(self._key_power)
         if _pl == STATE_ON:
             return True
         elif _pl == STATE_OFF:
             return False
         else:
-            raise EncodingException(
+            raise DecodingException(
                 f'Received erroneous State value : "{_pl}"')
 
 
