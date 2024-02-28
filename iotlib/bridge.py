@@ -71,7 +71,7 @@ class Surrogate(ABC):
         for _topic_property in self.get_subscription_list():
             client.subscribe(_topic_property, qos=1)
 
-    def _handle_values(self, topic, payload) -> list:
+    def _handle_values(self, topic:str, payload:bytes) -> list:
         """Handle an incoming sensor value message.
 
         Decode the message and execute property processors.
@@ -124,7 +124,7 @@ class Surrogate(ABC):
         """
 
     @abstractmethod
-    def get_subscription_list(self) -> list:
+    def get_subscription_list(self) -> list[str]:
         """Return the value topics the client must subscribe
         """
 
@@ -151,22 +151,23 @@ class Surrogate(ABC):
         """
         raise NotImplementedError
 
+MessageHandlerType: TypeAlias = tuple[
+    Callable, 
+    VirtualDevice, 
+    str]
 
 class Connector(Surrogate):
     def __init__(self, mqtt_client: MQTTClient, device_name: str):
-        self._message_handler_dict = defaultdict(list)
+        self._message_handler_dict:dict[str, MessageHandlerType] = defaultdict(list)
         super().__init__(mqtt_client, device_name)
 
     def get_availability_topic(self) -> str:
         return "NOT_IMPLEMENTED"
 
-    def get_subscription_list(self) -> list:
-        """Return the topics the client must subscribe
-        * <base_topic>/<device_name> : to get device property values
+    def get_subscription_list(self) -> list[str]:
+        """Return the topics the client must subscribe according to message handler set
         """
-        _list = list(self._message_handler_dict.keys())
-        self._logger.debug("Subscription list is : %s", _list)
-        return _list
+        return list(self._message_handler_dict.keys())
 
     def _set_message_handler(self,
                      topic: str,
@@ -189,7 +190,7 @@ class Connector(Surrogate):
         _tuple = (decoder, vdev, node)
         self._message_handler_dict[topic].append(_tuple)
 
-    def _get_message_handler(self, topic: str) -> list:
+    def _get_message_handlers(self, topic: str) -> MessageHandlerType:
         """Get the message handler functions for a given MQTT topic.
 
         Args:
@@ -201,7 +202,7 @@ class Connector(Surrogate):
         return self._message_handler_dict[topic]
 
 
-    def _decode_values(self, topic: str, payload: str) -> ProcessingResult:
+    def _decode_values(self, topic: str, payload: str) -> list[ProcessingResult]:
         """Decode values from a Tasmota MQTT message payload.
 
         Given a topic and payload, look up the associated decoder function
@@ -217,8 +218,8 @@ class Connector(Surrogate):
             list: List of (node, property, value) tuples if decoding was
             successful, else empty list.
         """
-        _decoded_values = list()
-        for _handler in self._get_message_handler(topic):
+        _decoded_values = []
+        for _handler in self._get_message_handlers(topic):
             if not _handler:
                 raise(ValueError(f'No topic set to decode : "{topic}"'))
             _decoder, _virtual_device, _node = _handler
@@ -234,7 +235,7 @@ class Connector(Surrogate):
                                         _process_result.property, 
                                         _process_result.value))
             else:
-                return list()
+                return []
         return _decoded_values
 
     def fit_payload(self, payload) -> str:
