@@ -4,8 +4,7 @@
 import enum
 import threading
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any
+from collections.abc import Callable
 
 from . import package_level_logger
 from iotlib.processor import VirtualDeviceProcessor
@@ -13,14 +12,9 @@ from iotlib.devconfig import PropertyConfig, ButtonValues
 
 
 class ResultType(enum.IntEnum):
+    IGNORE = -1
     SUCCESS = 0
     ECHO = 1
-
-@dataclass
-class ProcessingResult:
-    type: ResultType
-    property: str
-    value: Any
 
 class VirtualDevice(ABC):
     """VirtualDevice is the base class for all virtual devices.
@@ -53,7 +47,7 @@ class VirtualDevice(ABC):
         self.friendly_name = friendly_name
         self._quiet_mode = quiet_mode
         self._value = None
-        self._processor_list = []
+        self._processor_list:list[Callable[[VirtualDevice], None]] = []
 
     def __repr__(self):
         _sep = ''
@@ -87,7 +81,7 @@ class VirtualDevice(ABC):
     def get_property(self) -> str:
         raise NotImplementedError
 
-    def handle_new_value(self, value) -> ProcessingResult:
+    def handle_new_value(self, value) -> ResultType:
         """Handles a new value received from device manager for the virtual device.
 
         Checks if the value should be ignored based on previous value and 
@@ -103,20 +97,15 @@ class VirtualDevice(ABC):
         """
         if value is None:
             # No relevant value received (can be info on device like battery level), ignore
-            return None, self.value
-        if (self.value == value) and self._quiet_mode:
-            # Value is the same as before, ignore
-            return ProcessingResult(ResultType.ECHO,
-                                    property=self.get_property().property_name,
-                                    value = self.value)
+            return ResultType.IGNORE
+        elif (self.value == value) and self._quiet_mode:
+            return ResultType.ECHO
         else:
-            # Else set value and call event handler to process
             self.value = value
-            self._on_event()
-            # Return tuple of (property name, property value)
-            return ProcessingResult(type=ResultType.SUCCESS,
-                                    property=self.get_property().property_name,
-                                    value = self.value)
+            for _processor in self._processor_list:
+                _processor.handle_device_update(self)
+            return ResultType.SUCCESS
+
 
     def processor_append(self, processor):
         """Appends a Processor to the processor list"""
@@ -124,21 +113,6 @@ class VirtualDevice(ABC):
             raise TypeError(
                 f"Processor must be instance of Processor, not {type(processor)}")
         self._processor_list.append(processor)
-
-    def _on_event(self) -> None:
-        """Handle device update event.
-
-        This method is called when the device value is updated. 
-        It iterates through the list of processors and calls the 
-        handle_device_update method on each, passing the device instance.
-
-        This allows each processor to respond to the device update as 
-        needed. For example, a processor may log the new value, 
-        write it to a database, publish an MQTT message, etc.
-
-        """
-        for _processor in self._processor_list:
-            _processor.handle_device_update(self)
 
 class Sensor(VirtualDevice):
     def __init__(self, friendly_name=None, quiet_mode=False):
@@ -267,32 +241,6 @@ class Operable(VirtualDevice):
     @pulse_is_allowed.setter
     def pulse_is_allowed(self, value):
         self._pulse_instruction_allowed = value
-
-    def handle_new_value_TO_REMOVE(self, value: bool) -> list:
-        """Handle a new value for the virtual device.
-
-        Compares the new value to the current value. If different, updates 
-        the value property and triggers callbacks by calling _on_event().
-
-        Args:
-            value (bool): The new value.
-
-        Returns:
-            list: A list containing the property name and new value if changed, 
-            otherwise None.
-        """
-        if self.value == value:
-            self._logger.debug('[%s] state "%s" DID NOT change',
-                               self,
-                               value)
-            return None, self.value
-        self._logger.debug('[%s] Handle value virtual device value (previous : "%s" -> new : "%s")',
-                           self,
-                           self.value,
-                           value)
-        self.value = value
-        self._on_event()
-        return self.get_property().property_name, self.value
 
     def trigger_start(self) -> bool:
         ''' Ask the device to start
@@ -424,70 +372,38 @@ class Switch(Operable):
     """ Basic implementation of a virtual Switch 
     """
 
-    def __init__(self, friendly_name=None, quiet_mode=False):
+    def __init__(self, friendly_name=None, quiet_mode=False, countdown=0):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
         self._device_id = None  # Used by Shelly : relay numbers
-
-    def get_property(self) -> str:
-        return PropertyConfig.SWITCH_PROPERTY
-
-
-class AckSwitch(Switch):
-    """ Perioodically check the switch device to detect if it is alive
-    """
-    wake_up_loop = 60 * 60
-
-    def __init__(self, friendly_name=None, quiet_mode=False):
-        super().__init__(friendly_name,
-                         quiet_mode=quiet_mode)
-        # Acknowledge management
-        self._state_ack = None
-        self._ack_timer = self._start_monitoring(self.wake_up_loop)
-
-    def handle_new_value(self, value: bool) -> None:
-        self._state_ack = True   # set acknowledge status
-        return super().handle_new_value(value)
-
-    def _acknoledge_state(self) -> None:
-        if not self.concrete_device.is_available():
-            self._logger.debug('[%s] device not available', self)
-            self._state_ack = False
-            return
-        if self._state_ack:
-            self._logger.debug('[%s] state acknowledged', self)
-            # reset acknowledge status - it should be set in _decode_pl
-            self._state_ack = False
-            self.concrete_device.ask_for_state()
-        else:
-            self._logger.warning('[%s] !!! state NOT acknowledged !!!', self)
-            self._state_ack = False
-
-    def _start_monitoring(self, inter: int) -> None:
-        _timer = InfiniteTimer(inter, self._acknoledge_state)
-        _timer.start()
-        return _timer
-
-    def stop_monitoring(self) -> None:
-        """ Stop switch device monitoring
-        """
-        if self._ack_timer is not None:
-            self._ack_timer.cancel()
-            self._ack_timer = None
-
-
-class AutoStopSwitch(AckSwitch):
-    def __init__(self, friendly_name=None, countdown=60*1):
-        super().__init__(friendly_name)
         self._count_down = countdown
 
     def handle_new_value(self, value: bool) -> list:
         _result = super().handle_new_value(value)
-        if self._count_down == 0:
-            return _result
-        if value:
-            if not self._stop_timer:
-                # Automatically turn the switch off when manually turned on
-                self._remember_to_turn_the_light_off(self._count_down)
+        if self._count_down != 0:
+            if value:
+                if not self._stop_timer:
+                    # Automatically turn the switch off when manually turned on
+                    self._remember_to_turn_the_light_off(self._count_down)
 
         return _result
+
+    def get_property(self) -> str:
+        return PropertyConfig.SWITCH_PROPERTY
+
+class Switch0(Switch):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._device_id = 0
+
+    def get_property(self) -> str:
+        return PropertyConfig.SWITCH0_PROPERTY
+
+class Switch1(Switch):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._device_id = 1
+
+    def get_property(self) -> str:
+        return PropertyConfig.SWITCH1_PROPERTY
+

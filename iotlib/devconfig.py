@@ -1,37 +1,39 @@
 
 from enum import Enum
 
+
+
 class PropertyConfig(Enum):
-    """Enumeration defining property names and types for virtual devices.
+    """Defines property name enums for virtual devices.
 
-    This class defines enum members that represent property names and 
-    associated types for different virtual device types. The enum members
-    have the property name and type attributes to allow easy access.
+    This enum defines property names, types, and owning node 
+    for different virtual device types. Allows generic access 
+    to property configuration details.
 
-    For example:
+    Properties can be accessed like:
 
-    PropertyConfig.ADC_PROPERTY.property_name gives 'voltage'
-    PropertyConfig.ADC_PROPERTY.property_type gives float
-    
-    This allows using PropertyConfig to generically access property 
-    details between 'processors' et 'virtualdev' modules
+    PropertyConfig.ADC_PROPERTY.property_name
+    PropertyConfig.ADC_PROPERTY.property_type  
+    PropertyConfig.ADC_PROPERTY.node
     """
-    
-    ADC_PROPERTY = 'voltage', float
-    BUTTON_PROPERTY = 'action', str
-    CONDUCTIVITY_PROPERTY = 'conductivity', int
-    DUMMY_PROPERTY = 'dummy', str
-    HUMIDITY_PROPERTY = 'humidity', int
-    LIGHT_PROPERTY = 'light', int
-    MOTION_PROPERTY = 'occupancy', bool
-    SWITCH_PROPERTY = 'power', bool
-    TEMPERATURE_PROPERTY = 'temperature', float
-    ALARM_PROPERTY = 'alarm', bool
 
-    def __new__(cls, property_name, property_type):
+    ALARM_PROPERTY = 'alarm.alarm', bool
+    ADC_PROPERTY = 'sensor.voltage', float
+    BUTTON_PROPERTY = 'sensor.action', str
+    CONDUCTIVITY_PROPERTY = 'sensor.conductivity', int
+    HUMIDITY_PROPERTY = 'sensor.humidity', int
+    LIGHT_PROPERTY = 'sensor.light', int
+    MOTION_PROPERTY = 'sensor.occupancy', bool
+    SWITCH_PROPERTY = 'switch.power', bool
+    SWITCH0_PROPERTY = 'switch0.power', bool
+    SWITCH1_PROPERTY = 'switch1.power', bool
+    TEMPERATURE_PROPERTY = 'sensor.temperature', float
+
+    def __new__(cls, qualified_property:str, property_type:type):
         member = object.__new__(cls)
-        member.property_name = property_name
+        member.property_name = qualified_property.split('.')[1]
         member.property_type = property_type
+        member.property_node = qualified_property.split('.')[0]
         return member
 
     def __str__(self):

@@ -10,7 +10,7 @@ from abc import abstractmethod, ABCMeta
 from .. import package_level_logger
 from ..config import MQTTConfig
 from ..client import MQTTClient
-from ..bridge import Surrogate, Connector, DecodingException
+from ..bridge import Surrogate, DecodingException
 from ..virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                           TemperatureSensor, VirtualDevice)
 
@@ -26,7 +26,7 @@ STATE_ON = 'ON'
 STATE_OFF = 'OFF'
 
 
-class DeviceOnZigbee2MQTT(Connector):
+class DeviceOnZigbee2MQTT(Surrogate):
     ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
     '''
     _logger = package_level_logger
@@ -46,20 +46,12 @@ class DeviceOnZigbee2MQTT(Connector):
         _base_sub_topic = topic_base or MQTTConfig().z2m_sub_topic
         self._root_sub_topic = f'{_base_sub_topic}/{device_name}'
         self._state_sub_topic = f'{_base_sub_topic}/{device_name}/availability'
-        self._handler_list = list()
-        self._logger.debug('Z2M bridge for device %s created', device_name)
 
         super().__init__(mqtt_client, device_name=device_name)
-
-    def get_subscription_list(self) -> list:
-        """Return the topics the client must subscribe
-        * <base_topic>/<device_name> : to get device property values
-        """
-        return [self._root_sub_topic]
+        self._logger.debug('Z2M codec created for device %s', device_name)
 
     def get_availability_topic(self) -> str:
         """Return the availability topic the client must subscribe
-        * <base_topic>/<device_name>/availability : to get device availability
         """
         return self._state_sub_topic
 
@@ -101,16 +93,14 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_temp), TemperatureSensor), \
             f'Bad value : {v_temp} of type {type(v_temp)}'
-        self._set_message_handler(self.get_subscription_list()[0],
+        self._set_message_handler(self._root_sub_topic,
                                   self.__class__._decode_temp_pl,
-                                  v_temp,
-                                  'sensor')
+                                  v_temp)
         assert issubclass(type(v_humi), HumiditySensor), \
             f'Bad value : {v_humi} of type {type(v_humi)}'
-        self._set_message_handler(self.get_subscription_list()[0],
+        self._set_message_handler(self._root_sub_topic,
                                   self.__class__._decode_humi_pl,
-                                  v_humi,
-                                  'sensor')
+                                  v_humi)
 
     def _decode_temp_pl(self, topic, payload: dict) -> float:
         _value = payload.get('temperature')
@@ -160,10 +150,9 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_button), Button), \
             f'Bad value : {v_button} of type {type(v_button)}'
-        self._set_message_handler(self.get_subscription_list()[0],
+        self._set_message_handler(self._root_sub_topic,
                                   self.__class__._decode_action_pl,
-                                  v_button,
-                                  'sensor')
+                                  v_button)
 
     @abstractmethod
     def _decode_action_pl(self, payload) -> str:
@@ -200,10 +189,9 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_motion), Motion), \
             f'Bad value : {v_motion} of type {type(v_motion)}'
-        self._set_message_handler(self.get_subscription_list()[0],
+        self._set_message_handler(self._root_sub_topic,
                                   self.__class__._decode_motion_pl,
-                                  v_motion,
-                                  'sensor')
+                                  v_motion)
 
     @abstractmethod
     def _decode_motion_pl(self, topic, payload) -> dict:
@@ -244,10 +232,9 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_alarm), Alarm), \
             f'Bad value : {v_alarm} of type {type(v_alarm)}'
-        self._set_message_handler(self.get_subscription_list()[0],
+        self._set_message_handler(self._root_sub_topic,
                                   self.__class__._decode_state_pl,
-                                  v_alarm,
-                                  'alarm')
+                                  v_alarm)
         v_alarm.concrete_device = self
 
     def change_state(self, is_on: bool) -> None:
@@ -372,10 +359,9 @@ Features
         v_switch.concrete_device = self
         self._v_switch = v_switch
 
-        self._set_message_handler(self.get_subscription_list()[0],
+        self._set_message_handler(self._root_sub_topic,
                                   self.__class__._decode_state_pl,
-                                  v_switch,
-                                  'switch')
+                                  v_switch)
         self.ask_for_state()
 
 

@@ -1,10 +1,34 @@
 import json
 
 from iotlib.client import MQTTClientBase
-from .utils import log_it, logger, get_broker_name
+from .helper import log_it, logger, get_broker_name
 
+class MockZigbeeSensor:
+    ww = b'{"battery":67.5,"humidity":64,"linkquality":60,"temperature":19.6,"voltage":2900}'
+    def __init__(self,
+                 client: MQTTClientBase,
+                 device_name: str,
+                 topic_base) -> None:
+        self.client = client
+        self.device_name = device_name
+        self.topic_base = topic_base
+        self.topic_root = f'{topic_base}/{device_name}'
+        self.state = False
+        self.client.connect_handler_add(self.on_connect_cb)
 
-class MockSwitch:
+    def on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+        self.client.subscribe(self.topic_root, qos=1)
+
+    def publish(self, temperature:float, humidity:int):
+        _properties = {"battery":67.5,
+                    "humidity":humidity,
+                    "linkquality":60,
+                    "temperature":temperature,
+                    "voltage":2900}
+        _message = json.dumps(_properties)
+        self.client.publish(self.topic_root, _message)
+
+class MockZigbeeSwitch:
     MESSAGE_ON = '{"state": "ON"}'
     MESSAGE_OFF = '{"state": "OFF"}'
     

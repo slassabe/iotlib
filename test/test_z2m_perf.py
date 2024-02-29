@@ -17,8 +17,8 @@ from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                TemperatureSensor, VirtualDevice)
 from iotlib.processor import VirtualDeviceProcessor
 
-from ..utils import log_it, logger, get_broker_name
-from ..mocks import MockSwitch
+from .helper import log_it, logger, get_broker_name
+from .mocks import MockZigbeeSwitch
 
 
 class FlipFlopMessage(VirtualDeviceProcessor):
@@ -48,13 +48,13 @@ class FlipFlopMessage(VirtualDeviceProcessor):
 class TestSonoffZbminiL(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_switch'
 
     def test_Switch_00(self):
         log_it("Testing SonoffZbminiL : no loop to check connection")
         mqtt_client = MQTTClientBase('', self.TARGET)
-        mock = MockSwitch(mqtt_client,
+        mock = MockZigbeeSwitch(mqtt_client,
                           device_name=self.DEVICE_NAME,
                           topic_base=self.TOPIC_BASE)
         v_switch = Switch()
@@ -86,7 +86,7 @@ class TestSonoffZbminiL(unittest.TestCase):
         TEST_DURATION = 10 # sec.
         log_it("Testing SonoffZbminiL : publish, decode and access vdev")
         mqtt_client = MQTTClientBase('', self.TARGET)
-        mock = MockSwitch(mqtt_client,
+        mock = MockZigbeeSwitch(mqtt_client,
                           device_name=self.DEVICE_NAME,
                           topic_base=self.TOPIC_BASE)
         v_switch = Switch()

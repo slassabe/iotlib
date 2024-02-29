@@ -11,17 +11,19 @@ import time
 import paho.mqtt.client as mqtt
 from iotlib.client import MQTTClientBase
 
-from .utils import log_it, logger, get_broker_name
+from .helper import log_it, logger, get_broker_name
+
+TOPIC_BASE = 'TEST_A2IOT/client'
 
 
 class PubSub:
     MESSAGE1 = "message1"
     MESSAGE2 = "message2"
-    TOPIC_LEAF = "TEST/device_name/#"
-    TOPIC_ROOT = "TEST/+/the-topic"
-    TOPIC_1 = "TEST/device_name/the-topic"
-    TOPIC_2 = "TEST/device_name/another-topic"
-    TOPIC_3 = "TEST/another_name/the-topic"
+    TOPIC_LEAF = TOPIC_BASE + "/device_name/#"
+    TOPIC_ROOT = TOPIC_BASE + "/+/the-topic"
+    TOPIC_1 = TOPIC_BASE + "/device_name/the-topic"
+    TOPIC_2 = TOPIC_BASE + "/device_name/another-topic"
+    TOPIC_3 = TOPIC_BASE + "/another_name/the-topic"
 
     def __init__(self, client: MQTTClientBase, to_subscribe=None, to_publish=None):
         self.client = client
@@ -34,13 +36,13 @@ class PubSub:
     def on_root_topic_cb(self, client, userdata, message):
         payload = message.payload.decode("utf-8")
         logger.debug("Callback DEFAULT : receives message on topic '%s': %s",
-                      message.topic, payload)
+                     message.topic, payload)
         self.received_on_root = payload
 
     def on_this_topic_cb(self, client, userdata, message):
         payload = message.payload.decode("utf-8")
         logger.debug("Callback SPECIFIC : receives message on topic '%s': %s",
-                      message.topic, payload)
+                     message.topic, payload)
         self.received_on_this = payload
 
     def on_connect_cb(self, client, userdata, flags, rc, properties: mqtt.Properties | None) -> None:
@@ -73,12 +75,32 @@ class TestMQTTClient(unittest.TestCase):
         client.stop()
         self.assertFalse(client.connected)
 
-    def test_pub_sub_01(self):
+    def test_pub_sub_00(self):
         log_it("Testing subscribe with default callback")
         test = PubSub(MQTTClientBase('PubSubClient',
                                      self.target),
-                      to_subscribe=["TEST/device_name/#"],
-                      to_publish=[("TEST/device_name/the-topic", "message1")],
+                      to_subscribe=[TOPIC_BASE + "/device_name/the-topic"],
+                      to_publish=[(TOPIC_BASE + "/device_name/the-topic", "message1")],
+                      )
+
+        test.client.default_message_callback_add(test.on_root_topic_cb)
+        test.client.connect_handler_add(test.on_connect_cb)
+        test.client.subscribe_handler_add(test.on_subscribe_cb)
+        test.client.disconnect_handler_add(test.on_disconnect_cb)
+        test.client.start()
+
+        time.sleep(2)
+        self.assertTrue(test.status_on_root == "connected")
+        self.assertTrue(test.received_on_root == "message1")
+        test.client.stop()
+
+    def test_pub_sub_01(self):
+        log_it("Testing subscribe with default callback and wildchar subscription")
+        test = PubSub(MQTTClientBase('PubSubClient',
+                                     self.target),
+                      # <- Why is this required ??
+                      to_subscribe=[TOPIC_BASE + "/device_name/the-topic"],
+                      to_publish=[(TOPIC_BASE + "/device_name/the-topic", "message1")],
                       )
 
         test.client.default_message_callback_add(test.on_root_topic_cb)
@@ -94,14 +116,17 @@ class TestMQTTClient(unittest.TestCase):
 
     def test_pub_sub_02(self):
         log_it("Testing subscribe without wildchar callback")
-        test = PubSub(MQTTClientBase('PubSubClient',
-                                     self.target),
-                      to_subscribe=["TEST/#"],  # <- Why is this required ??
-                      to_publish=[("TEST/device_name/the-topic", "message1")],
+
+        mqtt_client = MQTTClientBase('PubSubClient', self.target)
+        mqtt_client.client.enable_logger()
+
+        test = PubSub(mqtt_client,
+                      to_subscribe=[TOPIC_BASE + "/device_name/the-topic"], 
+                      to_publish=[(TOPIC_BASE + "/device_name/the-topic", "message1")],
                       )
 
-        test.client.message_callback_add(
-            "TEST/device_name/the-topic", test.on_this_topic_cb)
+        test.client.message_callback_add(TOPIC_BASE + "/device_name/the-topic", 
+                                         test.on_this_topic_cb)
         test.client.connect_handler_add(test.on_connect_cb)
         test.client.subscribe_handler_add(test.on_subscribe_cb)
         test.client.start()
@@ -113,13 +138,13 @@ class TestMQTTClient(unittest.TestCase):
     def test_pub_sub_03(self):
         log_it("Mixing both wildchar and regular topic subscription")
         test = PubSub(MQTTClientBase('PubSubClient', self.target),
-                      to_subscribe=["TEST/device_name/#"],
-                      to_publish=[("TEST/device_name/the-topic", "message1"),
-                                  ("TEST/device_name/another-topic", "message2")]
+                      to_subscribe=[TOPIC_BASE + "/device_name/#"],
+                      to_publish=[(TOPIC_BASE + "/device_name/the-topic", "message1"),
+                                  (TOPIC_BASE + "/device_name/another-topic", "message2")]
                       )
 
         test.client.default_message_callback_add(test.on_root_topic_cb)
-        test.client.message_callback_add("TEST/device_name/the-topic",
+        test.client.message_callback_add(TOPIC_BASE + "/device_name/the-topic",
                                          test.on_this_topic_cb)
         test.client.connect_handler_add(test.on_connect_cb)     # Required
         test.client.subscribe_handler_add(test.on_subscribe_cb)  # Required
@@ -135,8 +160,8 @@ class TestMQTTClient(unittest.TestCase):
         log_it("Testing topic wildcard /root/+/leaf")
         test = PubSub(MQTTClientBase('PubSubClient',
                                      self.target),
-                      to_subscribe=["TEST/+/the-topic"],
-                      to_publish=[("TEST/another_name/the-topic", "message1")]
+                      to_subscribe=[TOPIC_BASE + "/+/the-topic"],
+                      to_publish=[(TOPIC_BASE + "/another_name/the-topic", "message1")]
                       )
 
         test.client.default_message_callback_add(test.on_root_topic_cb)
@@ -152,12 +177,12 @@ class TestMQTTClient(unittest.TestCase):
         log_it("Testing topic regular and wildcard concurrency - part 1")
         test = PubSub(MQTTClientBase('PubSubClient',
                                      self.target),
-                      to_subscribe=["TEST/+/the-topic"],
-                      to_publish=[("TEST/device_name/the-topic", "message1")]
+                      to_subscribe=[TOPIC_BASE + "/+/the-topic"],
+                      to_publish=[(TOPIC_BASE + "/device_name/the-topic", "message1")]
                       )
 
         test.client.default_message_callback_add(test.on_root_topic_cb)
-        test.client.message_callback_add("TEST/device_name/the-topic",
+        test.client.message_callback_add(TOPIC_BASE + "/device_name/the-topic",
                                          test.on_this_topic_cb)
         test.client.connect_handler_add(test.on_connect_cb)     # Required
         test.client.subscribe_handler_add(test.on_subscribe_cb)  # Required
@@ -172,13 +197,13 @@ class TestMQTTClient(unittest.TestCase):
         log_it("Testing topic regular and wildcard concurrency - part 2")
         test = PubSub(MQTTClientBase('PubSubClient',
                                      self.target),
-                      to_subscribe=["TEST/+/the-topic"],
-                      to_publish=[("TEST/device_name/the-topic", "message1"),
-                                  ("TEST/another_name/the-topic", "message2")]
+                      to_subscribe=[TOPIC_BASE + "/+/the-topic"],
+                      to_publish=[(TOPIC_BASE + "/device_name/the-topic", "message1"),
+                                  (TOPIC_BASE + "/another_name/the-topic", "message2")]
                       )
 
         test.client.default_message_callback_add(test.on_root_topic_cb)
-        test.client.message_callback_add("TEST/device_name/the-topic",
+        test.client.message_callback_add(TOPIC_BASE + "/device_name/the-topic",
                                          test.on_this_topic_cb)
         test.client.connect_handler_add(test.on_connect_cb)     # Required
         test.client.subscribe_handler_add(test.on_subscribe_cb)  # Required

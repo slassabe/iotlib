@@ -209,7 +209,6 @@ class MQTTClientBase():
 
     def subscribe(self, topic, **kwargs):
         ''' Subscribes to the specified topic. '''
-        self._logger.debug('Subscribes to topic "%s"', topic)
         return self.client.subscribe(topic, **kwargs)
 
     def _handle_on_subscribe(self, client, userdata, mid, reason_code_list, properties):

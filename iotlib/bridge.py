@@ -1,13 +1,17 @@
 #!/usr/local/bin/python3
 # coding=utf-8
-
-from abc import abstractmethod, ABCMeta, ABC
-from typing import Callable, List, TypeAlias
+from abc import abstractmethod, ABC
 from collections import defaultdict
+from typing import Callable, TypeAlias
+
+from iotlib.virtualdev import VirtualDevice
+from iotlib.client import MQTTClient
 
 from . import package_level_logger
-from iotlib.virtualdev import VirtualDevice, ResultType, ProcessingResult
-from iotlib.client import MQTTClient
+
+MessageHandlerType: TypeAlias = tuple[
+    Callable,
+    VirtualDevice]
 
 
 class Surrogate(ABC):
@@ -17,18 +21,17 @@ class Surrogate(ABC):
         self.client = mqtt_client
         self.device_name = device_name
         self.availability: bool = None
-        self.decoded_values: list = None
+
+        self._message_handler_dict: dict[str,
+                                         MessageHandlerType] = defaultdict(list)
         # Set MQTT on_message callbacks
         self.client.message_callback_add(self.get_availability_topic(),
                                          self.avalability_callback_cb)
-        for _topic_property in self.get_subscription_list():
-            self.client.message_callback_add(_topic_property,
-                                             self.property_callback_cb)
         # Set MQTT handlers
         self.client.connect_handler_add(self._on_connect_cb)
         self.client.subscribe_handler_add(self.on_subscribe_cb)
         # Disable auto start MQTT session
-        #self.client.start()
+        # self.client.start()
 
     def __repr__(self) -> str:
         _sep = ''
@@ -49,29 +52,36 @@ class Surrogate(ABC):
 
     def avalability_callback_cb(self, client, userdata, message) -> None:
         payload = message.payload.decode("utf-8")
-        self._logger.debug("Availability message received on topic: '%s' - payload: %s",
-                           message.topic, payload)
-        self._handle_availability(payload)
+        try:
+            self._handle_availability(payload)
+        except DecodingException as exp:
+            self._logger.exception('"[%s]" : Exception occured decoding : %s / %s',
+                                   exp,
+                                   message.topic,
+                                   payload[:100])
 
     def property_callback_cb(self, client, userdata, message) -> None:
         payload = message.payload.decode("utf-8")
-        self._logger.debug("Receives property message on topic '%s': %s",
-                           message.topic, payload)
-        self._handle_values(message.topic, payload)
+        try:
+            self._handle_values(message.topic, payload)
+        except DecodingException as exp:
+            self._logger.exception('"[%s]" : Exception occured decoding : %s / %s',
+                                   exp,
+                                   message.topic,
+                                   payload[:100])
 
     def on_subscribe_cb(self, client, userdata, mid, reason_code_list, properties) -> None:
-        self._logger.debug('Subscribe request confirmed')
+        pass
 
     def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Subscribes to MQTT topics for availability and value topics.
         """
-        self._logger.debug('Connection request accepted -> subscribe')
         _topic_avail = self.get_availability_topic()
-        client.subscribe(_topic_avail, qos=1)
+        self.client.subscribe(_topic_avail, qos=1)
         for _topic_property in self.get_subscription_list():
-            client.subscribe(_topic_property, qos=1)
+            self.client.subscribe(_topic_property, qos=1)
 
-    def _handle_values(self, topic:str, payload:bytes) -> list:
+    def _handle_values(self, topic: str, payload: bytes) -> None:
         """Handle an incoming sensor value message.
 
         Decode the message and execute property processors.
@@ -83,18 +93,17 @@ class Surrogate(ABC):
         Raises:
             EncodingException: If an error occurs decoding the message.
         """
-        try:
-            self.decoded_values = self._decode_values(topic, payload)
-            self._logger.debug('Handle value message on topic: %s - payload: %s', 
-                               topic, payload)
-            # A value is received from the device : force availability to True
-            self.availability = True
-            return self.decoded_values
-        except DecodingException as exp:
-            self._logger.exception('"[%s]" : Exception occured decoding : %s / %s',
-                                   exp,
-                                   topic,
-                                   payload[:100])
+        for _handler in self._get_message_handlers(topic):
+            if not _handler:
+                raise (ValueError(f'No topic set to decode : "{topic}"'))
+            _decoder, _virtual_device = _handler
+            if _virtual_device is None:
+                raise (ValueError(
+                    f'No virtual device set for topic : "{topic}"'))
+            # Decode value
+            _decoded_value = _decoder(self, topic, self.fit_payload(payload))
+            # Process handle_new_value with the decoded value
+            _virtual_device.handle_new_value(_decoded_value)
 
     def _handle_availability(self, payload: str) -> bool:
         """Handle availability message, executing availability processors when status changes.
@@ -105,64 +114,16 @@ class Surrogate(ABC):
         Raises:
             EncodingException: If an error occurs decoding the payload
         """
-        try:
-            new_avail = self._decode_avail_pl(payload)
-            if self.availability != new_avail:
-                self.availability = new_avail
-                self._logger.debug('Availability updated: %s',  self.availability)
-            else:
-                self._logger.debug('Availability unchanged: %s',  self.availability)
-            return new_avail
-        except DecodingException as exp:
-            self._logger.exception('"[%s]" : Exception occured decoding : %s',
-                                   exp,
-                                   payload)
-
-    @abstractmethod
-    def get_availability_topic(self) -> str:
-        """Return the availability topic the client must subscribe
-        """
-
-    @abstractmethod
-    def get_subscription_list(self) -> list[str]:
-        """Return the value topics the client must subscribe
-        """
-
-    @abstractmethod
-    def _decode_avail_pl(self, payload: str) -> bool:
-        ''' Decode message received on topic dedicated to availability '''
-        raise NotImplementedError
-
-    @abstractmethod
-    def _decode_values(self, topic: str, payload: str) -> list:
-        """Decode an incoming value message.
-
-        Decode the payload and return a list of (node, property, value) 
-        tuples for any matches.
-
-
-        Args:
-            topic (str): The message topic.
-            payload (str): The message payload.
-
-        Returns:
-            list: A list of (node, property, value) tuples.
-
-        """
-        raise NotImplementedError
-
-MessageHandlerType: TypeAlias = tuple[
-    Callable, 
-    VirtualDevice, 
-    str]
-
-class Connector(Surrogate):
-    def __init__(self, mqtt_client: MQTTClient, device_name: str):
-        self._message_handler_dict:dict[str, MessageHandlerType] = defaultdict(list)
-        super().__init__(mqtt_client, device_name)
-
-    def get_availability_topic(self) -> str:
-        return "NOT_IMPLEMENTED"
+        self._logger.debug('Handle availability message with payload: %s',
+                           payload)
+        new_avail = self._decode_avail_pl(payload)
+        if self.availability != new_avail:
+            self.availability = new_avail
+            self._logger.debug('Availability updated: %s',  self.availability)
+        else:
+            self._logger.debug('Availability unchanged: %s',
+                               self.availability)
+        return new_avail
 
     def get_subscription_list(self) -> list[str]:
         """Return the topics the client must subscribe according to message handler set
@@ -170,10 +131,9 @@ class Connector(Surrogate):
         return list(self._message_handler_dict.keys())
 
     def _set_message_handler(self,
-                     topic: str,
-                     decoder: Callable,
-                     vdev: VirtualDevice,
-                     node: str) -> None:
+                             topic: str,
+                             decoder: Callable,
+                             vdev: VirtualDevice) -> None:
         """Set a message handler function for a MQTT topic.
 
         Args:
@@ -187,10 +147,11 @@ class Connector(Surrogate):
         so that when a message is received on the given topic, the provided decoder
         function can be called to process it and update the virtual device.
         """
-        _tuple = (decoder, vdev, node)
+        self.client.message_callback_add(topic, self.property_callback_cb)
+        _tuple = (decoder, vdev)
         self._message_handler_dict[topic].append(_tuple)
 
-    def _get_message_handlers(self, topic: str) -> MessageHandlerType:
+    def _get_message_handlers(self, topic: str) -> list[MessageHandlerType]:
         """Get the message handler functions for a given MQTT topic.
 
         Args:
@@ -201,47 +162,22 @@ class Connector(Surrogate):
         """
         return self._message_handler_dict[topic]
 
-
-    def _decode_values(self, topic: str, payload: str) -> list[ProcessingResult]:
-        """Decode values from a Tasmota MQTT message payload.
-
-        Given a topic and payload, look up the associated decoder function
-        and virtual device. Call the decoder to extract values from the 
-        payload. Pass the decoded values to the virtual device to update
-        its state.
-
-        Args:
-            topic (str): The message topic
-            payload (str): The message payload
-
-        Returns:
-            list: List of (node, property, value) tuples if decoding was
-            successful, else empty list.
-        """
-        _decoded_values = []
-        for _handler in self._get_message_handlers(topic):
-            if not _handler:
-                raise(ValueError(f'No topic set to decode : "{topic}"'))
-            _decoder, _virtual_device, _node = _handler
-            if _virtual_device is None:
-                raise(ValueError(f'No virtual device set for topic : "{topic}"'))
-            # Decode value
-            _decoded_value = _decoder(self, topic, self.fit_payload(payload))
-            # Process handle_new_value with the decoded value
-            _process_result = _virtual_device.handle_new_value(_decoded_value)
-
-            if _process_result.type is ResultType.SUCCESS:
-                _decoded_values.append((_node, 
-                                        _process_result.property, 
-                                        _process_result.value))
-            else:
-                return []
-        return _decoded_values
-
-    def fit_payload(self, payload) -> str:
+    @staticmethod
+    def fit_payload(payload) -> str:
         """Adjust payload to be decoded, that is fit in string
         """
         return payload
+
+    @abstractmethod
+    def _decode_avail_pl(self, payload: str) -> bool:
+        ''' Decode message received on topic dedicated to availability '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_availability_topic(self) -> str:
+        '''Get the topic dedicated to handle availability messages'''
+        return NotImplementedError
+
 
 class DecodingException(Exception):
     """ Exception if message received on wrong topic

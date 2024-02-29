@@ -4,7 +4,7 @@
 """Virtual Device test
 
 $ source .venv/bin/activate
-$ python -m unittest test.test_virtauldev
+$ python -m unittest test.test_virtualdev
 """
 import inspect
 import unittest
@@ -13,7 +13,7 @@ import iotlib.virtualdev
 import iotlib.processor
 import iotlib.devconfig
 
-from .utils import log_it, logger
+from .helper import log_it, logger
 
 class Replicator(iotlib.processor.VirtualDeviceProcessor):
     """Replicates updates from virtual devices for testing purpose"""
@@ -30,24 +30,22 @@ class Replicator(iotlib.processor.VirtualDeviceProcessor):
 
 class TestVirtualDevice(unittest.TestCase):
 
-    def test_init(self):
-        log_it("Testing VirtualDevice init")
-        _dummy = iotlib.virtualdev.HumiditySensor(friendly_name='fake')
-        self.assertIsNone(_dummy.value)
-    
     def test_set_value(self):
         log_it("Testing VirtualDevice set_value")
         _vdev = iotlib.virtualdev.HumiditySensor(friendly_name='fake')
-        _vdev.value = 100
+        _vdev.handle_new_value(100)
+
         self.assertEqual(_vdev.value, 100)
+        self.assertEqual(_vdev.get_property().property_name, 'humidity')
+        self.assertEqual(_vdev.get_property().property_node, 'sensor')
 
     def test_processor(self):
         log_it("Testing VirtualDevice processor")
         _vdev = iotlib.virtualdev.HumiditySensor(friendly_name='fake')
         _replicator = Replicator()
-        _vdev.value = 100
+        _vdev.value = 0
         _vdev.processor_append(_replicator)
 
-        _vdev._on_event()
+        _vdev.handle_new_value(100)
         self.assertEqual(_replicator.property, _vdev.get_property())
         self.assertEqual(_replicator.value, 100)

@@ -83,5 +83,6 @@ def get_broker_name():
 
 init_logger(logging.getLogger('test'), debug=False)
 init_logger(logging.getLogger('iotlib'), debug=False)
+init_logger(logging.getLogger('paho.mqtt.client'), debug=False)
 init_logger(logging.getLogger('utilities'), debug=False)
 

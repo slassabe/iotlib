@@ -10,14 +10,14 @@ import unittest
 import time
 from iotlib.client import MQTTClientBase
 
-from .utils import log_it, logger, get_broker_name
+from .helper import log_it, logger, get_broker_name
 
 
 class PerfMeter:
     MAX_LOOP = 1000000
     def __init__(self, client):
         self.client = client
-        self.topic = "TEST/sync_client"
+        self.topic = "TEST_A2IOT/client_perf"
         self.nb_loop = None
 
     def prologue(self):

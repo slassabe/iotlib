@@ -13,16 +13,16 @@ from iotlib.bridge import DecodingException
 from iotlib.client import MQTTClientBase
 from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, SonoffSnzb3, NeoNasAB02B2, SonoffZbminiL
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
-                               TemperatureSensor, VirtualDevice)
+                               TemperatureSensor)
 
-from ..utils import log_it, logger, get_broker_name
-from ..mocks import MockSwitch
+from .helper import log_it, logger, get_broker_name
+from .mocks import MockZigbeeSwitch
 
 
 class TestDeviceOnZigbee2MQTT(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_device'
 
     PROPERTY_MESSAGE = b'{"battery":67.5,"humidity":64,"linkquality":60,"temperature":19.6,"voltage":2900}'
@@ -80,46 +80,11 @@ class TestDeviceOnZigbee2MQTT(unittest.TestCase):
         self.assertTrue(zigbee_dev.availability)
         mqtt_client.stop()
 
-    def test_decode_property(self):
-        log_it('Testing property message handling WITHOUT backend')
-        mqtt_client = MQTTClientBase('', self.TARGET)
-        zigbee_dev = DeviceOnZigbee2MQTT(mqtt_client,
-                                         self.DEVICE_NAME,
-                                         topic_base=self.TOPIC_BASE)
-        mqtt_client.start()
-        time.sleep(2)   # Wait MQTT client connection
-
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
-                                  self.PROPERTY_MESSAGE)
-        logger.warning("CANNOT DECODE VALUES WITHOUT BACKEND")
-        time.sleep(1)
-
-        self.assertEqual(zigbee_dev.decoded_values, [])
-        mqtt_client.stop()
-
-    def test_SonoffSnzb02(self):
-        log_it('Testing SonoffSnzb02')
-        mqtt_client = MQTTClientBase('', self.TARGET)
-        v_temp = TemperatureSensor()
-        v_humi = HumiditySensor()
-        zigbee_dev = SonoffSnzb02(mqtt_client,
-                                  self.DEVICE_NAME,
-                                  v_temp,
-                                  v_humi,
-                                  topic_base=self.TOPIC_BASE)
-        mqtt_client.start()
-        time.sleep(2)   # Wait MQTT client connection
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
-                                  self.PROPERTY_MESSAGE)
-        time.sleep(1)
-        logger.info(f"DECODED VALUES: {zigbee_dev.decoded_values}")
-        mqtt_client.stop()
-
 
 class TestSonoffSnzb02(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_device'
 
     PROPERTY_MESSAGE = b'{"battery":67.5,"humidity":64.1,"linkquality":60,"temperature":19.6,"voltage":2900}'
@@ -158,7 +123,7 @@ class TestSonoffSnzb02(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
 
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
+        zigbee_dev.client.publish(zigbee_dev._root_sub_topic,
                                   self.PROPERTY_MESSAGE,
                                   )
         time.sleep(2)
@@ -171,7 +136,7 @@ class TestSonoffSnzb02(unittest.TestCase):
 class TestSonoffSnzb01(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_button'
 
     MESSAGE_SINGLE = b'{"action":"single","battery":100,"linkquality":164,"voltage":3000}'
@@ -180,7 +145,9 @@ class TestSonoffSnzb01(unittest.TestCase):
 
     def test_end_to_end(self):
         log_it('Testing end to end handler mechanism on SonoffSnzb01 Sensor')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+
+        mqtt_client = MQTTClientBase('TestSonoffSnzb01', self.TARGET)
+        mqtt_client.client.enable_logger()
         v_button = Button()
         zigbee_dev = SonoffSnzb01(mqtt_client,
                                   self.DEVICE_NAME,
@@ -188,19 +155,19 @@ class TestSonoffSnzb01(unittest.TestCase):
                                   topic_base=self.TOPIC_BASE)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
+        zigbee_dev.client.publish(zigbee_dev._root_sub_topic,
                                   self.MESSAGE_SINGLE,
                                   )
-        time.sleep(1)
+        time.sleep(2)
         self.assertEqual(v_button.value, 'single')
 
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
+        zigbee_dev.client.publish(zigbee_dev._root_sub_topic,
                                   self.MESSAGE_DOUBLE,
                                   )
         time.sleep(1)
         self.assertEqual(v_button.value, 'double')
 
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
+        zigbee_dev.client.publish(zigbee_dev._root_sub_topic,
                                   self.MESSAGE_LONG,
                                   )
         time.sleep(1)
@@ -219,7 +186,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         with self.assertRaises(DecodingException) as ctx:
-            zigbee_dev._decode_values(zigbee_dev.get_subscription_list()[0],
+            zigbee_dev._handle_values(zigbee_dev._root_sub_topic,
                                       'value_format_error',
                                       )
         time.sleep(1)
@@ -236,7 +203,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         with self.assertRaises(DecodingException) as ctx:
-            zigbee_dev._decode_values(zigbee_dev.get_subscription_list()[0],
+            zigbee_dev._handle_values(zigbee_dev._root_sub_topic,
                                       b'{"action":"triple","battery":100,"linkquality":164,"voltage":3000}')
         mqtt_client.stop()
 
@@ -244,7 +211,7 @@ class TestSonoffSnzb01(unittest.TestCase):
 class TestSonoffSnzb3(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_motion'
 
     MESSAGE_FALSE = b'{"battery":64,"battery_low":false,"linkquality":144,"occupancy":false,"tamper":false,"voltage":2900}'
@@ -260,13 +227,13 @@ class TestSonoffSnzb3(unittest.TestCase):
                                  topic_base=self.TOPIC_BASE)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
+        zigbee_dev.client.publish(zigbee_dev._root_sub_topic,
                                   self.MESSAGE_FALSE,
                                   )
         time.sleep(1)
         self.assertFalse(v_motion.value)
 
-        zigbee_dev.client.publish(zigbee_dev.get_subscription_list()[0],
+        zigbee_dev.client.publish(zigbee_dev._root_sub_topic,
                                   self.MESSAGE_TRUE,
                                   )
         time.sleep(1)
@@ -277,7 +244,7 @@ class TestSonoffSnzb3(unittest.TestCase):
 class TestNeoNasAB02B2(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_alarm'
 
     def test_init(self):
@@ -317,7 +284,7 @@ class TestNeoNasAB02B2(unittest.TestCase):
 class TestSonoffZbminiL(unittest.TestCase):
     TARGET = get_broker_name()
 
-    TOPIC_BASE = 'TEST/z2m'
+    TOPIC_BASE = 'TEST_A2IOT/z2m'
     DEVICE_NAME = 'fake_switch'
 
     def test_Switch_00(self):
@@ -337,7 +304,7 @@ class TestSonoffZbminiL(unittest.TestCase):
     def test_Switch_01(self):
         log_it("Testing SonoffZbminiL : publish to mock")
         mqtt_client = MQTTClientBase('', self.TARGET)
-        mock = MockSwitch(mqtt_client,
+        mock = MockZigbeeSwitch(mqtt_client,
                           device_name=self.DEVICE_NAME,
                           topic_base=self.TOPIC_BASE)
         v_switch = Switch()
@@ -365,7 +332,7 @@ class TestSonoffZbminiL(unittest.TestCase):
     def test_Switch_02(self):
         log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
         mqtt_client = MQTTClientBase('', self.TARGET)
-        mock = MockSwitch(mqtt_client,
+        mock = MockZigbeeSwitch(mqtt_client,
                           device_name=self.DEVICE_NAME,
                           topic_base=self.TOPIC_BASE)
         v_switch = Switch()
@@ -393,7 +360,7 @@ class TestSonoffZbminiL(unittest.TestCase):
     def test_Switch_03(self):
         log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
         mqtt_client = MQTTClientBase('', self.TARGET)
-        mock = MockSwitch(mqtt_client,
+        mock = MockZigbeeSwitch(mqtt_client,
                           device_name=self.DEVICE_NAME,
                           topic_base=self.TOPIC_BASE)
         v_switch = Switch()
