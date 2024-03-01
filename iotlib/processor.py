@@ -17,7 +17,6 @@ Typical usage:
 
 """
 
-import logging
 from abc import ABC, abstractmethod
 from . import package_level_logger
 

@@ -14,7 +14,7 @@ from iotlib.virtualdev import (HumiditySensor, TemperatureSensor)
 
 from iotlib.bridge import Surrogate, DecodingException
 from iotlib.client import MQTTClient
-from .helper import log_it, get_broker_name
+from .helper import log_it, logger, get_broker_name
 
 TOPIC_BASE = 'TEST_A2IOT/bridge'
 
@@ -58,6 +58,66 @@ class MockZigbeeSensor(Surrogate):
             return float(_value)
 
     def _decode_humi_pl(self, topic, payload: dict) -> int:
+        _value = json.loads(payload).get('humidity')
+        if _value is None:
+            raise DecodingException(
+                f'No "humidity" key in payload : {payload}')
+        else:
+            return int(_value)
+    
+class MockZigbeeMagic(Surrogate):
+
+    def __init__(self,
+                 mqtt_client: MQTTClient,
+                 device_name: str | None,
+                 topic_base: str = None):
+        if device_name is None:
+            self._root_sub_topic = f'{topic_base}/+'
+            self._state_sub_topic = f'{topic_base}/+/availability'
+        else:
+            self._root_sub_topic = f'{topic_base}/{device_name}'
+            self._state_sub_topic = f'{topic_base}/{device_name}/availability'
+
+        super().__init__(mqtt_client, device_name=device_name)
+
+        self.availability = None
+        self.v_temp = TemperatureSensor()
+        self.v_humi = HumiditySensor()
+        self.client.default_message_callback_add(self.on_root_topic_cb)
+
+        self._set_message_handler(self._root_sub_topic,
+                                  self.__class__._decode_temp_pl,
+                                  self.v_temp)
+        self._set_message_handler(self._root_sub_topic,
+                                  self.__class__._decode_humi_pl,
+                                  self.v_humi)
+    def on_root_topic_cb(self, client, userdata, message):
+        payload = message.payload.decode("utf-8")
+        logger.debug("Callback DEFAULT : receives message on topic '%s': %s",
+                     message.topic, payload)
+        self.received_on_root = payload
+
+    def get_availability_topic(self) -> str:
+        return self._state_sub_topic
+
+    def _decode_avail_pl(self, payload: str) -> bool:
+        if payload != 'online' and payload != 'offline' and payload is not None:
+            raise DecodingException(f'Payload value error: {payload}')
+        else:
+            return payload == 'online'
+
+
+    def _decode_temp_pl(self, topic, payload: dict) -> float:
+        logger.info('Topic : %s - Payload : %s', topic, payload)
+        _value = json.loads(payload).get(('temperature'))
+        if _value is None:
+            raise DecodingException(
+                f'No "temperature" key in payload : {payload}')
+        else:
+            return float(_value)
+
+    def _decode_humi_pl(self, topic, payload: dict) -> int:
+        logger.info('Topic : %s - Payload : %s', topic, payload)
         _value = json.loads(payload).get('humidity')
         if _value is None:
             raise DecodingException(
@@ -118,6 +178,34 @@ class TestSurrogate(unittest.TestCase):
         time.sleep(2)
 
         mock.client.publish(mock._root_sub_topic, _encode(temperature = 37.2, humidity = 100))
+
+        time.sleep(1)
+        self.assertEqual(mock.v_temp.value, 37.2)
+        mqtt_client.stop()
+
+class TestMultiClient(unittest.TestCase):
+    target = get_broker_name()
+
+    def X_test_handle_property(self):
+        log_it('Mock Zigbee codec and test property message handling')
+        def _encode(temperature, humidity):
+            _properties = {"battery":67.5,
+                "humidity":humidity,
+                "linkquality":60,
+                "temperature":temperature,
+                "voltage":2900}
+            return json.dumps(_properties)
+
+        mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client.client.enable_logger(logger)
+        mqtt_client.start()
+
+        mock = MockZigbeeMagic(mqtt_client, 
+                                device_name=None,
+                                topic_base=TOPIC_BASE)
+        time.sleep(2)
+
+        mock.client.publish(TOPIC_BASE + '/device00', _encode(temperature = 37.2, humidity = 100))
 
         time.sleep(1)
         self.assertEqual(mock.v_temp.value, 37.2)

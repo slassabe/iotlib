@@ -1,8 +1,10 @@
 #!/usr/local/bin/python3
 # coding=utf-8
+
 from abc import abstractmethod, ABC
 from collections import defaultdict
-from typing import Callable, TypeAlias
+from typing import Callable, TypeAlias, Any
+import paho.mqtt.client as mqtt
 
 from iotlib.virtualdev import VirtualDevice
 from iotlib.client import MQTTClient
@@ -26,12 +28,10 @@ class Surrogate(ABC):
                                          MessageHandlerType] = defaultdict(list)
         # Set MQTT on_message callbacks
         self.client.message_callback_add(self.get_availability_topic(),
-                                         self.avalability_callback_cb)
+                                         self._avalability_callback)
         # Set MQTT handlers
-        self.client.connect_handler_add(self._on_connect_cb)
-        self.client.subscribe_handler_add(self.on_subscribe_cb)
-        # Disable auto start MQTT session
-        # self.client.start()
+        self.client.connect_handler_add(self._on_connect_callback)
+        self.client.disconnect_handler_add(self._on_disconnect_callback)
 
     def __repr__(self) -> str:
         _sep = ''
@@ -50,7 +50,10 @@ class Surrogate(ABC):
         """
         return self.availability
 
-    def avalability_callback_cb(self, client, userdata, message) -> None:
+    def _avalability_callback(self,
+                              client: mqtt.Client,
+                              userdata: Any,
+                              message: mqtt.MQTTMessage) -> None:
         payload = message.payload.decode("utf-8")
         try:
             self._handle_availability(payload)
@@ -60,7 +63,10 @@ class Surrogate(ABC):
                                    message.topic,
                                    payload[:100])
 
-    def property_callback_cb(self, client, userdata, message) -> None:
+    def _property_callback(self,
+                           client: mqtt.Client,
+                           userdata: Any,
+                           message: mqtt.MQTTMessage) -> None:
         payload = message.payload.decode("utf-8")
         try:
             self._handle_values(message.topic, payload)
@@ -70,16 +76,37 @@ class Surrogate(ABC):
                                    message.topic,
                                    payload[:100])
 
-    def on_subscribe_cb(self, client, userdata, mid, reason_code_list, properties) -> None:
-        pass
-
-    def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+    def _on_connect_callback(self,
+                             client: mqtt.Client,
+                             userdata: Any,
+                             flags: mqtt.ConnectFlags,
+                             reason_code: mqtt.ReasonCode,
+                             properties: mqtt.Properties) -> None:
         """Subscribes to MQTT topics for availability and value topics.
         """
-        _topic_avail = self.get_availability_topic()
-        self.client.subscribe(_topic_avail, qos=1)
-        for _topic_property in self.get_subscription_list():
-            self.client.subscribe(_topic_property, qos=1)
+        if reason_code == 0:
+            self._logger.info('Connection accepted -> launch connect handlers')
+            _topic_avail = self.get_availability_topic()
+            self.client.subscribe(_topic_avail, qos=1)
+            for _topic_property in self.get_subscription_list():
+                self.client.subscribe(_topic_property, qos=1)
+        else:
+            self._logger.warning('[%s] connection refused - reason : %s',
+                               self,
+                               mqtt.connack_string(reason_code))
+
+
+    def _on_disconnect_callback(self,
+                                client: mqtt.Client,
+                                userdata: Any,
+                                disconnect_flags: mqtt.DisconnectFlags,
+                                reason_code: mqtt.ReasonCode,
+                                properties: mqtt.Properties) -> None:
+        """Subscribes to MQTT topics for availability and value topics.
+        """
+        self._logger.info('Disconnection occures - rc : %s -> stop loop',
+                          reason_code)
+        client.loop_stop()
 
     def _handle_values(self, topic: str, payload: bytes) -> None:
         """Handle an incoming sensor value message.
@@ -147,7 +174,7 @@ class Surrogate(ABC):
         so that when a message is received on the given topic, the provided decoder
         function can be called to process it and update the virtual device.
         """
-        self.client.message_callback_add(topic, self.property_callback_cb)
+        self.client.message_callback_add(topic, self._property_callback)
         _tuple = (decoder, vdev)
         self._message_handler_dict[topic].append(_tuple)
 

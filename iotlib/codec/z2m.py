@@ -7,11 +7,11 @@ from json.decoder import JSONDecodeError
 from abc import abstractmethod, ABCMeta
 
 # Non standard lib
-from .. import package_level_logger
-from ..config import MQTTConfig
-from ..client import MQTTClient
-from ..bridge import Surrogate, DecodingException
-from ..virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
+from iotlib import package_level_logger
+from iotlib.config import MQTTConfig
+from iotlib.client import MQTTClient
+from iotlib.bridge import Surrogate, DecodingException
+from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                           TemperatureSensor, VirtualDevice)
 
 BUTTON_SINGLE_ACTION = 'single'
@@ -155,7 +155,7 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                                   v_button)
 
     @abstractmethod
-    def _decode_action_pl(self, payload) -> str:
+    def _decode_action_pl(self, topic, payload) -> str:
         raise NotImplementedError
 
 

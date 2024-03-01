@@ -2,8 +2,6 @@
 
 ## TO DO
 
-- remove virtualdev.concrete_device
-  - add bridge in virtualdev.handle_new_value(self, value, device)
+x- remove virtualdev.AckSwitch
 
-- remove virtualdev.AckSwitch
-
+- remove MQTTClient.default_message_callback_add

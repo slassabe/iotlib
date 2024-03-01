@@ -30,12 +30,14 @@ Typical usage:
 
 import socket
 
-from collections.abc import Callable  
+from collections.abc import Callable
+from typing import Callable, Any
 import certifi
 import paho.mqtt.client as mqtt
 
 from . import package_level_logger
 from iotlib.config import MQTTConfig
+
 
 class MQTTClientBase():
     _logger = package_level_logger
@@ -85,10 +87,10 @@ class MQTTClientBase():
         self.on_subscribe_handlers: List[Callable] = []
 
     def __str__(self):
-        #return f'<{self.__class__.__name__} object "{self.hostname}:{self.port}">'
+        # return f'<{self.__class__.__name__} object "{self.hostname}:{self.port}">'
         return f'<{self.__class__.__name__} obj.">'
 
-    def start(self, properties: mqtt.Properties | None=None) -> mqtt.MQTTErrorCode:
+    def start(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
         """Starts the client MQTT network loop.
 
         Connects the client if not already connected, starts the network loop
@@ -118,7 +120,7 @@ class MQTTClientBase():
                 raise RuntimeError('loop_stop failed')
         return _rc
 
-    def connect(self, properties: mqtt.Properties | None=None) -> mqtt.MQTTErrorCode:
+    def connect(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
         ''' Connect to a remote broker according to the init properties :
         '''
         try:
@@ -133,24 +135,29 @@ class MQTTClientBase():
         except socket.gaierror as exp:
             self._logger.fatal('[%s] cannot connect host %s',
                                exp, self.hostname)
-            raise RuntimeError('connect failed')
+            raise RuntimeError('connect failed') from exp
 
-    def _handle_on_connect(self, client, userdata, flags, reason_code, properties) -> None:
+    def _handle_on_connect(self,
+                           client: mqtt.Client,
+                           userdata: Any,
+                           flags: mqtt.ConnectFlags,
+                           reason_code: mqtt.ReasonCode,
+                           properties: mqtt.Properties) -> None:
         if reason_code == 0:
-            self._logger.info('Connection accepted -> launch connect handlers')
             self.connected = True
-            for on_connect_handler in self.on_connect_handlers:
-                try:
-                    on_connect_handler(client, userdata, flags,
-                                       reason_code, properties)
-                except Exception as error:
-                    self._logger.exception("Failed handling connect %s", error)
-        else:
-            self._logger.error('[%s] connection refused - reason : %s',
-                               self,
-                               mqtt.connack_string(reason_code))
+        for on_connect_handler in self.on_connect_handlers:
+            try:
+                on_connect_handler(client, userdata, flags,
+                                   reason_code, properties)
+            except Exception as error:
+                self._logger.exception("Failed handling connect %s", error)
 
-    def connect_handler_add(self, handler):
+    def connect_handler_add(self, handler: Callable):
+        """Adds a connect event handler.
+
+        Args:
+            handler: The callback function to handle the connect event.
+        """
         self.on_connect_handlers.append(handler)
 
     def disconnect(self) -> mqtt.MQTTErrorCode:
@@ -160,34 +167,36 @@ class MQTTClientBase():
         self._logger.debug('Disconnection request returns : %s', _rc)
         return _rc
 
-    def _handle_on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties) -> None:
+    def _handle_on_disconnect(self,
+                              client: mqtt.Client,
+                              userdata: Any,
+                              disconnect_flags: mqtt.DisconnectFlags,
+                              reason_code: mqtt.ReasonCode,
+                              properties: mqtt.Properties) -> None:
         ''' Define the default disconnect callback implementation. 
         '''
-        if reason_code == 0:
-            self._logger.info('Disconnection occures - rc : %s -> stop loop',
-                                 reason_code)
-            self.connected = False
-            self.client.loop_stop()
-            for on_disconnect_handler in self.on_disconnect_handlers:
-                try:
-                    on_disconnect_handler(client,
-                                          userdata,
-                                          disconnect_flags,
-                                          reason_code,
-                                          properties)
-                except Exception as error:
-                    self._logger.exception(
-                        "Failed handling disconnect %s", error)
-        else:
-            self._logger.warning('[%s] disconnection not required with rc "%s"',
-                                 self,
-                                 reason_code)
+        self.connected = False
+        for on_disconnect_handler in self.on_disconnect_handlers:
+            try:
+                on_disconnect_handler(client,
+                                      userdata,
+                                      disconnect_flags,
+                                      reason_code,
+                                      properties)
+            except Exception as error:
+                self._logger.exception(
+                    "Failed handling disconnect %s", error)
 
-    def disconnect_handler_add(self, handler):
+    def disconnect_handler_add(self, handler: Callable):
+        """Adds a disconnect event handler.
+
+        Args:
+            handler: The callback function to handle the disconnect event.
+        """
         self.on_disconnect_handlers.append(handler)
 
     def _handle_on_message(self, client: mqtt.Client,
-                           userdata: any,
+                           userdata: Any,
                            message: mqtt.MQTTMessage) -> None:
         ''' Define the message received callback implementation.
 
@@ -221,12 +230,13 @@ class MQTTClientBase():
             except Exception as error:
                 self._logger.exception("Failed handling subscribe %s", error)
 
-    def subscribe_handler_add(self, handler):
+    def subscribe_handler_add(self, handler: Callable):
         self.on_subscribe_handlers.append(handler)
 
     def publish(self, topic, payload, **kwargs):
         ''' Publish a message on a topic. '''
-        self._logger.debug('Publish on topic : %s - payload : %s', topic, payload)
+        self._logger.debug(
+            'Publish on topic : %s - payload : %s', topic, payload)
         return self.client.publish(topic, payload, **kwargs)
 
     def loop_forever(self) -> mqtt.MQTTErrorCode:
@@ -248,6 +258,7 @@ class MQTTClientBase():
 class MQTTClient(MQTTClientBase):
     """Initializes an MQTTClient instance with configured parameters.
     """
+
     def __init__(self, client_id):
         super().__init__(client_id,
                          MQTTConfig().hostname,
