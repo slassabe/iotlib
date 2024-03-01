@@ -115,21 +115,47 @@ class VirtualDevice(ABC):
         self._processor_list.append(processor)
 
 class Sensor(VirtualDevice):
+    """Sensor virtual devices
+
+    This virtual sensor device manages sensor values that can be 
+    read by observer devices. 
+
+    """
     def __init__(self, friendly_name=None, quiet_mode=False):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
-        self._switch_observers = []
+        self._sensor_observers: list[Operable] = []
 
     @property
-    def switch_observers(self):
-        return self._switch_observers
+    def sensor_observers(self) -> list[VirtualDevice]:
+        """Get the list of observer devices.
 
-    def add_observer(self, device):
-        self._switch_observers.append(device)
+        Returns:
+            list: The list of Operable device objects that are observing 
+                the sensor values.
+        """
+        return self._sensor_observers
+
+    def add_observer(self, device) -> None:
+        """Add an observer to be notified of sensor value changes.
+        
+        Args:
+            device (Operable): The device to add as an observer. 
+                Must be an instance of Operable.
+        
+        Raises:
+            TypeError: If device is not an instance of Operable.
+            
+        """
+        if not isinstance(device, Operable):
+            raise TypeError(
+                f"Device must be instance of Operable, not {type(device)}")
+        self._sensor_observers.append(device)
 
 
 class TemperatureSensor(Sensor):
-
+    """ Temperature sensor
+    """
     def get_property(self) -> str:
         return PropertyConfig.TEMPERATURE_PROPERTY
 
@@ -138,18 +164,22 @@ class TemperatureSensor(Sensor):
 
 
 class HumiditySensor(Sensor):
+    """ Humidity sensor
+    """
     def get_property(self) -> str:
         return PropertyConfig.HUMIDITY_PROPERTY
 
 
 class LightSensor(Sensor):
-
+    """ Light sensor
+    """
     def get_property(self) -> str:
         return PropertyConfig.LIGHT_PROPERTY
 
 
 class ConductivitySensor(Sensor):
-
+    """ Conductivity sensor
+    """
     def get_property(self) -> str:
         return PropertyConfig.CONDUCTIVITY_PROPERTY
 
@@ -170,7 +200,7 @@ class Button(Sensor):
         return self._value
 
     @value.setter
-    def value(self, value):
+    def value(self, value:str):
         # Handle button action
         _accepted_values = [ButtonValues.SINGLE_ACTION.value,
                             ButtonValues.DOUBLE_ACTION.value,
@@ -183,6 +213,9 @@ class Button(Sensor):
             # Validate value type
             raise ValueError(
                 f'Button value "{value}" is invalid, must be in  list : "{_accepted_values}"')
+        elif not isinstance(value, str):
+            raise TypeError(
+                f"Value {value} is not of type string")
         else:
             self._value = value
 
@@ -196,6 +229,8 @@ class Motion(Sensor):
 
 
 class ADC(Sensor):
+    """ Analog-to-digital converter
+    """
 
     def get_property(self) -> str:
         return PropertyConfig.ADC_PROPERTY
@@ -289,6 +324,9 @@ class Operable(VirtualDevice):
             duration (int): duration before stop switch.
         """
         self._logger.debug('[%s] Start it for "%s" sec.', self, period)
+        if not isinstance(period, int):
+            raise TypeError(
+                f'Expecting type int for period "{period}", not {type(period)}')
         if self.pulse_is_allowed:
             self._logger.debug('[%s] pulse instruction allowed', self)
             self.concrete_device.pulse(period)
@@ -301,6 +339,9 @@ class Operable(VirtualDevice):
     def _remember_to_turn_the_light_off(self, when: int) -> None:
         self._logger.debug('[%s] Automatially stop after "%s" sec.',
                            self,  when)
+        if not isinstance(when, int):
+            raise TypeError(
+                f'Expecting type int for period "{when}", not {type(when)}')
         if self._stop_timer:
             self._stop_timer.cancel()    # a timer is allready set, cancel it
         self._stop_timer = threading.Timer(when, self.trigger_stop, [])
@@ -371,7 +412,6 @@ class Alarm(Operable):
 class Switch(Operable):
     """ Basic implementation of a virtual Switch 
     """
-
     def __init__(self, friendly_name=None, quiet_mode=False, countdown=0):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
@@ -381,17 +421,17 @@ class Switch(Operable):
     def handle_new_value(self, value: bool) -> list:
         _result = super().handle_new_value(value)
         if self._count_down != 0:
-            if value:
-                if not self._stop_timer:
-                    # Automatically turn the switch off when manually turned on
-                    self._remember_to_turn_the_light_off(self._count_down)
-
+            if value and not self._stop_timer:
+                # Automatically turn the switch off when manually turned on
+                self._remember_to_turn_the_light_off(self._count_down)
         return _result
 
     def get_property(self) -> str:
         return PropertyConfig.SWITCH_PROPERTY
 
 class Switch0(Switch):
+    """ Virtual switch #0 of a multi channel device
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._device_id = 0
@@ -400,6 +440,8 @@ class Switch0(Switch):
         return PropertyConfig.SWITCH0_PROPERTY
 
 class Switch1(Switch):
+    """ Virtual switch #1 of a multi channel device
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._device_id = 1

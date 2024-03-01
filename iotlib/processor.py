@@ -18,6 +18,8 @@ Typical usage:
 """
 
 from abc import ABC, abstractmethod
+from iotlib.devconfig import ButtonValues
+
 from . import package_level_logger
 
 
@@ -74,3 +76,97 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
                           v_dev,
                           v_dev.get_property(),
                           v_dev.value)
+
+
+class ButtonTrigger(VirtualDeviceProcessor):
+    """ButtonTrigger is used to trigger actions on registered 
+    virtual switches based on the type of button press
+    on the associated physical button.
+
+    The parameters are:
+
+    - countdown_short: duration (in sec) for "start_and_stop" action on single press  
+    - countdown_long: duration (in sec) for "start_and_stop" action on double press
+
+    Virtual switches to control must be passed in 
+    registered_list on registration.
+    """
+
+    def __init__(self,
+                 countdown_short=60*5,
+                 countdown_long=60*10) -> None:
+        super().__init__()
+        self._countdown_short = countdown_short
+        self._countdown_long = countdown_long
+
+    def handle_device_update(self, v_dev) -> None:
+        """Process button press actions on registered switches.
+
+        This method is called on each button value change to trigger 
+        actions on the registered virtual switches:
+
+        Parameters:
+            name (str): Name of the button device
+            property_str (str): Property name that changed
+            value (int): Button press type value 
+                (Button.SINGLE_ACTION, Button.DOUBLE_ACTION, Button.LONG_ACTION)
+            registered_list (list): List of registered Switch instances
+
+        Actions:
+            - single press: Start and stop registered switches for countdown_short
+            - double press: Start and stop registered switches for countdown_long
+            - long press: Stop registered switches
+
+        No return value.
+        """
+        prefix = f'[{v_dev}] : event "{v_dev.value}" occured'
+        if v_dev.value is None:
+            self._logger.debug(
+                '%s -> discarded', prefix)
+            return
+        elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
+            self._logger.info(
+                '%s -> "start_and_stop" with short period', prefix)
+            for _sw in v_dev.switch_observers:
+                _sw.start_and_stop(self._countdown_short)
+        elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
+            self._logger.info('%s -> "start_and_stop" with long period',
+                              prefix)
+            for _sw in v_dev.switch_observers:
+                _sw.start_and_stop(self._countdown_long)
+        elif v_dev.value == ButtonValues.LONG_ACTION.value:
+            self._logger.info('%s -> "trigger_stop"', prefix)
+            for _sw in v_dev.switch_observers:
+                _sw.trigger_stop()
+        else:
+            self._logger.error('%s : action unknown "%s"',
+                               prefix,
+                               v_dev.value)
+
+
+class MotionTrigger(VirtualDeviceProcessor):
+    """ Start registered switches when occupency is detected
+    """
+
+    def __init__(self, countdown=60*3):
+        super().__init__()
+        self._countdown = countdown
+
+    def handle_device_update(self, v_dev) -> None:
+        '''
+        Handle a Motion Sensor state change, turn on the registered switches \
+        when occupancy is detected
+        '''
+        if v_dev.value:
+            self._logger.info('[%s] occupancy changed to "%s" '
+                              '-> "start_and_stop" on registered switch',
+                              v_dev.friendly_name,
+                              v_dev.value)
+            for _sw in v_dev.switch_observers:
+                _sw.start_and_stop(self._countdown)
+        else:
+            self._logger.debug('[%s] occupancy changed to "%s" '
+                               '-> nothing to do (timer will stop switch)',
+                               v_dev.friendly_name,
+                               v_dev.value)
+

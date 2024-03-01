@@ -30,13 +30,12 @@ Typical usage:
 
 import socket
 
-from collections.abc import Callable
 from typing import Callable, Any
 import certifi
 import paho.mqtt.client as mqtt
+from iotlib.config import MQTTConfig
 
 from . import package_level_logger
-from iotlib.config import MQTTConfig
 
 
 class MQTTClientBase():
