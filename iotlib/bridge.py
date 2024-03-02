@@ -14,7 +14,7 @@ from . import package_level_logger
 MessageHandlerType: TypeAlias = tuple[
     Callable,
     VirtualDevice]
-
+HandlersListType : TypeAlias = dict[str, MessageHandlerType]
 
 class Surrogate(ABC):
     _logger = package_level_logger
@@ -25,12 +25,12 @@ class Surrogate(ABC):
         self.availability: bool = None
         self._avail_proc_list: list[AvailabilityProcessor] = []
 
-        self._message_handler_dict: dict[str,
-                                         MessageHandlerType] = defaultdict(list)
+        self._message_handler_dict: HandlersListType = defaultdict(list)
+        
         # Set MQTT on_message callbacks
         self.client.message_callback_add(self.get_availability_topic(),
                                          self._avalability_callback)
-        # Set MQTT handlers
+        # Set MQTT connection handlers
         self.client.connect_handler_add(self._on_connect_callback)
         self.client.disconnect_handler_add(self._on_disconnect_callback)
 
