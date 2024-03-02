@@ -1,10 +1,60 @@
 import json
 
 from iotlib.client import MQTTClientBase
+from iotlib.virtualdev import Switch
+from iotlib.virtualdev import (HumiditySensor, TemperatureSensor)
+from iotlib.bridge import Surrogate, DecodingException
+
 from .helper import log_it, logger, get_broker_name
 
+
+class MockSurrogate(Surrogate):
+
+    def __init__(self,
+                 mqtt_client: MQTTClientBase,
+                 device_name: str,
+                 topic_base: str = None):
+        self._root_sub_topic = f'{topic_base}/{device_name}'
+        self._state_sub_topic = f'{topic_base}/{device_name}/availability'
+        super().__init__(mqtt_client, device_name=device_name)
+
+        self.availability = None
+        self.v_temp = TemperatureSensor()
+        self.v_humi = HumiditySensor()
+        self._set_message_handler(self._root_sub_topic,
+                                  self.__class__._decode_temp_pl,
+                                  self.v_temp)
+        self._set_message_handler(self._root_sub_topic,
+                                  self.__class__._decode_humi_pl,
+                                  self.v_humi)
+
+    def get_availability_topic(self) -> str:
+        return self._state_sub_topic
+
+    def _decode_avail_pl(self, payload: str) -> bool:
+        if payload != 'online' and payload != 'offline' and payload is not None:
+            raise DecodingException(f'Payload value error: {payload}')
+        else:
+            return payload == 'online'
+
+
+    def _decode_temp_pl(self, topic, payload: dict) -> float:
+        _value = json.loads(payload).get(('temperature'))
+        if _value is None:
+            raise DecodingException(
+                f'No "temperature" key in payload : {payload}')
+        else:
+            return float(_value)
+
+    def _decode_humi_pl(self, topic, payload: dict) -> int:
+        _value = json.loads(payload).get('humidity')
+        if _value is None:
+            raise DecodingException(
+                f'No "humidity" key in payload : {payload}')
+        else:
+            return int(_value)
+
 class MockZigbeeSensor:
-    ww = b'{"battery":67.5,"humidity":64,"linkquality":60,"temperature":19.6,"voltage":2900}'
     def __init__(self,
                  client: MQTTClientBase,
                  device_name: str,
@@ -35,9 +85,13 @@ class MockZigbeeSwitch:
     def __init__(self,
                  client: MQTTClientBase,
                  device_name: str,
+                 v_switch: Switch,
                  topic_base) -> None:
         self.client = client
         self.device_name = device_name
+        v_switch.concrete_device = self
+        self._v_switch = v_switch
+
         self.topic_base = topic_base
         self.topic_root = f'{topic_base}/{device_name}'
         self.state = False

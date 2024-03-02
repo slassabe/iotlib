@@ -6,9 +6,8 @@
 $ source .venv/bin/activate
 $ python -m unittest test.test_virtualdev
 """
-import inspect
 import unittest
-import time
+
 import iotlib.virtualdev
 import iotlib.processor
 import iotlib.devconfig

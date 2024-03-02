@@ -4,7 +4,7 @@
 """Client test
 
 $ source .venv/bin/activate
-$ python -m unittest test.connectors.test_z2m
+$ python -m unittest test.test_z2m
 """
 import time
 import unittest
@@ -14,16 +14,17 @@ from iotlib.client import MQTTClientBase
 from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, SonoffSnzb3, NeoNasAB02B2, SonoffZbminiL
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                TemperatureSensor)
+from iotlib.processor import (AvailabilityPublisher, AvailabilityLogger)
 
 from .helper import log_it, logger, get_broker_name
 from .mocks import MockZigbeeSwitch
 
 
-class TestDeviceOnZigbee2MQTT(unittest.TestCase):
+class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
     TARGET = get_broker_name()
 
     TOPIC_BASE = 'TEST_A2IOT/z2m'
-    DEVICE_NAME = 'fake_device'
+    DEVICE_NAME = 'availability_device'
 
     PROPERTY_MESSAGE = b'{"battery":67.5,"humidity":64,"linkquality":60,"temperature":19.6,"voltage":2900}'
     # PROPERTY_MESSAGE = b'{"humidity":64}'
@@ -58,6 +59,72 @@ class TestDeviceOnZigbee2MQTT(unittest.TestCase):
         time.sleep(1)
         self.assertFalse(zigbee_dev.availability)
         mqtt_client.stop()
+
+    def test_availability_logger_00(self):
+        log_it("Testing TestAvailabilityLogger")
+        mqtt_client = MQTTClientBase('', self.TARGET)
+        zigbee_dev = DeviceOnZigbee2MQTT(mqtt_client,
+                                         self.DEVICE_NAME,
+                                         topic_base=self.TOPIC_BASE)
+        mqtt_client.start()
+        publisher = AvailabilityLogger(device_name=self.DEVICE_NAME)
+        zigbee_dev.avail_proc_append(publisher)
+
+        time.sleep(2)   # Wait MQTT client connection
+        # Check ONLINE availability decodding
+        zigbee_dev.client.publish(zigbee_dev.get_availability_topic(),
+                                  'online')
+        time.sleep(1)
+        self.assertTrue(zigbee_dev.availability)
+        # Check OFFLINE availability decodding
+        zigbee_dev.client.publish(zigbee_dev.get_availability_topic(),
+                                  'offline')
+        time.sleep(1)
+        self.assertFalse(zigbee_dev.availability)
+        mqtt_client.stop()
+
+    def test_availability_publisher_00(self):
+        log_it("Testing TestAvailabilityLogger")
+        mqtt_client = MQTTClientBase('', self.TARGET)
+        zigbee_dev = DeviceOnZigbee2MQTT(mqtt_client,
+                                         self.DEVICE_NAME,
+                                         topic_base=self.TOPIC_BASE)
+        mqtt_client.start()
+        publisher = AvailabilityPublisher(client=mqtt_client,
+                                          device_name=self.DEVICE_NAME,
+                                          topic_base='TEST_A2IOT/canonical')
+        zigbee_dev.avail_proc_append(publisher)
+
+        time.sleep(2)   # Wait MQTT client connection
+        # Check ONLINE availability decodding
+        zigbee_dev.client.publish(zigbee_dev.get_availability_topic(),
+                                  'online')
+        time.sleep(1)
+        self.assertTrue(zigbee_dev.availability)
+        # Check OFFLINE availability decodding
+        zigbee_dev.client.publish(zigbee_dev.get_availability_topic(),
+                                  'offline')
+        time.sleep(1)
+        self.assertFalse(zigbee_dev.availability)
+        mqtt_client.stop()
+
+    def test_availability_publisher_01(self):
+        log_it("Testing TestAvailabilityLogger - message lost")
+        mqtt_client = MQTTClientBase('', self.TARGET)
+        zigbee_dev = DeviceOnZigbee2MQTT(mqtt_client,
+                                         'device_avail_lost',
+                                         topic_base=self.TOPIC_BASE)
+        mqtt_client.start()
+        publisher = AvailabilityPublisher(client=mqtt_client,
+                                          device_name='device_avail_lost',
+                                          topic_base='TEST_A2IOT/canonical')
+        zigbee_dev.avail_proc_append(publisher)
+
+        time.sleep(2)   # Wait MQTT client connection
+        # Check ONLINE availability decodding
+        zigbee_dev.client.publish(zigbee_dev.get_availability_topic(),
+                                  'online')
+        time.sleep(1)
 
     def test_decode_availability_fail(self):
         log_it('Testing availability message handling : FAIL')
@@ -305,8 +372,9 @@ class TestSonoffZbminiL(unittest.TestCase):
         log_it("Testing SonoffZbminiL : publish to mock")
         mqtt_client = MQTTClientBase('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
-                          device_name=self.DEVICE_NAME,
-                          topic_base=self.TOPIC_BASE)
+                                device_name=self.DEVICE_NAME,
+                                v_switch=Switch(),  # not used
+                                topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         zigbee_dev = SonoffZbminiL(mqtt_client,
                                    self.DEVICE_NAME,
@@ -333,8 +401,9 @@ class TestSonoffZbminiL(unittest.TestCase):
         log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
         mqtt_client = MQTTClientBase('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
-                          device_name=self.DEVICE_NAME,
-                          topic_base=self.TOPIC_BASE)
+                                device_name=self.DEVICE_NAME,
+                                v_switch=Switch(),  # not used
+                                topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         zigbee_dev = SonoffZbminiL(mqtt_client,
                                    self.DEVICE_NAME,
@@ -361,8 +430,9 @@ class TestSonoffZbminiL(unittest.TestCase):
         log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
         mqtt_client = MQTTClientBase('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
-                          device_name=self.DEVICE_NAME,
-                          topic_base=self.TOPIC_BASE)
+                                device_name=self.DEVICE_NAME,
+                                v_switch=Switch(),  # not used
+                                topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         zigbee_dev = SonoffZbminiL(mqtt_client,
                                    self.DEVICE_NAME,

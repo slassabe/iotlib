@@ -6,10 +6,10 @@ import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
-from . import package_level_logger
 from iotlib.processor import VirtualDeviceProcessor
 from iotlib.devconfig import PropertyConfig, ButtonValues
 
+from . import package_level_logger
 
 class ResultType(enum.IntEnum):
     IGNORE = -1
@@ -103,6 +103,7 @@ class VirtualDevice(ABC):
         else:
             self.value = value
             for _processor in self._processor_list:
+                self._logger.debug('Execute processor : %s', _processor)
                 _processor.handle_device_update(self)
             return ResultType.SUCCESS
 

@@ -17,7 +17,7 @@ class PropertyConfig(Enum):
     PropertyConfig.ADC_PROPERTY.node
     """
 
-    ALARM_PROPERTY = 'alarm.alarm', bool
+    ALARM_PROPERTY = 'alarm.power', bool
     ADC_PROPERTY = 'sensor.voltage', float
     BUTTON_PROPERTY = 'sensor.action', str
     CONDUCTIVITY_PROPERTY = 'sensor.conductivity', int

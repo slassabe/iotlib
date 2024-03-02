@@ -55,8 +55,9 @@ class TestSonoffZbminiL(unittest.TestCase):
         log_it("Testing SonoffZbminiL : no loop to check connection")
         mqtt_client = MQTTClientBase('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
-                          device_name=self.DEVICE_NAME,
-                          topic_base=self.TOPIC_BASE)
+                                device_name=self.DEVICE_NAME,
+                                v_switch=Switch(),
+                                topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         v_switch.processor_append(FlipFlopMessage())  # No loop
 
@@ -83,12 +84,13 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.stop()
 
     def test_Switch_01(self):
-        TEST_DURATION = 10 # sec.
+        TEST_DURATION = 10  # sec.
         log_it("Testing SonoffZbminiL : publish, decode and access vdev")
         mqtt_client = MQTTClientBase('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
-                          device_name=self.DEVICE_NAME,
-                          topic_base=self.TOPIC_BASE)
+                                device_name=self.DEVICE_NAME,
+                                v_switch=Switch(),  # not used
+                                topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         zigbee_dev = SonoffZbminiL(mqtt_client,
                                    self.DEVICE_NAME,
@@ -112,8 +114,8 @@ class TestSonoffZbminiL(unittest.TestCase):
         _process_delta = (_process_end - _process_start) / 1000000  # millisec.
         _nb_message = message_handler.loop_count * 2
         logger.warning(f"MQTT brocker : {get_broker_name()} - "
-                    f"{_nb_message} loops in {_exec_delta:.2f}s"
-                    f" -> {_nb_message / (_exec_delta):.2f} messages/s"
-                    f" - {_process_delta:.2f} ms")
+                       f"{_nb_message} loops in {_exec_delta:.2f}s"
+                       f" -> {_nb_message / (_exec_delta):.2f} messages/s"
+                       f" - {_process_delta:.2f} ms")
         self.assertTrue(message_handler.loop_count > 1)
         mqtt_client.stop()

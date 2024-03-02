@@ -8,7 +8,7 @@ import paho.mqtt.client as mqtt
 
 from iotlib.virtualdev import VirtualDevice
 from iotlib.client import MQTTClient
-
+from iotlib.processor import AvailabilityProcessor
 from . import package_level_logger
 
 MessageHandlerType: TypeAlias = tuple[
@@ -23,6 +23,7 @@ class Surrogate(ABC):
         self.client = mqtt_client
         self.device_name = device_name
         self.availability: bool = None
+        self._avail_proc_list: list[AvailabilityProcessor] = []
 
         self._message_handler_dict: dict[str,
                                          MessageHandlerType] = defaultdict(list)
@@ -49,6 +50,14 @@ class Surrogate(ABC):
         """ check if the device is available
         """
         return self.availability
+
+    def avail_proc_append(self, processor: AvailabilityProcessor):
+        """Appends an Availability Processor instance to the processor list
+        """
+        if not isinstance(processor, AvailabilityProcessor):
+            _msg = f"Processor must be instance of AvailabilityProcessor, not {type(processor)}"
+            raise TypeError(_msg)
+        self._avail_proc_list.append(processor)
 
     def _avalability_callback(self,
                               client: mqtt.Client,
@@ -85,16 +94,16 @@ class Surrogate(ABC):
         """Subscribes to MQTT topics for availability and value topics.
         """
         if reason_code == 0:
-            self._logger.info('Connection accepted -> launch connect handlers')
+            self._logger.debug(
+                'Connection accepted -> launch connect handlers')
             _topic_avail = self.get_availability_topic()
             self.client.subscribe(_topic_avail, qos=1)
             for _topic_property in self.get_subscription_list():
                 self.client.subscribe(_topic_property, qos=1)
         else:
             self._logger.warning('[%s] connection refused - reason : %s',
-                               self,
-                               mqtt.connack_string(reason_code))
-
+                                 self,
+                                 mqtt.connack_string(reason_code))
 
     def _on_disconnect_callback(self,
                                 client: mqtt.Client,
@@ -104,9 +113,14 @@ class Surrogate(ABC):
                                 properties: mqtt.Properties) -> None:
         """Subscribes to MQTT topics for availability and value topics.
         """
-        self._logger.info('Disconnection occures - rc : %s -> stop loop',
-                          reason_code)
-        client.loop_stop()
+        if reason_code == 0:
+            self._logger.debug('Disconnection occures - rc : %s -> stop loop',
+                               reason_code)
+            client.loop_stop()
+        else:
+            self._logger.warning('[%s] disconnection not required with rc "%s"',
+                                 self,
+                                 reason_code)
 
     def _handle_values(self, topic: str, payload: bytes) -> None:
         """Handle an incoming sensor value message.
@@ -147,6 +161,9 @@ class Surrogate(ABC):
         if self.availability != new_avail:
             self.availability = new_avail
             self._logger.debug('Availability updated: %s',  self.availability)
+            # Notify
+            for _processor in self._avail_proc_list:
+                _processor.handle_update(self.availability)
         else:
             self._logger.debug('Availability unchanged: %s',
                                self.availability)

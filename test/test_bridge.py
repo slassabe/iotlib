@@ -10,121 +10,14 @@ import json
 import unittest
 import time
 import iotlib.client
-from iotlib.virtualdev import (HumiditySensor, TemperatureSensor)
 
-from iotlib.bridge import Surrogate, DecodingException
-from iotlib.client import MQTTClient
+from iotlib.client import MQTTClientBase
 from .helper import log_it, logger, get_broker_name
+from .mocks import MockSurrogate
 
 TOPIC_BASE = 'TEST_A2IOT/bridge'
 
 
-class MockZigbeeSensor(Surrogate):
-
-    def __init__(self,
-                 mqtt_client: MQTTClient,
-                 device_name: str,
-                 topic_base: str = None):
-        self._root_sub_topic = f'{topic_base}/{device_name}'
-        self._state_sub_topic = f'{topic_base}/{device_name}/availability'
-        super().__init__(mqtt_client, device_name=device_name)
-
-        self.availability = None
-        self.v_temp = TemperatureSensor()
-        self.v_humi = HumiditySensor()
-        self._set_message_handler(self._root_sub_topic,
-                                  self.__class__._decode_temp_pl,
-                                  self.v_temp)
-        self._set_message_handler(self._root_sub_topic,
-                                  self.__class__._decode_humi_pl,
-                                  self.v_humi)
-
-    def get_availability_topic(self) -> str:
-        return self._state_sub_topic
-
-    def _decode_avail_pl(self, payload: str) -> bool:
-        if payload != 'online' and payload != 'offline' and payload is not None:
-            raise DecodingException(f'Payload value error: {payload}')
-        else:
-            return payload == 'online'
-
-
-    def _decode_temp_pl(self, topic, payload: dict) -> float:
-        _value = json.loads(payload).get(('temperature'))
-        if _value is None:
-            raise DecodingException(
-                f'No "temperature" key in payload : {payload}')
-        else:
-            return float(_value)
-
-    def _decode_humi_pl(self, topic, payload: dict) -> int:
-        _value = json.loads(payload).get('humidity')
-        if _value is None:
-            raise DecodingException(
-                f'No "humidity" key in payload : {payload}')
-        else:
-            return int(_value)
-    
-class MockZigbeeMagic(Surrogate):
-
-    def __init__(self,
-                 mqtt_client: MQTTClient,
-                 device_name: str | None,
-                 topic_base: str = None):
-        if device_name is None:
-            self._root_sub_topic = f'{topic_base}/+'
-            self._state_sub_topic = f'{topic_base}/+/availability'
-        else:
-            self._root_sub_topic = f'{topic_base}/{device_name}'
-            self._state_sub_topic = f'{topic_base}/{device_name}/availability'
-
-        super().__init__(mqtt_client, device_name=device_name)
-
-        self.availability = None
-        self.v_temp = TemperatureSensor()
-        self.v_humi = HumiditySensor()
-        self.client.default_message_callback_add(self.on_root_topic_cb)
-
-        self._set_message_handler(self._root_sub_topic,
-                                  self.__class__._decode_temp_pl,
-                                  self.v_temp)
-        self._set_message_handler(self._root_sub_topic,
-                                  self.__class__._decode_humi_pl,
-                                  self.v_humi)
-    def on_root_topic_cb(self, client, userdata, message):
-        payload = message.payload.decode("utf-8")
-        logger.debug("Callback DEFAULT : receives message on topic '%s': %s",
-                     message.topic, payload)
-        self.received_on_root = payload
-
-    def get_availability_topic(self) -> str:
-        return self._state_sub_topic
-
-    def _decode_avail_pl(self, payload: str) -> bool:
-        if payload != 'online' and payload != 'offline' and payload is not None:
-            raise DecodingException(f'Payload value error: {payload}')
-        else:
-            return payload == 'online'
-
-
-    def _decode_temp_pl(self, topic, payload: dict) -> float:
-        logger.info('Topic : %s - Payload : %s', topic, payload)
-        _value = json.loads(payload).get(('temperature'))
-        if _value is None:
-            raise DecodingException(
-                f'No "temperature" key in payload : {payload}')
-        else:
-            return float(_value)
-
-    def _decode_humi_pl(self, topic, payload: dict) -> int:
-        logger.info('Topic : %s - Payload : %s', topic, payload)
-        _value = json.loads(payload).get('humidity')
-        if _value is None:
-            raise DecodingException(
-                f'No "humidity" key in payload : {payload}')
-        else:
-            return int(_value)
-    
 class TestSurrogate(unittest.TestCase):
     target = get_broker_name()
 
@@ -141,11 +34,11 @@ class TestSurrogate(unittest.TestCase):
 
     def test_handle_availability(self):
         log_it('Mock Zigbee codec and test availability message handling')
-        mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client = MQTTClientBase('', self.target)
         mqtt_client.start()
 
         device_name = 'fake_device_00'
-        mock = MockZigbeeSensor(mqtt_client, device_name,
+        mock = MockSurrogate(mqtt_client, device_name,
                                 topic_base=TOPIC_BASE)
         time.sleep(2)
         self.assertIsNone(mock.availability)
@@ -173,7 +66,7 @@ class TestSurrogate(unittest.TestCase):
         mqtt_client.start()
 
         device_name = 'test_device'
-        mock = MockZigbeeSensor(mqtt_client, device_name,
+        mock = MockSurrogate(mqtt_client, device_name,
                                 topic_base=TOPIC_BASE)
         time.sleep(2)
 
@@ -197,7 +90,6 @@ class TestMultiClient(unittest.TestCase):
             return json.dumps(_properties)
 
         mqtt_client = iotlib.client.MQTTClientBase('', self.target)
-        mqtt_client.client.enable_logger(logger)
         mqtt_client.start()
 
         mock = MockZigbeeMagic(mqtt_client, 

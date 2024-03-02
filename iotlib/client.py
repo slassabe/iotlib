@@ -80,10 +80,11 @@ class MQTTClientBase():
         self.client.on_message = self._handle_on_message
         self.client.on_subscribe = self._handle_on_subscribe
 
-        self.on_connect_handlers: List[Callable] = []
-        self.on_disconnect_handlers: List[Callable] = []
-        self._default_message_callbacks: List[Callable] = []
-        self.on_subscribe_handlers: List[Callable] = []
+        self.on_connect_handlers: list[Callable] = []
+        self.on_disconnect_handlers: list[Callable] = []
+        self._default_message_callbacks: list[Callable] = []
+        self.on_subscribe_handlers: list[Callable] = []
+        #self.client.enable_logger(package_level_logger)
 
     def __str__(self):
         # return f'<{self.__class__.__name__} object "{self.hostname}:{self.port}">'
@@ -220,8 +221,6 @@ class MQTTClientBase():
         return self.client.subscribe(topic, **kwargs)
 
     def _handle_on_subscribe(self, client, userdata, mid, reason_code_list, properties):
-        self._logger.info('Subscribe request accepted with reason code %s',
-                          reason_code_list)
         for on_subscribe_handler in self.on_subscribe_handlers:
             try:
                 on_subscribe_handler(client, userdata, mid,
