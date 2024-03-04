@@ -4,7 +4,7 @@
 """Client test
 
 $ source .venv/bin/activate
-$ python -m unittest test.connectors.test_z2m_perf
+$ python -m unittest test.test_z2m_perf
 """
 import time
 import unittest
@@ -16,6 +16,7 @@ from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, So
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                TemperatureSensor, VirtualDevice)
 from iotlib.processor import VirtualDeviceProcessor
+from iotlib.bridge import Surrogate
 
 from .helper import log_it, logger, get_broker_name
 from .mocks import MockZigbeeSwitch
@@ -61,10 +62,13 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch = Switch()
         v_switch.processor_append(FlipFlopMessage())  # No loop
 
-        zigbee_dev = SonoffZbminiL(mqtt_client,
-                                   self.DEVICE_NAME,
-                                   v_switch,
-                                   topic_base=self.TOPIC_BASE)
+        codec = SonoffZbminiL(self.DEVICE_NAME,
+                              v_switch,
+                              client=mqtt_client,
+                              topic_base=self.TOPIC_BASE)
+
+        bridge = Surrogate(mqtt_client, codec)
+
         mqtt_client.start()
 
         time.sleep(2)   # Wait MQTT client connection
@@ -92,10 +96,13 @@ class TestSonoffZbminiL(unittest.TestCase):
                                 v_switch=Switch(),  # not used
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch()
-        zigbee_dev = SonoffZbminiL(mqtt_client,
-                                   self.DEVICE_NAME,
-                                   v_switch,
-                                   topic_base=self.TOPIC_BASE)
+        codec = SonoffZbminiL(self.DEVICE_NAME,
+                              v_switch,
+                              client=mqtt_client,
+                              topic_base=self.TOPIC_BASE)
+
+        bridge = Surrogate(mqtt_client, codec)
+
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)

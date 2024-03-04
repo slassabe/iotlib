@@ -17,7 +17,7 @@ from iotlib.virtualdev import (ADC, Alarm, Button, HumiditySensor,
                                Motion, Switch, TemperatureSensor)
 
 from .helper import log_it, get_broker_name, logger
-from .mocks import MockSurrogate
+from .mocks import MockBridge
 
 TOPIC_BASE = 'TEST_A2IOT/canonical'
 

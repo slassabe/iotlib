@@ -10,7 +10,7 @@ from abc import abstractmethod, ABCMeta
 from iotlib import package_level_logger
 from iotlib.config import MQTTConfig
 from iotlib.client import MQTTClient
-from iotlib.bridge import Surrogate, DecodingException
+from iotlib.bridge import AbstractCodec, DecodingException
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                           TemperatureSensor, VirtualDevice)
 
@@ -26,13 +26,12 @@ STATE_ON = 'ON'
 STATE_OFF = 'OFF'
 
 
-class DeviceOnZigbee2MQTT(Surrogate):
+class DeviceOnZigbee2MQTT(AbstractCodec):
     ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
     '''
     _logger = package_level_logger
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
                  device_name: str,
                  topic_base: str = None):
         '''Subscribes on Zigbee2mqtt topics to receive information from devices :
@@ -47,7 +46,7 @@ class DeviceOnZigbee2MQTT(Surrogate):
         self._root_sub_topic = f'{_base_sub_topic}/{device_name}'
         self._state_sub_topic = f'{_base_sub_topic}/{device_name}/availability'
 
-        super().__init__(mqtt_client, device_name=device_name)
+        super().__init__(device_name, topic_base)
         self._logger.debug('Z2M codec created for device %s', device_name)
 
     def get_availability_topic(self) -> str:
@@ -55,7 +54,7 @@ class DeviceOnZigbee2MQTT(Surrogate):
         """
         return self._state_sub_topic
 
-    def _decode_avail_pl(self, payload: str) -> bool:
+    def decode_avail_pl(self, payload: str) -> bool:
         # Z2M availability payload depends on its configuration in configuration.yaml :
         # advanced:
         #   legacy_availability_payload: true
@@ -84,12 +83,11 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     ''' Bridge between SENSOR devices and MQTT Clients '''
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
                  device_name: SystemError,
                  v_temp: TemperatureSensor,
                  v_humi: HumiditySensor,
                  topic_base: str = None) -> None:
-        super().__init__(mqtt_client, device_name, topic_base)
+        super().__init__(device_name, topic_base)
 
         assert issubclass(type(v_temp), TemperatureSensor), \
             f'Bad value : {v_temp} of type {type(v_temp)}'
@@ -142,11 +140,10 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     ''' Bridge between Wireless button devices and MQTT Clients '''
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
                  device_name: str,
                  v_button: Button,
                  topic_base: str = None) -> None:
-        super().__init__(mqtt_client, device_name, topic_base)
+        super().__init__(device_name, topic_base)
 
         assert issubclass(type(v_button), Button), \
             f'Bad value : {v_button} of type {type(v_button)}'
@@ -181,11 +178,10 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     '''  Bridge between MOTION SENSOR devices and MQTT Clients '''
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
                  device_name: str,
                  v_motion: Motion,
                  topic_base: str = None) -> None:
-        super().__init__(mqtt_client, device_name, topic_base)
+        super().__init__(device_name, topic_base)
 
         assert issubclass(type(v_motion), Motion), \
             f'Bad value : {v_motion} of type {type(v_motion)}'
@@ -224,11 +220,12 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
                  device_name: str,
                  v_alarm: Alarm,
+                 client: MQTTClient,
                  topic_base: str = None) -> None:
-        super().__init__(mqtt_client, device_name, topic_base)
+        super().__init__(device_name, topic_base)
+        self.client = client
 
         assert issubclass(type(v_alarm), Alarm), \
             f'Bad value : {v_alarm} of type {type(v_alarm)}'
@@ -279,12 +276,8 @@ class NeoNasAB02B2(AlarmOnZigbee):
     _key_alarm_level = 'volume'
     _key_alarm_duration = 'duration'
 
-    def __init__(self,
-                 mqtt_client: MQTTClient,
-                 device_name: str,
-                 v_alarm: Alarm,
-                 topic_base: str = None) -> None:
-        super().__init__(mqtt_client, device_name, v_alarm, topic_base)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self._melody = 1
         self._alarm_level = 'low'
         self._alarm_duration = 5
@@ -348,11 +341,12 @@ Features
     '''
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
                  device_name: str,
                  v_switch: Switch,
+                 client: MQTTClient,
                  topic_base: str = None) -> None:
-        super().__init__(mqtt_client, device_name, topic_base)
+        super().__init__(device_name, topic_base)
+        self.client = client
 
         assert issubclass(type(v_switch), Switch), \
             f'Bad value : {v_switch} of type {type(v_switch)}'

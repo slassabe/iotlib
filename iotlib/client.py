@@ -97,12 +97,20 @@ class MQTTClientBase():
 
         Returns:
             mqtt.MQTTErrorCode: The result of calling client.loop_start().
+
+        Raises:
+            RuntimeError: If loop_stop fails.
         """
-        if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-            self._logger.error('[%s] loop_start failed', self)
-            raise RuntimeError('loop_start failed')
-        _rc = self.connect(properties=properties)
-        return _rc
+        try:
+            if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
+                self._logger.error('[%s] loop_start failed', self)
+                raise RuntimeError('loop_start failed')
+            _rc = self.connect(properties=properties)
+            return _rc
+        except ConnectionRefusedError as exp:
+            self._logger.fatal('[%s] cannot connect host %s',
+                               exp, self.hostname)
+            raise RuntimeError('[%s] connection refused') from exp
 
     def stop(self) -> mqtt.MQTTErrorCode:
         """Stops the client MQTT connection. 
