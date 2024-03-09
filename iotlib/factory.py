@@ -30,15 +30,15 @@ import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
-from iotlib.client import MQTTClientBase
-from iotlib.bridge import Surrogate
+from iotlib.client import MQTTClient
+from iotlib.bridge import Surrogate, AbstractCodec
 from iotlib.codec.z2m import (NeoNasAB02B2, SonoffSnzb01, SonoffSnzb02, SonoffSnzb3,
-                                    SonoffZbminiL, Ts0601Soil, SonoffZbSw02Right)
-from iotlib.processor import PropertyPublisher, VirtualDeviceLogger, ButtonTrigger, AvailabilityLogger, AvailabilityPublisher
+                              SonoffZbminiL, Ts0601Soil, SonoffZbSw02Right)
+from iotlib.processor import PropertyPublisher, VirtualDeviceLogger, ButtonTrigger, AvailabilityLogger, AvailabilityPublisher, MotionTrigger
 
 from iotlib.virtualdev import (VirtualDevice, Alarm, ADC, Button,
-                                HumiditySensor, Motion, Switch,
-                                TemperatureSensor, LightSensor, ConductivitySensor)
+                               HumiditySensor, Motion, Switch,
+                               TemperatureSensor, LightSensor, ConductivitySensor)
 
 from .utils import Singleton
 
@@ -110,34 +110,25 @@ class Cluster(ABC):
                  model: Model,
                  protocol: Protocol,
                  device_name: str,
-                 friendly_name=None,
+                 friendly_name: str = None,
                  ):
-        self.model = model
-        self.protocol = protocol,
+        self.model: Model = model
+        self.protocol: Protocol = protocol,
         self.device_name = device_name
         self.friendly_name = friendly_name or device_name
-        self.bridge = None
+        self.codec = None
 
     def declare_virtual_devices(self, virtual_devices: List[VirtualDevice]):
         for virt_dev in virtual_devices:
             assert isinstance(
                 virt_dev, VirtualDevice), f"Item {virt_dev} is not a VirtualDevice instance"
             virt_dev.processor_append(VirtualDeviceLogger())
+            # This will publish property changes on MQTT
+            virt_dev.processor_append(PropertyPublisher(client=mqqtt_from_somewhere,
+                                                        topic_base=topic_base_from_somewhere))
 
     @abstractmethod
-    def enroll_device(self) -> Surrogate:
-        """Enroll the device with a bridge.
-
-        This method should handle connecting to the appropriate bridge, 
-        registering the device, and storing the bridge instance.
-
-        Returns:
-            MQTTBridge: The bridge instance associated with this device cluster.
-
-        Raises:
-            NotImplementedError: This method must be implemented in subclasses.
-
-        """
+    def get_codec(self) -> AbstractCodec:
         raise NotImplementedError
 
 
@@ -158,7 +149,10 @@ class ClusterFactory(metaclass=Singleton):
         """Initialize the factory by creating an empty constructors dict."""
         self._constructors = defaultdict(dict)
 
-    def registers(self, model: Model, protocol: Protocol, constructor: Callable) -> None:
+    def registers(self, 
+                  model: Model, 
+                  protocol: Protocol, 
+                  constructor: Callable[[list], Cluster]) -> None:
         """Register a constructor for the given model.
 
         Args:
@@ -183,7 +177,7 @@ class ClusterFactory(metaclass=Singleton):
                 f'Constructor {constructor} is not of type "Callable"')
         self._constructors[model][protocol] = constructor
 
-    def _get_constructor(self, model: str, protocol=None) -> Callable:
+    def _get_constructor(self, model: str, protocol=None) -> Callable[[list], Cluster]:
         """Get the constructor callable for the given model and protocol.
 
         Args:
@@ -211,7 +205,12 @@ class ClusterFactory(metaclass=Singleton):
                 f'Unable to create instance for model {model} and protocol {protocol}')
         return _constructor
 
-    def create_instance(self, model: Model, protocol: Protocol, device_name: str, *args, **kwargs) -> Cluster:
+    def create_instance(self, 
+                        model: Model, 
+                        protocol: Protocol, 
+                        client: MQTTClient,
+                        device_name: str, 
+                        *args, **kwargs) -> Cluster:
         """Create an instance of a Cluster for the given model and protocol.
 
         Args:
@@ -232,37 +231,37 @@ class ClusterFactory(metaclass=Singleton):
         protocol, instantiates it using the provided arguments, and returns the 
         instance.
         """
-        def _set_processors(bridge: Surrogate, 
-                            device_name: str):
+        def _set_availability_processors(bridge: Surrogate,
+                                         device_name: str):
             # This will log availability changes
             bridge.avail_proc_append(AvailabilityLogger(device_name))
             # This will publish availability changes on MQTT
-            bridge.avail_proc_append(AvailabilityPublisher(device_name, bridge.client))
-            # This will publish property changes on MQTT
-            bridge.property_proc_append(PropertyPublisher(bridge.client))
+            bridge.avail_proc_append(
+                AvailabilityPublisher(device_name, bridge.client))
             # Silent mode:
             # self.property_proc_append(PropertyLogger())
 
         if not isinstance(model, Model):
-            raise TypeError(
-                f"Model {model} is not of type Model or is not defined")
+            raise TypeError(f"Model {model} is not of type Model")
         if not isinstance(protocol, Protocol):
-            raise TypeError(
-                f"Protocole {protocol} is not of type Protocole or is not defined")
+            raise TypeError(f"Protocole {protocol} is not of type Protocol")
+        if not isinstance(client, MQTTClient):
+            raise TypeError(f"Bad type for Client {client} : {type(client)}")
 
         _constructor = self._get_constructor(model, protocol)
         _cluster = _constructor(model, protocol, device_name, *args, **kwargs)
-        _bridge = _cluster.enroll_device()
-        _cluster.bridge = _bridge
-        
-        _set_processors(_bridge, device_name)
+        # 
+        _cluster.codec = _cluster.get_codec()
+        _set_availability_processors(_cluster.codec, device_name)
+
+        Surrogate(client, _cluster.codec)
 
         return _cluster
 
 
 # Device customization
 
-class _ClusterAirSensoir(Cluster):
+class _ClusterAirSensor(Cluster):
     def __init__(self,
                  model: Model,
                  protocol: Protocol,
@@ -282,8 +281,8 @@ class _ClusterAirSensoir(Cluster):
         self.declare_virtual_devices([self.virt_temp, self.virt_humi])
 
 
-class _ClusterSonoffSnzb02(_ClusterAirSensoir):
-    def enroll_device(self) -> MQTTBridge:
+class _ClusterSonoffSnzb02(_ClusterAirSensor):
+    def get_codec(self) -> AbstractCodec:
         return SonoffSnzb02(self.device_name,
                             v_temp=self.virt_temp,
                             v_humi=self.virt_humi,
@@ -294,8 +293,8 @@ ClusterFactory().registers(Model.ZB_AIRSENSOR, Protocol.Z2M,
                            _ClusterSonoffSnzb02)
 
 
-class _ClusterTs0601Soil(_ClusterAirSensoir):
-    def enroll_device(self) -> MQTTBridge:
+class _ClusterTs0601Soil(_ClusterAirSensor):
+    def get_codec(self) -> AbstractCodec:
         return Ts0601Soil(self.device_name,
                           v_temp=self.virt_temp,
                           v_humi=self.virt_humi,
@@ -306,7 +305,7 @@ ClusterFactory().registers(Model.TUYA_SOIL, Protocol.Z2M,
                            _ClusterTs0601Soil)
 
 
-class _ClusterMiflora(_ClusterAirSensoir):
+class _ClusterMiflora(_ClusterAirSensor):
     def __init__(self,
                  model: Model,
                  protocol: Protocol,
@@ -334,7 +333,7 @@ class _ClusterMiflora(_ClusterAirSensoir):
 
         self.declare_virtual_devices([self.virt_light, self.virt_cond])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return Miflora(self.device_name,
                        v_temp=self.virt_temp,
                        v_humi=self.virt_humi,
@@ -353,16 +352,14 @@ class _ClusterSonoffSnzb01(Cluster):
                  protocol: Protocol,
                  device_name: str,
                  friendly_name=None,
-                 countdown_short=60*5,
                  countdown_long=60*10,
                  ):
         super().__init__(model, protocol, device_name, friendly_name)
         self.virt_button = Button(self.friendly_name)
-        self.virt_button.processor_append(ButtonTrigger(countdown_short=countdown_short,
-                                                        countdown_long=countdown_long))
+        self.virt_button.processor_append(ButtonTrigger(countdown_long=countdown_long))
         self.declare_virtual_devices([self.virt_button])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return SonoffSnzb01(self.device_name,
                             v_button=self.virt_button)
 
@@ -377,14 +374,13 @@ class _ClusterSonoffSnzb3(Cluster):
                  protocol: Protocol,
                  device_name: str,
                  friendly_name=None,
-                 countdown=60*3,
                  ):
         super().__init__(model, protocol, device_name, friendly_name)
         self.virt_motion = Motion(self.friendly_name)
-        self.virt_motion.processor_append(MotionTrigger(countdown=countdown))
+        self.virt_motion.processor_append(MotionTrigger())
         self.declare_virtual_devices([self.virt_motion])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return SonoffSnzb3(self.device_name,
                            v_motion=self.virt_motion)
 
@@ -406,7 +402,7 @@ class _ClusterNeoAlarm(Cluster):
                                            quiet_mode=False)
         self.declare_virtual_devices([self.virt_alarm])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return NeoNasAB02B2(self.device_name,
                             v_alarm=self.virt_alarm)
 
@@ -424,11 +420,11 @@ class _ClusterZBmini(Cluster):
                  countdown=60*3,
                  ):
         super().__init__(model, protocol, device_name, friendly_name)
-        self.virt_switch = AutoStopSwitch(friendly_name=self.friendly_name,
+        self.virt_switch = Switch(friendly_name=self.friendly_name,
                                           countdown=countdown)
         self.declare_virtual_devices([self.virt_switch])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return SonoffZbminiL(self.device_name,
                              v_switch=self.virt_switch)
 
@@ -450,14 +446,13 @@ class _ClusterZbSw02Right(Cluster):
                                           countdown=countdown)
         self.declare_virtual_devices([self.virt_switch])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return SonoffZbSw02Right(self.device_name,
                                  v_switch=self.virt_switch)
 
 
 ClusterFactory().registers(Model.ZB_SW02, Protocol.Z2M,
                            _ClusterZbSw02Right)
-
 
 
 class _ClusterUni(Cluster):
@@ -481,9 +476,10 @@ class _ClusterUni(Cluster):
         self.declare_virtual_devices(
             [self.v_switch0, self.v_switch1, self.v_adc])
 
+
 class _ClusterShellyUni(_ClusterUni):
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return ShellyUni(self.device_name,
                          v_swit0=self.v_switch0,
                          v_swit1=self.v_switch1,
@@ -493,13 +489,15 @@ class _ClusterShellyUni(_ClusterUni):
 ClusterFactory().registers(Model.SHELLY_UNI, Protocol.SHELLY,
                            _ClusterShellyUni)
 
+
 class _ClusterTasmotaUni(_ClusterUni):
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return TasmotaUni(self.device_name,
-                         v_swit0=self.v_switch0,
-                         v_swit1=self.v_switch1,
-                         v_adc=self.v_adc)
+                          v_swit0=self.v_switch0,
+                          v_swit1=self.v_switch1,
+                          v_adc=self.v_adc)
+
 
 ClusterFactory().registers(Model.SHELLY_UNI, Protocol.TASMOTA,
                            _ClusterTasmotaUni)
@@ -519,13 +517,14 @@ class _ClusterShellyPlugS(Cluster):
                                           countdown=countdown)
         self.declare_virtual_devices([self.virt_switch])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return ShellyPlugS(self.device_name,
                            v_swit0=self.virt_switch)
 
 
 ClusterFactory().registers(Model.SHELLY_PLUGS, Protocol.SHELLY,
                            _ClusterShellyPlugS)
+
 
 class _ClusterTasmotaPlugS(Cluster):
     def __init__(self,
@@ -547,7 +546,7 @@ class _ClusterTasmotaPlugS(Cluster):
         self.declare_virtual_devices(
             [self.virt_switch, self.virt_temp, self.v_adc])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return TasmotaPlugS(self.device_name,
                             v_swit0=self.virt_switch,
                             v_temp=self.virt_temp,
@@ -573,7 +572,7 @@ class _ClusterRingCamera(Cluster):
         self.virt_motion = Motion(self.friendly_name)
         self.declare_virtual_devices([self.virt_button, self.virt_motion])
 
-    def enroll_device(self) -> MQTTBridge:
+    def get_codec(self) -> AbstractCodec:
         return RingCamera(self.device_name,
                           self.location,
                           v_button=self.virt_button,

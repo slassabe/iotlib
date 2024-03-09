@@ -11,7 +11,7 @@ import unittest
 import time
 import iotlib.client
 
-from iotlib.client import MQTTClientBase
+from iotlib.client import MQTTClient
 from .helper import log_it, logger, get_broker_name
 from .mocks import MockBridge
 
@@ -23,7 +23,7 @@ class TestSurrogate(unittest.TestCase):
 
     def test_connect(self):
         log_it(f"Testing connection to {self.target}")
-        mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client = iotlib.client.MQTTClient('', self.target)
         mqtt_client.start()
         time.sleep(2)
         self.assertTrue(mqtt_client.connected)
@@ -33,7 +33,7 @@ class TestSurrogate(unittest.TestCase):
 
     def test_handle_availability(self):
         log_it('Mock Zigbee codec and test availability message handling')
-        mqtt_client = MQTTClientBase('', self.target)
+        mqtt_client = MQTTClient('', self.target)
         mqtt_client.start()
 
         device_name = 'fake_device_00'
@@ -62,7 +62,7 @@ class TestSurrogate(unittest.TestCase):
                            "voltage": 2900}
             return json.dumps(_properties)
 
-        mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client = iotlib.client.MQTTClient('', self.target)
         mqtt_client.start()
 
         device_name = 'test_device'
@@ -92,7 +92,7 @@ class TestMultiClient(unittest.TestCase):
                            "voltage": 2900}
             return json.dumps(_properties)
 
-        mqtt_client = iotlib.client.MQTTClientBase('', self.target)
+        mqtt_client = iotlib.client.MQTTClient('', self.target)
         mqtt_client.start()
 
         mock = MockZigbeeMagic(mqtt_client,

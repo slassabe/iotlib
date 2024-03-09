@@ -5,58 +5,25 @@
 This module defines the VirtualDeviceProcessor abstract base class 
 for processing updates from virtual devices and sensors. 
 
-Concrete subclasses should implement the handle_device_update() method
+Concrete subclasses should implement the process_value_update() method
 to provide custom logic when a device value changes.
 
 Typical usage:
 
 1. Define a custom processor subclass
-2. Override handle_device_update() 
+2. Override process_value_update() 
 3. Register it to a virtual device using device.processor_append()
-4. The processor will receive value change events via handle_device_update()
+4. The processor will receive value change events via process_value_update()
 
 """
 
-from abc import ABC, ABCMeta, abstractmethod
+
 from iotlib.devconfig import ButtonValues
 from iotlib.client import MQTTClient
+from iotlib.bridge import AvailabilityProcessor
+from iotlib.virtualdev import VirtualDevice, VirtualDeviceProcessor
 
 from . import package_level_logger
-
-
-class Processor(ABC):
-    """Base class for processing events from sensors and devices.
-    """
-    _logger = package_level_logger
-
-    def __str__(self):
-        return f'{self.__class__.__name__} object'
-
-
-class VirtualDeviceProcessor(Processor, metaclass=ABCMeta):
-    """Base class for processing events from virtual devices.
-
-    This class defines the common handle_device_update() method that is called 
-    when a sensor value changes or device availability changes.
-
-    Child classes should implement handle_device_update() to handle specific 
-    processing logic for the sensor or device type.
-
-    """
-
-    @abstractmethod
-    def handle_device_update(self, v_dev) -> None:
-        """Handle an update from a virtual device.
-
-        This method is called when a value changes on a virtual 
-        device. It should be implemented in child classes to 
-        handle specific processing logic for the device type.
-
-        Args:
-            v_dev (VirtualDevice): The virtual device instance.
-
-        """
-        raise NotImplementedError
 
 
 class VirtualDeviceLogger(VirtualDeviceProcessor):
@@ -67,7 +34,9 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
 
     """
 
-    def handle_device_update(self, v_dev) -> None:
+    def process_value_update(self, 
+                             v_dev: VirtualDevice, 
+                             bridge) -> None:
         self._logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                            self,
                            v_dev,
@@ -93,7 +62,9 @@ class ButtonTrigger(VirtualDeviceProcessor):
         super().__init__()
         self._countdown_long = countdown_long
 
-    def handle_device_update(self, v_dev) -> None:
+    def process_value_update(self, 
+                             v_dev: VirtualDevice, 
+                             bridge) -> None:
         """Process button press actions on registered switches.
 
         This method is called on each button value change to trigger 
@@ -122,7 +93,7 @@ class ButtonTrigger(VirtualDeviceProcessor):
             self._logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.sensor_observers:
-                _sw.trigger_start()
+                _sw.trigger_start(bridge)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             self._logger.info('%s -> "start_and_stop" with long period',
                               prefix)
@@ -131,7 +102,7 @@ class ButtonTrigger(VirtualDeviceProcessor):
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             self._logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.sensor_observers:
-                _sw.trigger_stop()
+                _sw.trigger_stop(bridge)
         else:
             self._logger.error('%s : action unknown "%s"',
                                prefix,
@@ -142,7 +113,9 @@ class MotionTrigger(VirtualDeviceProcessor):
     """ Start registered switches when occupency is detected
     """
 
-    def handle_device_update(self, v_dev) -> None:
+    def process_value_update(self,
+                             v_dev: VirtualDevice,
+                             bridge) -> None:
         '''
         Handle a Motion Sensor state change, turn on the registered switches \
         when occupancy is detected
@@ -153,7 +126,7 @@ class MotionTrigger(VirtualDeviceProcessor):
                               v_dev.friendly_name,
                               v_dev.value)
             for _sw in v_dev.sensor_observers:
-                _sw.trigger_start()
+                _sw.trigger_start(bridge)
         else:
             self._logger.debug('[%s] occupancy changed to "%s" '
                                '-> nothing to do (timer will stop switch)',
@@ -170,7 +143,7 @@ class PropertyPublisher(VirtualDeviceProcessor):
         self._client = client
         self._topic_base = topic_base
 
-    def handle_device_update(self, v_dev) -> None:
+    def process_value_update(self, v_dev, bridge) -> None:
         _property_topic = self._topic_base
         _property_topic += '/device/' + v_dev.friendly_name
         _property_topic += '/' + v_dev.get_property().property_node
@@ -179,29 +152,6 @@ class PropertyPublisher(VirtualDeviceProcessor):
         self._client.publish(_property_topic,
                              v_dev.value,
                              qos=1, retain=True)
-
-
-class AvailabilityProcessor(Processor, metaclass=ABCMeta):
-    """Abstract base class for processors that handle device availability updates.
-
-    This class provides a common interface for processors that need to react
-    to device availability changes reported by a Surrogate instance. 
-
-    Subclasses should implement handle_update() to define custom availability 
-    processing behavior.
-    """
-    @abstractmethod
-    def handle_update(self,
-                      availability: bool) -> None:
-        """Handle an update to the device availability status.
-
-        Args:
-            availability (bool): The new availability status of the device.
-
-        Returns:
-            None
-        """
-        raise NotImplementedError
 
 
 class AvailabilityLogger(AvailabilityProcessor):
@@ -216,7 +166,7 @@ class AvailabilityLogger(AvailabilityProcessor):
         super().__init__()
         self.device_name = device_name
 
-    def handle_update(self, availability: bool) -> None:
+    def process_availability_update(self, availability: bool) -> None:
         if availability:
             self._logger.debug("[%s] is available", self.device_name)
         else:
@@ -232,19 +182,23 @@ class AvailabilityPublisher(AvailabilityProcessor):
     """
 
     def __init__(self,
-                 client: MQTTClient,
                  device_name: str,
+                 client: MQTTClient,
                  topic_base: str = None):
+        if not isinstance(client, MQTTClient):
+            raise TypeError(f"client must be MQTTClient, not {type(client)}")
+        if not isinstance(device_name, str):
+            raise TypeError(f"device_name must be string, not {type(device_name)}")
+
         super().__init__()
         self._client = client
         self._topic_base = topic_base
         self._state_topic = f"{topic_base}/device/{device_name}/$state"
-        self._client.will_set(self._state_topic, 
+        self._client.will_set(self._state_topic,
                               'lost',
                               qos=1, retain=True)
 
-    def handle_update(self,
-                      availability: bool) -> None:
+    def process_availability_update(self, availability: bool) -> None:
         if availability is None:
             _state_str = 'init'
         elif availability:

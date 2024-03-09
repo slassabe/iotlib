@@ -8,7 +8,7 @@ $ python -m unittest test.test_client_perf
 """
 import unittest
 import time
-from iotlib.client import MQTTClientBase
+from iotlib.client import MQTTClient
 
 from .helper import log_it, logger, get_broker_name
 
@@ -77,7 +77,7 @@ class TestMQTTClient(unittest.TestCase):
 
     def test_perf(self):
         log_it(f"Testing launch to {self.target}")
-        perf = PerfMeter(MQTTClientBase('TestPerf', self.target))
+        perf = PerfMeter(MQTTClient('TestPerf', self.target))
         nb_loop = perf.launch()
         self.assertTrue(nb_loop > 0)
 

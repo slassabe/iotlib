@@ -33,7 +33,7 @@ class DeviceOnZigbee2MQTT(AbstractCodec):
 
     def __init__(self,
                  device_name: str,
-                 topic_base: str = None):
+                 base_topic: str = None):
         '''Subscribes on Zigbee2mqtt topics to receive information from devices :
         * zigbee2mqtt/<name>/             : to get device attributs
         * zigbee2mqtt/<name>/availability : to get device availability, not a Zigbee attribut
@@ -42,17 +42,18 @@ class DeviceOnZigbee2MQTT(AbstractCodec):
             device_name (str): the device name to subscribe
         '''
         # Topics to subscribe to
-        _base_sub_topic = topic_base or MQTTConfig().z2m_sub_topic
-        self._root_sub_topic = f'{_base_sub_topic}/{device_name}'
-        self._state_sub_topic = f'{_base_sub_topic}/{device_name}/availability'
+        base_topic = base_topic or MQTTConfig().z2m_topic_base
+        super().__init__(device_name, base_topic)
 
-        super().__init__(device_name, topic_base)
+        self._root_topic = f'{base_topic}/{device_name}'
+        self._availability_topic = f'{base_topic}/{device_name}/availability'
+
         self._logger.debug('Z2M codec created for device %s', device_name)
 
     def get_availability_topic(self) -> str:
         """Return the availability topic the client must subscribe
         """
-        return self._state_sub_topic
+        return self._availability_topic
 
     def decode_avail_pl(self, payload: str) -> bool:
         # Z2M availability payload depends on its configuration in configuration.yaml :
@@ -91,12 +92,12 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_temp), TemperatureSensor), \
             f'Bad value : {v_temp} of type {type(v_temp)}'
-        self._set_message_handler(self._root_sub_topic,
+        self._set_message_handler(self._root_topic,
                                   self.__class__._decode_temp_pl,
                                   v_temp)
         assert issubclass(type(v_humi), HumiditySensor), \
             f'Bad value : {v_humi} of type {type(v_humi)}'
-        self._set_message_handler(self._root_sub_topic,
+        self._set_message_handler(self._root_topic,
                                   self.__class__._decode_humi_pl,
                                   v_humi)
 
@@ -147,7 +148,7 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_button), Button), \
             f'Bad value : {v_button} of type {type(v_button)}'
-        self._set_message_handler(self._root_sub_topic,
+        self._set_message_handler(self._root_topic,
                                   self.__class__._decode_action_pl,
                                   v_button)
 
@@ -185,7 +186,7 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_motion), Motion), \
             f'Bad value : {v_motion} of type {type(v_motion)}'
-        self._set_message_handler(self._root_sub_topic,
+        self._set_message_handler(self._root_topic,
                                   self.__class__._decode_motion_pl,
                                   v_motion)
 
@@ -229,7 +230,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         assert issubclass(type(v_alarm), Alarm), \
             f'Bad value : {v_alarm} of type {type(v_alarm)}'
-        self._set_message_handler(self._root_sub_topic,
+        self._set_message_handler(self._root_topic,
                                   self.__class__._decode_state_pl,
                                   v_alarm)
         v_alarm.concrete_device = self
@@ -240,7 +241,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         Args:
             is_on (bool): True to power on, False to power off.
         """
-        self.client.publish(f'{self._root_sub_topic}/set',
+        self.client.publish(f'{self._root_topic}/set',
                             self._encode_state_pl(is_on),
                             qos=1,
                             retain=False)
@@ -302,8 +303,8 @@ class NeoNasAB02B2(AlarmOnZigbee):
         for k, v in _parameter_list:
             _set = {k: v}
             self._logger.debug('Publishing payload : %s on %s/set',
-                               _set, self._root_sub_topic)
-            self.client.publish(f'{self._root_sub_topic}/set',
+                               _set, self._root_topic)
+            self.client.publish(f'{self._root_topic}/set',
                                 json.dumps(_set),
                                 qos=1,
                                 retain=False)
@@ -315,7 +316,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
                 self._key_alarm_level: self._alarm_level,
                 self._key_alarm_duration: self._alarm_duration,
                 }
-        self._logger.debug('Publishing payload : %s', _set)
+        self._logger.debug('Encode payload : %s', _set)
         return json.dumps(_set)
 
     def _decode_state_pl(self, topic, payload) -> bool:
@@ -353,7 +354,7 @@ Features
         v_switch.concrete_device = self
         self._v_switch = v_switch
 
-        self._set_message_handler(self._root_sub_topic,
+        self._set_message_handler(self._root_topic,
                                   self.__class__._decode_state_pl,
                                   v_switch)
         self.ask_for_state()
@@ -368,7 +369,7 @@ Features
         Returns:
             bool: return True if the device is able to publish state
         '''
-        self.client.publish(f'{self._root_sub_topic}/get',
+        self.client.publish(f'{self._root_topic}/get',
                           '{"state":""}',
                           qos=1,
                           retain=False)
@@ -380,7 +381,7 @@ Features
         Args:
             * is_on (bool): power on if True else power off
         '''
-        self.client.publish(f'{self._root_sub_topic}/set',
+        self.client.publish(f'{self._root_topic}/set',
                           self._encode_state_pl(is_on),
                           qos=1,
                           retain=False)

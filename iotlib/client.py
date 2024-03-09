@@ -38,7 +38,7 @@ from iotlib.config import MQTTConfig
 from . import package_level_logger
 
 
-class MQTTClientBase():
+class MQTTClient():
     _logger = package_level_logger
 
     def __init__(self,
@@ -103,7 +103,9 @@ class MQTTClientBase():
         """
         try:
             if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                self._logger.error('[%s] loop_start failed', self)
+                self._logger.error('[%s] loop_start failed : %s', 
+                                   self,
+                                   mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_start failed')
             _rc = self.connect(properties=properties)
             return _rc
@@ -121,10 +123,15 @@ class MQTTClientBase():
         Raises:
             RuntimeError: If loop_stop fails.
         """
+        if not self.connected:
+            self._logger.error('Unable to stop disconnected client')
+            raise RuntimeError('loop_stop failed')
         _rc = self.disconnect()
         if not self._loop_forever_used:
             if self.client.loop_stop() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                self._logger.error('[%s] loop_stop failed', self)
+                self._logger.error('[%s] loop_stop failed : %s', 
+                                   self,
+                                   mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_stop failed')
         return _rc
 
@@ -261,7 +268,7 @@ class MQTTClientBase():
                                     retain=retain)
 
 
-class MQTTClient(MQTTClientBase):
+class MQTTClientInit(MQTTClient):
     """Initializes an MQTTClient instance with configured parameters.
     """
 

@@ -10,12 +10,9 @@ import time
 import unittest
 import time
 
-from iotlib.bridge import DecodingException
-from iotlib.client import MQTTClientBase
-from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, SonoffSnzb3, NeoNasAB02B2, SonoffZbminiL
-from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
-                               TemperatureSensor, VirtualDevice)
-from iotlib.processor import VirtualDeviceProcessor
+from iotlib.client import MQTTClient
+from iotlib.codec.z2m import SonoffZbminiL
+from iotlib.virtualdev import (Switch, VirtualDeviceProcessor)
 from iotlib.bridge import Surrogate
 
 from .helper import log_it, logger, get_broker_name
@@ -29,7 +26,7 @@ class FlipFlopMessage(VirtualDeviceProcessor):
         self.loop_count = 0
         self.loop_in = loop_in
 
-    def handle_device_update(self, v_dev: Switch) -> None:
+    def process_value_update(self, v_dev: Switch, bridge: Surrogate) -> None:
         logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                      self,
                      v_dev,
@@ -41,9 +38,9 @@ class FlipFlopMessage(VirtualDeviceProcessor):
             raise RuntimeError('Max loop exceeded')
         self.loop_count += 1
         if v_dev.value:
-            v_dev.trigger_stop()
+            v_dev.trigger_stop(bridge)
         else:
-            v_dev.trigger_start()
+            v_dev.trigger_start(bridge)
 
 
 class TestSonoffZbminiL(unittest.TestCase):
@@ -54,7 +51,7 @@ class TestSonoffZbminiL(unittest.TestCase):
 
     def test_Switch_00(self):
         log_it("Testing SonoffZbminiL : no loop to check connection")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
                                 v_switch=Switch(),
@@ -77,11 +74,11 @@ class TestSonoffZbminiL(unittest.TestCase):
         time.sleep(1)
         self.assertFalse(v_switch.value)    # Default value is False
 
-        v_switch.trigger_start()
+        v_switch.trigger_start(bridge)
         time.sleep(1)
         self.assertTrue(v_switch.value)
 
-        v_switch.trigger_stop()
+        v_switch.trigger_stop(bridge)
         time.sleep(1)
         self.assertFalse(v_switch.value)
 
@@ -90,7 +87,7 @@ class TestSonoffZbminiL(unittest.TestCase):
     def test_Switch_01(self):
         TEST_DURATION = 10  # sec.
         log_it("Testing SonoffZbminiL : publish, decode and access vdev")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
                                 v_switch=Switch(),  # not used
@@ -112,7 +109,7 @@ class TestSonoffZbminiL(unittest.TestCase):
 
         _exc_start = time.perf_counter()
         _process_start = time.process_time_ns()
-        v_switch.trigger_start()
+        v_switch.trigger_start(bridge)
         time.sleep(TEST_DURATION)
         _process_end = time.process_time_ns()
         _exc_end = time.perf_counter()

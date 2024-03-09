@@ -10,11 +10,11 @@ import time
 import unittest
 
 from iotlib.bridge import DecodingException, Surrogate
-from iotlib.client import MQTTClientBase
+from iotlib.processor import AvailabilityPublisher, AvailabilityLogger
+from iotlib.client import MQTTClient
 from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, SonoffSnzb3, NeoNasAB02B2, SonoffZbminiL
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                TemperatureSensor)
-from iotlib.processor import (AvailabilityPublisher, AvailabilityLogger)
 
 from .helper import log_it, logger, get_broker_name
 from .mocks import MockZigbeeSwitch
@@ -31,9 +31,9 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
 
     def test_init(self):
         log_it("Testing DeviceOnZigbee2MQTT init")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
-                                    topic_base=self.TOPIC_BASE)
+                                    base_topic=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
 
         mqtt_client.start()
@@ -43,9 +43,9 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
 
     def test_decode_availability(self):
         log_it('Testing availability message handling')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
-                                    topic_base=self.TOPIC_BASE)
+                                    base_topic=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -63,9 +63,9 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
 
     def test_availability_logger_00(self):
         log_it("Testing TestAvailabilityLogger")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
-                                    topic_base=self.TOPIC_BASE)
+                                    base_topic=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
         publisher = AvailabilityLogger(device_name=self.DEVICE_NAME)
@@ -86,13 +86,13 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
 
     def test_availability_publisher_00(self):
         log_it("Testing TestAvailabilityLogger")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
-                                    topic_base=self.TOPIC_BASE)
+                                    base_topic=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
-        publisher = AvailabilityPublisher(client=mqtt_client,
-                                          device_name=self.DEVICE_NAME,
+        publisher = AvailabilityPublisher(device_name=self.DEVICE_NAME,
+                                          client=mqtt_client,
                                           topic_base='TEST_A2IOT/canonical')
         bridge.avail_proc_append(publisher)
 
@@ -111,13 +111,13 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
 
     def test_availability_publisher_01(self):
         log_it("Testing TestAvailabilityLogger - message lost")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
-                                    topic_base=self.TOPIC_BASE)
+                                    base_topic=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
-        publisher = AvailabilityPublisher(client=mqtt_client,
-                                          device_name='device_avail_lost',
+        publisher = AvailabilityPublisher(device_name='device_avail_lost',
+                                          client=mqtt_client,
                                           topic_base='TEST_A2IOT/canonical')
         bridge.avail_proc_append(publisher)
 
@@ -129,9 +129,9 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
 
     def test_decode_availability_fail(self):
         log_it('Testing availability message handling : FAIL')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
-                                    topic_base=self.TOPIC_BASE)
+                                    base_topic=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -159,7 +159,7 @@ class TestSonoffSnzb02(unittest.TestCase):
 
     def test_end_point_decode(self):
         log_it('Testing SonoffSnzb02 end point decoder')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_temp = TemperatureSensor()
         v_humi = HumiditySensor()
         codec = SonoffSnzb02(self.DEVICE_NAME,
@@ -168,6 +168,7 @@ class TestSonoffSnzb02(unittest.TestCase):
                              topic_base=self.TOPIC_BASE)
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
+        time.sleep(2)
 
         payload = {'temperature': 25.5}
         result = codec._decode_temp_pl('dummy_topic', payload)
@@ -180,7 +181,7 @@ class TestSonoffSnzb02(unittest.TestCase):
 
     def test_end_to_end(self):
         log_it('Testing end to end handler mechanism on SonoffSnzb02 Sensor')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_temp = TemperatureSensor()
         v_humi = HumiditySensor()
         codec = SonoffSnzb02(self.DEVICE_NAME,
@@ -191,7 +192,7 @@ class TestSonoffSnzb02(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
 
-        bridge.client.publish(codec._root_sub_topic,
+        bridge.client.publish(codec._root_topic,
                               self.PROPERTY_MESSAGE,
                               )
         time.sleep(2)
@@ -214,7 +215,7 @@ class TestSonoffSnzb01(unittest.TestCase):
     def test_end_to_end(self):
         log_it('Testing end to end handler mechanism on SonoffSnzb01 Sensor')
 
-        mqtt_client = MQTTClientBase('TestSonoffSnzb01', self.TARGET)
+        mqtt_client = MQTTClient('TestSonoffSnzb01', self.TARGET)
         mqtt_client.client.enable_logger()
         v_button = Button()
         codec = SonoffSnzb01(self.DEVICE_NAME,
@@ -223,19 +224,19 @@ class TestSonoffSnzb01(unittest.TestCase):
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
-        bridge.client.publish(codec._root_sub_topic,
+        bridge.client.publish(codec._root_topic,
                               self.MESSAGE_SINGLE,
                               )
         time.sleep(2)
         self.assertEqual(v_button.value, 'single')
 
-        bridge.client.publish(codec._root_sub_topic,
+        bridge.client.publish(codec._root_topic,
                               self.MESSAGE_DOUBLE,
                               )
         time.sleep(1)
         self.assertEqual(v_button.value, 'double')
 
-        bridge.client.publish(codec._root_sub_topic,
+        bridge.client.publish(codec._root_topic,
                               self.MESSAGE_LONG,
                               )
         time.sleep(1)
@@ -245,7 +246,7 @@ class TestSonoffSnzb01(unittest.TestCase):
 
     def test_FAIL01(self):
         log_it('Testing TestSonoffSnzb01 value message handling : FAIL')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_button = Button()
         codec = SonoffSnzb01(self.DEVICE_NAME,
                              v_button,
@@ -254,7 +255,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         with self.assertRaises(DecodingException) as ctx:
-            bridge._handle_values(codec._root_sub_topic,
+            bridge._handle_values(codec._root_topic,
                                   'value_format_error',
                                   )
         time.sleep(1)
@@ -262,7 +263,7 @@ class TestSonoffSnzb01(unittest.TestCase):
 
     def test_FAIL02(self):
         log_it('Testing TestSonoffSnzb01 value message handling : FAIL')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_button = Button()
         codec = SonoffSnzb01(self.DEVICE_NAME,
                              v_button,
@@ -271,7 +272,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         with self.assertRaises(DecodingException) as ctx:
-            bridge._handle_values(codec._root_sub_topic,
+            bridge._handle_values(codec._root_topic,
                                   b'{"action":"triple","battery":100,"linkquality":164,"voltage":3000}')
         mqtt_client.stop()
 
@@ -287,7 +288,7 @@ class TestSonoffSnzb3(unittest.TestCase):
 
     def test_end_to_end(self):
         log_it('Testing end to end handler mechanism on SonoffSnzb3 Sensor')
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_motion = Motion()
 
         codec = SonoffSnzb3(self.DEVICE_NAME,
@@ -296,13 +297,13 @@ class TestSonoffSnzb3(unittest.TestCase):
         bridge = Surrogate(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
-        bridge.client.publish(codec._root_sub_topic,
+        bridge.client.publish(codec._root_topic,
                               self.MESSAGE_FALSE,
                               )
         time.sleep(1)
         self.assertFalse(v_motion.value)
 
-        bridge.client.publish(codec._root_sub_topic,
+        bridge.client.publish(codec._root_topic,
                               self.MESSAGE_TRUE,
                               )
         time.sleep(1)
@@ -318,7 +319,7 @@ class TestNeoNasAB02B2(unittest.TestCase):
 
     def test_init(self):
         log_it("Testing NasAB02B2 init")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_alarm = Alarm()
         codec = NeoNasAB02B2(self.DEVICE_NAME,
                              v_alarm,
@@ -335,7 +336,7 @@ class TestNeoNasAB02B2(unittest.TestCase):
     def X_test_start_and_stop(self):
         # Mock is required !
         log_it("Testing NasAB02B2 change_state")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_alarm = Alarm()
         codec = NeoNasAB02B2(self.DEVICE_NAME,
                              v_alarm,
@@ -362,7 +363,7 @@ class TestSonoffZbminiL(unittest.TestCase):
 
     def test_Switch_00(self):
         log_it("Testing SonoffZbminiL init")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
@@ -378,7 +379,7 @@ class TestSonoffZbminiL(unittest.TestCase):
 
     def test_Switch_01(self):
         log_it("Testing SonoffZbminiL : publish to mock")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
                                 v_switch=Switch(),  # not used
@@ -409,7 +410,7 @@ class TestSonoffZbminiL(unittest.TestCase):
 
     def test_Switch_02(self):
         log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
                                 v_switch=Switch(),  # not used
@@ -440,7 +441,7 @@ class TestSonoffZbminiL(unittest.TestCase):
 
     def test_Switch_03(self):
         log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
-        mqtt_client = MQTTClientBase('', self.TARGET)
+        mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
                                 v_switch=Switch(),  # not used
@@ -456,11 +457,11 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        v_switch.trigger_start()
+        v_switch.trigger_start(bridge)
         time.sleep(1)
         self.assertTrue(v_switch.value)
 
-        v_switch.trigger_stop()
+        v_switch.trigger_stop(bridge)
         time.sleep(1)
         self.assertFalse(v_switch.value)
 

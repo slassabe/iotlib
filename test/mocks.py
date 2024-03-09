@@ -1,6 +1,6 @@
 import json
 
-from iotlib.client import MQTTClientBase
+from iotlib.client import MQTTClient
 from iotlib.virtualdev import Switch
 from iotlib.virtualdev import (HumiditySensor, TemperatureSensor)
 from iotlib.bridge import AbstractCodec, Surrogate, DecodingException
@@ -54,7 +54,7 @@ class MockCodec(AbstractCodec):
 class MockBridge:
 
     def __init__(self,
-                 mqtt_client: MQTTClientBase,
+                 mqtt_client: MQTTClient,
                  device_name: str,
                  topic_base: str = None):
         self.codec = MockCodec(device_name, topic_base)
@@ -64,7 +64,7 @@ class MockBridge:
 
 class MockZigbeeSensor:
     def __init__(self,
-                 client: MQTTClientBase,
+                 client: MQTTClient,
                  device_name: str,
                  topic_base) -> None:
         self.client = client
@@ -92,7 +92,7 @@ class MockZigbeeSwitch:
     MESSAGE_OFF = '{"state": "OFF"}'
 
     def __init__(self,
-                 client: MQTTClientBase,
+                 client: MQTTClient,
                  device_name: str,
                  v_switch: Switch,
                  topic_base) -> None:

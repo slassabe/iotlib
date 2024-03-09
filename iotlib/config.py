@@ -44,7 +44,7 @@ class MQTTConfig(metaclass=Singleton):
             self.clean_start = self.config.getboolean(_section, 'CLEAN_START')
 
             self.domotic_base_topic = self.config.get('MQTT_TOPICS', 'BASE_DOMOTIC')
-            self.z2m_sub_topic = self.config.get('MQTT_TOPICS', 'BASE_Z2M')
+            self.z2m_topic_base = self.config.get('MQTT_TOPICS', 'BASE_Z2M')
             self.shelly_sub_topic = self.config.get('MQTT_TOPICS', 'BASE_SHELLY')
             self.tasmota_cmd_topic = self.config.get('MQTT_TOPICS', 'CMND_TASMOTA')
             self.tasmota_status_topic = self.config.get('MQTT_TOPICS', 'STATUS_TASMOTA')
