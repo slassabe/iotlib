@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Callable, TypeAlias
 
 from iotlib import package_level_logger
+from iotlib.abstracts import AbstractCodec
 from iotlib.virtualdev import VirtualDevice
 
 
@@ -14,14 +15,14 @@ MessageHandlerType: TypeAlias = tuple[
     VirtualDevice]
 HandlersListType: TypeAlias = dict[str, MessageHandlerType]
 
-
-class AbstractCodec(ABC):
+class Codec(AbstractCodec):
     _logger = package_level_logger
     def __init__(self,
                  device_name: str,
                  base_topic: str):
-        self.device_name = device_name
-        self.base_topic = base_topic
+        #self.device_name = device_name
+        #self.base_topic = base_topic
+        super().__init__(device_name, base_topic)
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
     def __str__(self) -> str:
@@ -68,16 +69,6 @@ class AbstractCodec(ABC):
         """Adjust payload to be decoded, that is, fit in string
         """
         return payload
-
-    @abstractmethod
-    def decode_avail_pl(self, payload: str) -> bool:
-        ''' Decode message received on topic dedicated to availability '''
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_availability_topic(self) -> str:
-        '''Get the topic dedicated to handle availability messages'''
-        return NotImplementedError
 
 class DecodingException(Exception):
     """ Exception if message received on wrong topic

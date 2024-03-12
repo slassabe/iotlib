@@ -13,7 +13,7 @@ import time
 from iotlib.client import MQTTClient
 from iotlib.codec.z2m import SonoffZbminiL
 from iotlib.virtualdev import (Switch, VirtualDeviceProcessor)
-from iotlib.bridge import Surrogate
+from iotlib.bridge import MQTTBridge
 
 from .helper import log_it, logger, get_broker_name
 from .mocks import MockZigbeeSwitch
@@ -26,7 +26,7 @@ class FlipFlopMessage(VirtualDeviceProcessor):
         self.loop_count = 0
         self.loop_in = loop_in
 
-    def process_value_update(self, v_dev: Switch, bridge: Surrogate) -> None:
+    def process_value_update(self, v_dev: Switch, bridge: MQTTBridge) -> None:
         logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                      self,
                      v_dev,
@@ -64,7 +64,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                               client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
 
@@ -98,7 +98,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                               client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection

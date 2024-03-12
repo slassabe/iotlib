@@ -9,7 +9,7 @@ $ python -m unittest test.test_z2m
 import time
 import unittest
 
-from iotlib.bridge import DecodingException, Surrogate
+from iotlib.bridge import DecodingException, MQTTBridge
 from iotlib.processor import AvailabilityPublisher, AvailabilityLogger
 from iotlib.client import MQTTClient
 from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, SonoffSnzb3, NeoNasAB02B2, SonoffZbminiL
@@ -34,7 +34,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
                                     base_topic=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)
@@ -46,7 +46,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
                                     base_topic=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         # Check ONLINE availability decodding
@@ -66,7 +66,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
                                     base_topic=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         publisher = AvailabilityLogger(device_name=self.DEVICE_NAME)
         bridge.avail_proc_append(publisher)
@@ -89,7 +89,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
                                     base_topic=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         publisher = AvailabilityPublisher(device_name=self.DEVICE_NAME,
                                           client=mqtt_client,
@@ -114,7 +114,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
                                     base_topic=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         publisher = AvailabilityPublisher(device_name='device_avail_lost',
                                           client=mqtt_client,
@@ -132,7 +132,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         codec = DeviceOnZigbee2MQTT(device_name=self.DEVICE_NAME,
                                     base_topic=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         # Check ONLINE availability decodding
@@ -166,7 +166,7 @@ class TestSonoffSnzb02(unittest.TestCase):
                              v_temp,
                              v_humi,
                              topic_base=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)
 
@@ -188,7 +188,7 @@ class TestSonoffSnzb02(unittest.TestCase):
                              v_temp,
                              v_humi,
                              topic_base=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
 
@@ -221,7 +221,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         codec = SonoffSnzb01(self.DEVICE_NAME,
                              v_button,
                              topic_base=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         bridge.client.publish(codec._root_topic,
@@ -251,7 +251,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         codec = SonoffSnzb01(self.DEVICE_NAME,
                              v_button,
                              topic_base=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         with self.assertRaises(DecodingException) as ctx:
@@ -268,7 +268,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         codec = SonoffSnzb01(self.DEVICE_NAME,
                              v_button,
                              topic_base=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         with self.assertRaises(DecodingException) as ctx:
@@ -294,7 +294,7 @@ class TestSonoffSnzb3(unittest.TestCase):
         codec = SonoffSnzb3(self.DEVICE_NAME,
                             v_motion,
                             topic_base=self.TOPIC_BASE)
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         bridge.client.publish(codec._root_topic,
@@ -326,7 +326,7 @@ class TestNeoNasAB02B2(unittest.TestCase):
                              client=mqtt_client,
                              topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -343,7 +343,7 @@ class TestNeoNasAB02B2(unittest.TestCase):
                              client=mqtt_client,
                              topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -370,7 +370,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                               client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -390,7 +390,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                               client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -421,7 +421,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                               client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
@@ -452,7 +452,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                               client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
-        bridge = Surrogate(mqtt_client, codec)
+        bridge = MQTTBridge(mqtt_client, codec)
 
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection

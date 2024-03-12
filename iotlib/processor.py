@@ -20,10 +20,8 @@ Typical usage:
 
 from iotlib.devconfig import ButtonValues
 from iotlib.client import MQTTClient
-from iotlib.bridge import AvailabilityProcessor
-from iotlib.virtualdev import VirtualDevice, VirtualDeviceProcessor
-
-from . import package_level_logger
+from iotlib.abstracts import AvailabilityProcessor, VirtualDeviceProcessor
+from iotlib.virtualdev import VirtualDevice
 
 
 class VirtualDeviceLogger(VirtualDeviceProcessor):

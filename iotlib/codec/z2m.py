@@ -10,9 +10,9 @@ from abc import abstractmethod, ABCMeta
 from iotlib import package_level_logger
 from iotlib.config import MQTTConfig
 from iotlib.client import MQTTClient
-from iotlib.bridge import AbstractCodec, DecodingException
+from iotlib.codec.core import Codec, DecodingException
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
-                          TemperatureSensor, VirtualDevice)
+                               TemperatureSensor)
 
 BUTTON_SINGLE_ACTION = 'single'
 BUTTON_DOUBLE_ACTION = 'double'
@@ -26,7 +26,7 @@ STATE_ON = 'ON'
 STATE_OFF = 'OFF'
 
 
-class DeviceOnZigbee2MQTT(AbstractCodec):
+class DeviceOnZigbee2MQTT(Codec):
     ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
     '''
     _logger = package_level_logger
@@ -77,7 +77,6 @@ class DeviceOnZigbee2MQTT(AbstractCodec):
         except JSONDecodeError as exp:
             raise DecodingException(
                 f'Exception occured while decoding : "{payload}"') from exp
-
 
 
 class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
@@ -250,7 +249,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     def set_sound(self,
                   melody: int,
                   alarm_level: str,
-                  alarm_duration: int) -> json:
+                  alarm_duration: int) -> None:
         """Change the alarm parameters.
 
         Args:
@@ -265,7 +264,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         """Decode state payload."""
         raise NotImplementedError
 
-    def _encode_state_pl(self, is_on: bool) -> json:
+    def _encode_state_pl(self, is_on: bool) -> str:
         """Encode state payload."""
         raise NotImplementedError
 
@@ -286,7 +285,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
     def set_sound(self,
                   melody: int,
                   alarm_level: str,
-                  alarm_duration: int) -> json:
+                  alarm_duration: int) -> None:
         assert issubclass(type(melody), int) and melody in range(1, 19), \
             f'Bad value for melody : {melody}'
         assert issubclass(type(alarm_level), str) and alarm_level in ['low', 'medium', 'high'], \
@@ -309,7 +308,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
                                 qos=1,
                                 retain=False)
 
-    def _encode_state_pl(self, is_on: bool) -> json:
+    def _encode_state_pl(self, is_on: bool) -> str:
         # _set = {self._key_alarm: STATE_ON if is_on else STATE_OFF,
         _set = {self._key_alarm: is_on,
                 self._key_melody: self._melody,
@@ -359,7 +358,6 @@ Features
                                   v_switch)
         self.ask_for_state()
 
-
     def ask_for_state(self, device_id=None) -> bool:
         '''Send request to the device to get its state
 
@@ -370,9 +368,9 @@ Features
             bool: return True if the device is able to publish state
         '''
         self.client.publish(f'{self._root_topic}/get',
-                          '{"state":""}',
-                          qos=1,
-                          retain=False)
+                            '{"state":""}',
+                            qos=1,
+                            retain=False)
         return True
 
     def change_state(self, is_on: bool) -> None:
@@ -382,14 +380,14 @@ Features
             * is_on (bool): power on if True else power off
         '''
         self.client.publish(f'{self._root_topic}/set',
-                          self._encode_state_pl(is_on),
-                          qos=1,
-                          retain=False)
+                            self._encode_state_pl(is_on),
+                            qos=1,
+                            retain=False)
 
     def _decode_state_pl(self, topic, payload) -> bool:
         raise NotImplementedError
 
-    def _encode_state_pl(self, is_on: bool) -> json:
+    def _encode_state_pl(self, is_on: bool) -> str:
         raise NotImplementedError
 
 
@@ -397,7 +395,7 @@ class SonoffZbminiL(SwitchOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/ZBMINI-L.html#sonoff-zbmini-l '''
     _key_power = SWITCH_POWER
 
-    def _encode_state_pl(self, is_on: bool) -> json:
+    def _encode_state_pl(self, is_on: bool) -> str:
         if is_on:
             _set = {self._key_power: STATE_ON}
         else:

@@ -6,47 +6,21 @@ from abc import ABC, abstractmethod
 import paho.mqtt.client as mqtt
 
 from iotlib import package_level_logger
+from iotlib.abstracts import Surrogate, AvailabilityProcessor
 from iotlib.client import MQTTClient
-from iotlib.codec.abstract import AbstractCodec, DecodingException
+from iotlib.codec.core import AbstractCodec, DecodingException
 
 
-class AvailabilityProcessor(ABC):
-    """Abstract base class for processors that handle device availability updates.
-
-    This class provides a common interface for processors that need to react
-    to device availability changes reported by a Surrogate instance. 
-
-    Subclasses should implement handle_update() to define custom availability 
-    processing behavior.
-    """
-    _logger = package_level_logger
-
-    def __str__(self):
-        return f'{self.__class__.__name__} object'
-
-    @abstractmethod
-    def process_availability_update(self,
-                      availability: bool) -> None:
-        """Handle an update to the device availability status.
-
-        Args:
-            availability (bool): The new availability status of the device.
-
-        Returns:
-            None
-        """
-        raise NotImplementedError
-
-
-class Surrogate:
+class MQTTBridge(Surrogate):
     _logger = package_level_logger
 
     def __init__(self,
                  mqtt_client: MQTTClient,
                  codec: AbstractCodec):
-        self.client = mqtt_client
-        self.codec = codec
-
+        #self.client = mqtt_client
+        #self.codec = codec
+        super().__init__(mqtt_client, codec)
+        
         self.availability: bool = None
         self._avail_proc_list: list[AvailabilityProcessor] = []
 

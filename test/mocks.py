@@ -3,12 +3,12 @@ import json
 from iotlib.client import MQTTClient
 from iotlib.virtualdev import Switch
 from iotlib.virtualdev import (HumiditySensor, TemperatureSensor)
-from iotlib.bridge import AbstractCodec, Surrogate, DecodingException
+from iotlib.bridge import MQTTBridge, DecodingException
+from iotlib.codec.core import Codec
+from .helper import logger
 
-from .helper import log_it, logger, get_broker_name
 
-
-class MockCodec(AbstractCodec):
+class MockCodec(Codec):
     def __init__(self,
                  device_name: str,
                  topic_base: str):
@@ -58,7 +58,7 @@ class MockBridge:
                  device_name: str,
                  topic_base: str = None):
         self.codec = MockCodec(device_name, topic_base)
-        self.surrogate = Surrogate(mqtt_client, self.codec)
+        self.surrogate = MQTTBridge(mqtt_client, self.codec)
 
 
 

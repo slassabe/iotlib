@@ -6,40 +6,12 @@ import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
+from . import package_level_logger
+from iotlib.abstracts import VirtualDeviceProcessor
 from iotlib.client import MQTTClient
 from iotlib.devconfig import PropertyConfig, ButtonValues
 #from iotlib.bridge import Surrogate
-from . import package_level_logger
 
-
-class VirtualDeviceProcessor(ABC):
-    """Base class for processing events from virtual devices.
-
-    This class defines the common process_value_update() method that is called 
-    when a sensor value changes or device availability changes.
-
-    Child classes should implement process_value_update() to handle specific 
-    processing logic for the sensor or device type.
-
-    """
-    _logger = package_level_logger
-
-    def __str__(self):
-        return f'{self.__class__.__name__} object'
-
-    @abstractmethod
-    def process_value_update(self, v_dev, bridge) -> None:
-        """Handle an update from a virtual device.
-
-        This method is called when a value changes on a virtual 
-        device. It should be implemented in child classes to 
-        handle specific processing logic for the device type.
-
-        Args:
-            v_dev (VirtualDevice): The virtual device instance.
-
-        """
-        raise NotImplementedError
 
 
 class ResultType(enum.IntEnum):
