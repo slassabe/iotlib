@@ -8,13 +8,8 @@ from typing import Callable, TypeAlias
 from iotlib import package_level_logger
 from iotlib.client import MQTTClient
 
-class AbstractCodec(ABC):
-    def __init__(self,
-                 device_name: str,
-                 base_topic: str):
-        self.device_name = device_name
-        self.base_topic = base_topic
 
+class AbstractCodec(ABC):
     @abstractmethod
     def decode_avail_pl(self, payload: str) -> bool:
         ''' Decode message received on topic dedicated to availability '''
@@ -25,6 +20,33 @@ class AbstractCodec(ABC):
         '''Get the topic dedicated to handle availability messages'''
         return NotImplementedError
 
+    @abstractmethod
+    def get_state_request(self, device_id: int | None) -> tuple[str, str]:
+        """Get the current state request for a device.
+    
+        Args:
+            device_id: The device ID to get the state request for.
+        
+        Returns:
+            A tuple containing the state request topic and payload or None
+            if such a request is not accepted.
+        """
+        return NotImplementedError
+
+    @abstractmethod
+    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
+        """Get the state change request for a device.
+
+        Args:
+            is_on (bool): True to power on, False to power off.
+            device_id: The device ID to get the state change request for.
+
+        Returns:
+            A tuple containing the state change request topic and payload or None
+            if such a request is not accepted.
+        """
+        return NotImplementedError
+
 
 class Surrogate(ABC):
     def __init__(self,
@@ -32,6 +54,10 @@ class Surrogate(ABC):
                  codec: AbstractCodec):
         self.client = mqtt_client
         self.codec = codec
+
+    @abstractmethod
+    def publish_message(self, topic: str, message: str) -> None:
+        return NotImplementedError
 
 
 

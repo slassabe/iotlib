@@ -50,6 +50,12 @@ class MockCodec(Codec):
         else:
             return int(_value)
 
+    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
+        raise(RuntimeError('Cannot encode state of Sensor'))
+
+    def get_state_request(self, device_id: int | None) -> tuple[str, str]:
+        raise(RuntimeError('Cannot get topic control state of Sensor'))
+
 
 class MockBridge:
 

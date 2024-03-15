@@ -323,7 +323,6 @@ class TestNeoNasAB02B2(unittest.TestCase):
         v_alarm = Alarm()
         codec = NeoNasAB02B2(self.DEVICE_NAME,
                              v_alarm,
-                             client=mqtt_client,
                              topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -331,27 +330,6 @@ class TestNeoNasAB02B2(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        mqtt_client.stop()
-
-    def X_test_start_and_stop(self):
-        # Mock is required !
-        log_it("Testing NasAB02B2 change_state")
-        mqtt_client = MQTTClient('', self.TARGET)
-        v_alarm = Alarm()
-        codec = NeoNasAB02B2(self.DEVICE_NAME,
-                             v_alarm,
-                             client=mqtt_client,
-                             topic_base=self.TOPIC_BASE)
-
-        bridge = MQTTBridge(mqtt_client, codec)
-
-        mqtt_client.start()
-        time.sleep(2)   # Wait MQTT client connection
-        codec.set_sound(melody=10, alarm_level='low', alarm_duration=2)
-        codec.change_state(is_on=True)
-        time.sleep(2)
-        self.assertTrue(v_alarm.value)
-
         mqtt_client.stop()
 
 
@@ -367,7 +345,6 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
-                              client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -387,7 +364,6 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
-                              client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -395,21 +371,22 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        codec.change_state(is_on=True)
+        v_switch.trigger_change_state(bridge, is_on=True)
         time.sleep(1)
         self.assertTrue(mock.state)
 
-        codec.change_state(is_on=False)
+        v_switch.trigger_change_state(bridge, is_on=False)
+
         time.sleep(1)
         self.assertFalse(mock.state)
 
-        codec.ask_for_state()
+        v_switch.trigger_get_state(bridge)
         time.sleep(1)
         self.assertFalse(mock.state)
         mqtt_client.stop()
 
     def test_Switch_02(self):
-        log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
+        log_it("Testing SonoffZbminiL : Switch.trigger_change_state to VirtualDevice.value")
         mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
@@ -418,7 +395,6 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
-                              client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -426,21 +402,21 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        codec.change_state(is_on=True)
+        v_switch.trigger_change_state(bridge, is_on=True)
         time.sleep(1)
         self.assertTrue(v_switch.value)
 
-        codec.change_state(is_on=False)
+        v_switch.trigger_change_state(bridge, is_on=False)
         time.sleep(1)
         self.assertFalse(v_switch.value)
 
-        codec.ask_for_state()
+        v_switch.trigger_get_state(bridge)
         time.sleep(1)
         self.assertFalse(v_switch.value)
         mqtt_client.stop()
 
     def test_Switch_03(self):
-        log_it("Testing SonoffZbminiL : ZigbeeDevice.change_state to VirtualDevice.value")
+        log_it("Testing SonoffZbminiL : Switch.change_state to VirtualDevice.value")
         mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
@@ -449,7 +425,6 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
-                              client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -465,7 +440,7 @@ class TestSonoffZbminiL(unittest.TestCase):
         time.sleep(1)
         self.assertFalse(v_switch.value)
 
-        codec.ask_for_state()
+        v_switch.trigger_get_state(bridge)
         time.sleep(1)
         self.assertFalse(v_switch.value)
         mqtt_client.stop()

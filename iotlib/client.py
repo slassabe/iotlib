@@ -84,7 +84,7 @@ class MQTTClient():
         self.on_disconnect_handlers: list[Callable] = []
         self._default_message_callbacks: list[Callable] = []
         self.on_subscribe_handlers: list[Callable] = []
-        #self.client.enable_logger(package_level_logger)
+        self.client.enable_logger(package_level_logger)
 
     def __str__(self):
         # return f'<{self.__class__.__name__} object "{self.hostname}:{self.port}">'

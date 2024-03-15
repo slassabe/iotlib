@@ -61,7 +61,6 @@ class TestSonoffZbminiL(unittest.TestCase):
 
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
-                              client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -95,7 +94,6 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch,
-                              client=mqtt_client,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)

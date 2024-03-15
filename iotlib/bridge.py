@@ -17,10 +17,10 @@ class MQTTBridge(Surrogate):
     def __init__(self,
                  mqtt_client: MQTTClient,
                  codec: AbstractCodec):
-        #self.client = mqtt_client
-        #self.codec = codec
+        # self.client = mqtt_client
+        # self.codec = codec
         super().__init__(mqtt_client, codec)
-        
+
         self.availability: bool = None
         self._avail_proc_list: list[AvailabilityProcessor] = []
 
@@ -33,6 +33,7 @@ class MQTTBridge(Surrogate):
         # Set MQTT connection handlers
         self.client.connect_handler_add(self._on_connect_callback)
         self.client.disconnect_handler_add(self._on_disconnect_callback)
+        
 
     def __repr__(self) -> str:
         _sep = ''
@@ -141,8 +142,8 @@ class MQTTBridge(Surrogate):
                 raise (ValueError(
                     f'No virtual device set for topic : "{topic}"'))
             # Decode value
-            _decoded_value = _decoder(self.codec, 
-                                      topic, 
+            _decoded_value = _decoder(self.codec,
+                                      topic,
                                       self.codec.fit_payload(payload))
             # Process handle_new_value with the decoded value
             _virtual_device.handle_new_value(_decoded_value, self)
@@ -170,3 +171,8 @@ class MQTTBridge(Surrogate):
                                self.availability)
         return new_avail
 
+    def publish_message(self, topic: str, message: str) -> None:
+        rc: mqtt.MQTTMessageInfo = self.client.publish(topic,
+                                                       message,
+                                                       qos=1,
+                                                       retain=False)

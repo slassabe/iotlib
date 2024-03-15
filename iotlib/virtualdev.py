@@ -8,10 +8,9 @@ from collections.abc import Callable
 
 from . import package_level_logger
 from iotlib.abstracts import VirtualDeviceProcessor
-from iotlib.client import MQTTClient
+from iotlib.abstracts import Surrogate
 from iotlib.devconfig import PropertyConfig, ButtonValues
-#from iotlib.bridge import Surrogate
-
+# from iotlib.bridge import Surrogate
 
 
 class ResultType(enum.IntEnum):
@@ -19,13 +18,13 @@ class ResultType(enum.IntEnum):
     SUCCESS = 0
     ECHO = 1
 
+
 class VirtualDevice(ABC):
     """VirtualDevice is the base class for all virtual devices.
 
     It contains common attributes and methods for virtual devices like:
 
     - friendly_name: Name of the device
-    - concrete_device: The physical device associated 
     - registered_list: List of devices registered to events
 
     Main methods:
@@ -33,7 +32,6 @@ class VirtualDevice(ABC):
     - __init__() : Constructor
     - __repr__() : Representation for debug/logging
     - __str__() : String representation 
-    - concrete_device : Property to get/set the physical device  
     - registers() : Register a device to events
     - process_value() : Processes a value, must be implemented in child classes
     - _on_event() : Called on event, to be implemented in child classes
@@ -50,7 +48,7 @@ class VirtualDevice(ABC):
         self.friendly_name = friendly_name
         self._value = None
         self._quiet_mode = quiet_mode
-        self._processor_list:list[VirtualDeviceProcessor] = []
+        self._processor_list: list[VirtualDeviceProcessor] = []
 
     def __repr__(self):
         _sep = ''
@@ -110,7 +108,6 @@ class VirtualDevice(ABC):
                 _processor.process_value_update(self, bridge)
             return ResultType.SUCCESS
 
-
     def processor_append(self, processor: VirtualDeviceProcessor) -> None:
         """Appends a Processor to the processor list"""
         if not isinstance(processor, VirtualDeviceProcessor):
@@ -127,7 +124,6 @@ class Operable(VirtualDevice):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
         self._device_id = None  # Used by Shelly : relay numbers
-        self._concrete_device = None
         self._stop_timer = None
         self._pulse_instruction_allowed = False
 
@@ -140,16 +136,6 @@ class Operable(VirtualDevice):
         self._device_id = value
 
     @property
-    def concrete_device(self):
-        return self._concrete_device
-
-    @concrete_device.setter
-    def concrete_device(self, value):
-        if self._concrete_device is not None:
-            raise RuntimeError(f'Virtual device {self} allready set')
-        self._concrete_device = value
-
-    @property
     def pulse_is_allowed(self):
         return self._pulse_instruction_allowed
 
@@ -157,7 +143,38 @@ class Operable(VirtualDevice):
     def pulse_is_allowed(self, value):
         self._pulse_instruction_allowed = value
 
-    def trigger_start(self, bridge) -> bool:
+    def trigger_get_state(self,
+                          bridge: Surrogate,
+                          device_id=None) -> None:
+        """Triggers a state request to the device bridge.
+
+        Sends a request message to the device bridge to retrieve the 
+        current state of the device. The device bridge will publish 
+        a state update message in response.
+
+        Args:
+        bridge: The device bridge instance.
+        device_id: Optional device ID to retrieve state for.
+        """
+        _request = bridge.codec.get_state_request(device_id)
+        if _request is None:
+            self._logger.debug('%s : unable to get state')
+        else:
+            _topic, _payload = _request
+            bridge.publish_message(_topic, _payload)
+
+    def trigger_change_state(self,
+                             bridge: Surrogate,
+                             is_on: bool,
+                             device_id=None) -> None:
+        _request = bridge.codec.change_state_request(is_on, device_id)
+        if _request is None:
+            self._logger.debug('%s : unable to change state')
+        else:
+            _topic, _payload = _request
+            bridge.publish_message(_topic, _payload)
+
+    def trigger_start(self, bridge: Surrogate) -> bool:
         ''' Ask the device to start
 
         Returns:
@@ -168,14 +185,13 @@ class Operable(VirtualDevice):
                                self)
             return False
         self._logger.debug('[%s] is "off" -> request to turn it "on"', self)
-        if self._device_id is None:
-            self.concrete_device.change_state(True)
-        else:
-            self.concrete_device.change_device_id_state(self._device_id, True)
+        self.trigger_change_state(bridge,
+                                    is_on=True,
+                                    device_id=self._device_id)
         return True
 
-    def trigger_stop(self, bridge) -> bool:
-        ''' Ask the device to stop after a period
+    def trigger_stop(self, bridge: Surrogate) -> bool:
+        ''' Ask the device to stop
 
         Returns:
             bool: returns True if switch state is ON  when method called    
@@ -190,34 +206,10 @@ class Operable(VirtualDevice):
         else:
             self._logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                self)
-            if self._device_id is None:
-                bridge.codec.change_state(False)
-                #self.concrete_device.change_state(False)
-            else:
-                #self.concrete_device.change_device_id_state(
-                #    self._device_id, False)
-                bridge.codec.change_device_id_state(
-                    self._device_id, False)
+            self.trigger_change_state(bridge,
+                                        is_on=False,
+                                        device_id=self._device_id)
             return True
-
-    def start_and_stop(self, period: int, bridge) -> None:
-        """ Ask the device to start, then stop after a period
-
-        Args:
-            duration (int): duration before stop switch.
-        """
-        self._logger.debug('[%s] Start it for "%s" sec.', self, period)
-        if not isinstance(period, int):
-            raise TypeError(
-                f'Expecting type int for period "{period}", not {type(period)}')
-        if self.pulse_is_allowed:
-            self._logger.debug('[%s] pulse instruction allowed', self)
-            self.concrete_device.pulse(period)
-            self.trigger_start(bridge)
-        else:
-            self._logger.debug('[%s] pulse instruction NOT allowed', self)
-            self.trigger_start(bridge)
-            self._remember_to_turn_the_light_off(period, bridge)
 
     def _remember_to_turn_the_light_off(self, when: int, bridge) -> None:
         self._logger.debug('[%s] Automatially stop after "%s" sec.',
@@ -269,32 +261,11 @@ class Alarm(Operable):
     def get_property(self) -> str:
         return PropertyConfig.ALARM_PROPERTY
 
-    def configure_alarm(self,
-                        melody: Melodies,
-                        alarm_level: Level,
-                        alarm_duration: int) -> None:  # pylint: disable=unused-argument
-        """ Configure the alarm type, level and duration
-        """
-        if not isinstance(melody, Melodies):
-            raise TypeError(f'Melody {melody} is invalid,'
-                            'must be one of Melodies enum value')
-        if not isinstance(alarm_level, Level):
-            raise TypeError(
-                f'Alarm level "{alarm_level}" is invalid,'
-                'must be one of Level enum value')
-        self._logger.info('[%s] melody : %s - alarm_level: %s - alarm_duration: %s',
-                          self,
-                          melody,
-                          alarm_level,
-                          alarm_duration,
-                          )
-        self.concrete_device.set_sound(
-            melody.value, alarm_level.value, alarm_duration)
-
 
 class Switch(Operable):
     """ Basic implementation of a virtual Switch 
     """
+
     def __init__(self, friendly_name=None, quiet_mode=False, countdown=0):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
@@ -312,9 +283,11 @@ class Switch(Operable):
     def get_property(self) -> str:
         return PropertyConfig.SWITCH_PROPERTY
 
+
 class Switch0(Switch):
     """ Virtual switch #0 of a multi channel device
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._device_id = 0
@@ -322,9 +295,11 @@ class Switch0(Switch):
     def get_property(self) -> str:
         return PropertyConfig.SWITCH0_PROPERTY
 
+
 class Switch1(Switch):
     """ Virtual switch #1 of a multi channel device
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._device_id = 1
@@ -340,6 +315,7 @@ class Sensor(VirtualDevice):
     read by observer devices. 
 
     """
+
     def __init__(self, friendly_name=None, quiet_mode=False):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
@@ -357,14 +333,14 @@ class Sensor(VirtualDevice):
 
     def add_observer(self, device: Operable) -> None:
         """Add an observer to be notified of sensor value changes.
-        
+
         Args:
             device (Operable): The device to add as an observer. 
                 Must be an instance of Operable.
-        
+
         Raises:
             TypeError: If device is not an instance of Operable.
-            
+
         """
         if not isinstance(device, Operable):
             raise TypeError(
@@ -375,6 +351,7 @@ class Sensor(VirtualDevice):
 class TemperatureSensor(Sensor):
     """ Temperature sensor
     """
+
     def get_property(self) -> str:
         return PropertyConfig.TEMPERATURE_PROPERTY
 
@@ -385,6 +362,7 @@ class TemperatureSensor(Sensor):
 class HumiditySensor(Sensor):
     """ Humidity sensor
     """
+
     def get_property(self) -> str:
         return PropertyConfig.HUMIDITY_PROPERTY
 
@@ -392,6 +370,7 @@ class HumiditySensor(Sensor):
 class LightSensor(Sensor):
     """ Light sensor
     """
+
     def get_property(self) -> str:
         return PropertyConfig.LIGHT_PROPERTY
 
@@ -399,6 +378,7 @@ class LightSensor(Sensor):
 class ConductivitySensor(Sensor):
     """ Conductivity sensor
     """
+
     def get_property(self) -> str:
         return PropertyConfig.CONDUCTIVITY_PROPERTY
 
@@ -419,7 +399,7 @@ class Button(Sensor):
         return self._value
 
     @value.setter
-    def value(self, value:str):
+    def value(self, value: str):
         # Handle button action
         _accepted_values = [ButtonValues.SINGLE_ACTION.value,
                             ButtonValues.DOUBLE_ACTION.value,
@@ -456,4 +436,3 @@ class ADC(Sensor):
 
     def handle_new_value(self, value: float, bridge) -> list:
         return super().handle_new_value(round(float(value), 1), bridge)
-
