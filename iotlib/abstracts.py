@@ -2,12 +2,10 @@
 # coding=utf-8
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
-from typing import Callable, TypeAlias
+import enum
 
 from iotlib import package_level_logger
 from iotlib.client import MQTTClient
-
 
 class AbstractCodec(ABC):
     @abstractmethod
@@ -18,7 +16,7 @@ class AbstractCodec(ABC):
     @abstractmethod
     def get_availability_topic(self) -> str:
         '''Get the topic dedicated to handle availability messages'''
-        return NotImplementedError
+        raise NotImplementedError
 
     @abstractmethod
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
@@ -31,7 +29,7 @@ class AbstractCodec(ABC):
             A tuple containing the state request topic and payload or None
             if such a request is not accepted.
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     @abstractmethod
     def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
@@ -45,7 +43,7 @@ class AbstractCodec(ABC):
             A tuple containing the state change request topic and payload or None
             if such a request is not accepted.
         """
-        return NotImplementedError
+        raise NotImplementedError
 
 
 
@@ -131,3 +129,19 @@ class VirtualDeviceProcessor(ABC):
 
         """
         raise NotImplementedError
+
+
+class ResultType(enum.IntEnum):
+    IGNORE = -1
+    SUCCESS = 0
+    ECHO = 1
+
+class AbstractDevice(ABC):
+    @abstractmethod
+    def handle_value(self, value, bridge: Surrogate) -> ResultType:
+        raise NotImplementedError
+
+    @abstractmethod
+    def processor_append(self, processor: VirtualDeviceProcessor) -> None:
+        raise NotImplementedError
+

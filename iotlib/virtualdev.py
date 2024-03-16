@@ -3,23 +3,16 @@
 
 import enum
 import threading
-from abc import ABC, abstractmethod
-from collections.abc import Callable
+from abc import abstractmethod
+
+from iotlib.abstracts import (
+    AbstractDevice, Surrogate, ResultType, VirtualDeviceProcessor)
+from iotlib.devconfig import PropertyConfig, ButtonValues
 
 from . import package_level_logger
-from iotlib.abstracts import VirtualDeviceProcessor
-from iotlib.abstracts import Surrogate
-from iotlib.devconfig import PropertyConfig, ButtonValues
-# from iotlib.bridge import Surrogate
 
 
-class ResultType(enum.IntEnum):
-    IGNORE = -1
-    SUCCESS = 0
-    ECHO = 1
-
-
-class VirtualDevice(ABC):
+class VirtualDevice(AbstractDevice):
     """VirtualDevice is the base class for all virtual devices.
 
     It contains common attributes and methods for virtual devices like:
@@ -66,7 +59,6 @@ class VirtualDevice(ABC):
         return self._value
 
     def _validate_value_type(self, value: any):
-        # Validate value type
         _property = self.get_property()
         _type_cast = self.get_property().property_type
         if not isinstance(value, _type_cast):
@@ -78,24 +70,7 @@ class VirtualDevice(ABC):
         self._validate_value_type(value)
         self._value = value
 
-    @abstractmethod
-    def get_property(self) -> str:
-        raise NotImplementedError
-
-    def handle_new_value(self, value, bridge) -> ResultType:
-        """Handles a new value received from device manager for the virtual device.
-
-        Checks if the value should be ignored based on previous value and 
-        quiet mode. If valid, sets the new value and calls the event handler.
-
-        Args:
-            value: The new value received.
-
-        Returns:
-            A tuple of (property name, property value).
-            Returns None if the value should be ignored.
-
-        """
+    def handle_value(self, value, bridge: Surrogate) -> ResultType:
         if value is None:
             # No relevant value received (can be info on device like battery level), ignore
             return ResultType.IGNORE
@@ -109,11 +84,14 @@ class VirtualDevice(ABC):
             return ResultType.SUCCESS
 
     def processor_append(self, processor: VirtualDeviceProcessor) -> None:
-        """Appends a Processor to the processor list"""
         if not isinstance(processor, VirtualDeviceProcessor):
             raise TypeError(
                 f"Processor must be instance of Processor, not {type(processor)}")
         self._processor_list.append(processor)
+
+    @abstractmethod
+    def get_property(self) -> str:
+        raise NotImplementedError
 
 
 class Operable(VirtualDevice):
@@ -186,8 +164,8 @@ class Operable(VirtualDevice):
             return False
         self._logger.debug('[%s] is "off" -> request to turn it "on"', self)
         self.trigger_change_state(bridge,
-                                    is_on=True,
-                                    device_id=self._device_id)
+                                  is_on=True,
+                                  device_id=self._device_id)
         return True
 
     def trigger_stop(self, bridge: Surrogate) -> bool:
@@ -207,8 +185,8 @@ class Operable(VirtualDevice):
             self._logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                self)
             self.trigger_change_state(bridge,
-                                        is_on=False,
-                                        device_id=self._device_id)
+                                      is_on=False,
+                                      device_id=self._device_id)
             return True
 
     def _remember_to_turn_the_light_off(self, when: int, bridge) -> None:
@@ -272,8 +250,8 @@ class Switch(Operable):
         self._device_id = None  # Used by Shelly : relay numbers
         self._count_down = countdown
 
-    def handle_new_value(self, value: bool, bridge) -> list:
-        _result = super().handle_new_value(value, bridge)
+    def handle_value(self, value: bool, bridge) -> list:
+        _result = super().handle_value(value, bridge)
         if self._count_down != 0:
             if value and not self._stop_timer:
                 # Automatically turn the switch off when manually turned on
@@ -321,8 +299,7 @@ class Sensor(VirtualDevice):
                          quiet_mode=quiet_mode)
         self._sensor_observers: list[Operable] = []
 
-    @property
-    def sensor_observers(self) -> list[VirtualDevice]:
+    def get_sensor_observers(self) -> list[VirtualDevice]:
         """Get the list of observer devices.
 
         Returns:
@@ -332,7 +309,7 @@ class Sensor(VirtualDevice):
         return self._sensor_observers
 
     def add_observer(self, device: Operable) -> None:
-        """Add an observer to be notified of sensor value changes.
+        """Add an observer device to be notified of sensor value changes.
 
         Args:
             device (Operable): The device to add as an observer. 
@@ -355,8 +332,8 @@ class TemperatureSensor(Sensor):
     def get_property(self) -> str:
         return PropertyConfig.TEMPERATURE_PROPERTY
 
-    def handle_new_value(self, value: float, bridge) -> list:
-        return super().handle_new_value(round(float(value), 1), bridge)
+    def handle_value(self, value: float, bridge) -> list:
+        return super().handle_value(round(float(value), 1), bridge)
 
 
 class HumiditySensor(Sensor):
@@ -434,5 +411,5 @@ class ADC(Sensor):
     def get_property(self) -> str:
         return PropertyConfig.ADC_PROPERTY
 
-    def handle_new_value(self, value: float, bridge) -> list:
-        return super().handle_new_value(round(float(value), 1), bridge)
+    def handle_value(self, value: float, bridge) -> list:
+        return super().handle_value(round(float(value), 1), bridge)

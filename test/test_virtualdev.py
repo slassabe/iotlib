@@ -30,7 +30,7 @@ class TestVirtualDevice(unittest.TestCase):
     def test_set_value(self):
         log_it("Testing VirtualDevice set_value")
         _vdev = HumiditySensor(friendly_name='fake')
-        _vdev.handle_new_value(100, bridge=None)
+        _vdev.handle_value(100, bridge=None)
 
         self.assertEqual(_vdev.value, 100)
         self.assertEqual(_vdev.get_property().property_name, 'humidity')
@@ -43,6 +43,6 @@ class TestVirtualDevice(unittest.TestCase):
         _vdev.value = 0
         _vdev.processor_append(_replicator)
 
-        _vdev.handle_new_value(100, bridge=None)
+        _vdev.handle_value(100, bridge=None)
         self.assertEqual(_replicator.property, _vdev.get_property())
         self.assertEqual(_replicator.value, 100)

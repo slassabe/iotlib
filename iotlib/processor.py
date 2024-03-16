@@ -90,16 +90,16 @@ class ButtonTrigger(VirtualDeviceProcessor):
         elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
             self._logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
-            for _sw in v_dev.sensor_observers:
+            for _sw in v_dev.get_sensor_observers:
                 _sw.trigger_start(bridge)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             self._logger.info('%s -> "start_and_stop" with long period',
                               prefix)
-            for _sw in v_dev.sensor_observers:
+            for _sw in v_dev.get_sensor_observers:
                 _sw.start_and_stop(self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             self._logger.info('%s -> "trigger_stop"', prefix)
-            for _sw in v_dev.sensor_observers:
+            for _sw in v_dev.get_sensor_observers:
                 _sw.trigger_stop(bridge)
         else:
             self._logger.error('%s : action unknown "%s"',
@@ -123,7 +123,7 @@ class MotionTrigger(VirtualDeviceProcessor):
                               '-> "start_and_stop" on registered switch',
                               v_dev.friendly_name,
                               v_dev.value)
-            for _sw in v_dev.sensor_observers:
+            for _sw in v_dev.get_sensor_observers:
                 _sw.trigger_start(bridge)
         else:
             self._logger.debug('[%s] occupancy changed to "%s" '
