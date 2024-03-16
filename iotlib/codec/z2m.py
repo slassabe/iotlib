@@ -8,19 +8,24 @@ from abc import abstractmethod, ABCMeta
 
 # Non standard lib
 from iotlib import package_level_logger
-from iotlib.config import MQTTConfig
+
 from iotlib.codec.core import Codec, DecodingException
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                TemperatureSensor)
 
+# Zigbee2mqtt base topics configuration :
+Z2M_BASE_TOPIC = 'zigbee2mqtt'
+
+# Zigbee devices
+# Buttons
 BUTTON_SINGLE_ACTION = 'single'
 BUTTON_DOUBLE_ACTION = 'double'
 BUTTON_LONG_ACTION = 'long'
-
+# Switch
 SWITCH_POWER = 'state'
 SWITCH_POWER_RIGHT = 'state_right'
 SWITCH_POWER_LEFT = 'state_left'   # Not ipmplelmented !
-
+# Switch state values
 STATE_ON = 'ON'
 STATE_OFF = 'OFF'
 
@@ -41,7 +46,7 @@ class DeviceOnZigbee2MQTT(Codec):
             device_name (str): the device name to subscribe
         '''
         # Topics to subscribe to
-        base_topic = base_topic or MQTTConfig().z2m_topic_base
+        base_topic = base_topic or Z2M_BASE_TOPIC
         super().__init__(device_name, base_topic)
 
         self._root_topic = f'{base_topic}/{device_name}'
@@ -306,10 +311,10 @@ class NeoNasAB02B2(AlarmOnZigbee):
 class SwitchOnZigbee(DeviceOnZigbee2MQTT):
     ''' Bridge between SWITCH devices connected via Zigbee2MQTT and MQTT Clients
 
-Features
-    * get and set "state" SWITCH standard attribut
-    * manage a countdown to automatically close a SWITCH turned on
-    * check periodically its state
+    Features
+        * get and set "state" SWITCH standard attribut
+        * manage a countdown to automatically close a SWITCH turned on
+        * check periodically its state
 
     Bridge publishes on these topics to send messages to Switch devices
         zigbee2mqtt/<name>/get      : to refresh state attribut

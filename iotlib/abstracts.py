@@ -48,7 +48,14 @@ class AbstractCodec(ABC):
         return NotImplementedError
 
 
+
 class Surrogate(ABC):
+    """A surrogate class that wraps an MQTT client and codec.
+
+    This class acts as a surrogate for devices that use the given
+    MQTT client and codec for communication. It can handle
+    encoding/decoding messages to interact with real devices.
+    """
     def __init__(self,
                  mqtt_client: MQTTClient,
                  codec: AbstractCodec):
@@ -56,8 +63,15 @@ class Surrogate(ABC):
         self.codec = codec
 
     @abstractmethod
-    def publish_message(self, topic: str, message: str) -> None:
-        return NotImplementedError
+    def publish_message(self, topic: str, payload: str) -> None:
+        """Publish a message on the given MQTT topic.
+
+        Args:
+            topic: The MQTT topic to publish the message on.
+            payload: The message payload to publish.
+        
+        """
+        raise NotImplementedError
 
 
 

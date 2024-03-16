@@ -17,8 +17,6 @@ class MQTTBridge(Surrogate):
     def __init__(self,
                  mqtt_client: MQTTClient,
                  codec: AbstractCodec):
-        # self.client = mqtt_client
-        # self.codec = codec
         super().__init__(mqtt_client, codec)
 
         self.availability: bool = None
@@ -29,11 +27,10 @@ class MQTTBridge(Surrogate):
                                          self._avalability_callback)
         for _topic_property in self.codec.get_subscription_topics():
             self.client.message_callback_add(_topic_property,
-                                             self._property_callback)
+                                             self._value_callback)
         # Set MQTT connection handlers
         self.client.connect_handler_add(self._on_connect_callback)
         self.client.disconnect_handler_add(self._on_disconnect_callback)
-        
 
     def __repr__(self) -> str:
         _sep = ''
@@ -72,7 +69,7 @@ class MQTTBridge(Surrogate):
                                    message.topic,
                                    payload[:100])
 
-    def _property_callback(self,
+    def _value_callback(self,
                            client: mqtt.Client,
                            userdata: Any,
                            message: mqtt.MQTTMessage) -> None:
@@ -171,8 +168,17 @@ class MQTTBridge(Surrogate):
                                self.availability)
         return new_avail
 
-    def publish_message(self, topic: str, message: str) -> None:
-        rc: mqtt.MQTTMessageInfo = self.client.publish(topic,
-                                                       message,
-                                                       qos=1,
-                                                       retain=False)
+    def publish_message(self, topic: str, payload: str) -> None:
+        if not isinstance(topic, str):
+            raise TypeError(f"topic must be string, not {type(topic)}")
+        if not isinstance(payload, str):
+            raise TypeError(f"payload must be string, not {type(payload)}")
+
+        self._logger.debug('Publish messageon topic : %s - payload : %s',
+                        topic, payload)
+        _reason_code: mqtt.MQTTMessageInfo = self.client.publish(topic,
+                                                        payload,
+                                                        qos=1,
+                                                        retain=False)
+        
+        return

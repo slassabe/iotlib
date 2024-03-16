@@ -33,7 +33,6 @@ import socket
 from typing import Callable, Any
 import certifi
 import paho.mqtt.client as mqtt
-from iotlib.config import MQTTConfig
 
 from . import package_level_logger
 
@@ -267,18 +266,3 @@ class MQTTClient():
                                     qos=qos,
                                     retain=retain)
 
-
-class MQTTClientInit(MQTTClient):
-    """Initializes an MQTTClient instance with configured parameters.
-    """
-
-    def __init__(self, client_id):
-        super().__init__(client_id,
-                         MQTTConfig().hostname,
-                         MQTTConfig().port,
-                         MQTTConfig().user_name,
-                         MQTTConfig().user_pwd,
-                         MQTTConfig().keepalive,
-                         MQTTConfig().tls,
-                         MQTTConfig().clean_start,
-                         )

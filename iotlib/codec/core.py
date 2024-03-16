@@ -22,7 +22,6 @@ class Codec(AbstractCodec):
                  base_topic: str):
         self.device_name = device_name
         self.base_topic = base_topic
-        # TO REMOVE: super().__init__(device_name, base_topic)
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
     def __str__(self) -> str:
