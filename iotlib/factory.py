@@ -236,9 +236,9 @@ class ClusterFactory(metaclass=Singleton):
         def _set_availability_processors(bridge: MQTTBridge,
                                          device_name: str):
             # This will log availability changes
-            bridge.avail_proc_append(AvailabilityLogger(device_name))
+            bridge.add_availability_processor(AvailabilityLogger(device_name))
             # This will publish availability changes on MQTT
-            bridge.avail_proc_append(
+            bridge.add_availability_processor(
                 AvailabilityPublisher(device_name, bridge.client))
             # Silent mode:
             # self.property_proc_append(PropertyLogger())

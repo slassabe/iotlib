@@ -32,8 +32,8 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
 
     """
 
-    def process_value_update(self, 
-                             v_dev: VirtualDevice, 
+    def process_value_update(self,
+                             v_dev: VirtualDevice,
                              bridge) -> None:
         self._logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                            self,
@@ -43,42 +43,42 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
 
 
 class ButtonTrigger(VirtualDeviceProcessor):
-    """ButtonTrigger is used to trigger actions on registered 
-    virtual switches based on the type of button press
-    on the associated physical button.
+    """
+    A class that processes button press actions on registered switches.
 
-    The parameters are:
+    This class inherits from the VirtualDeviceProcessor class and provides
+    functionality to handle button press events and trigger actions on
+    registered virtual switches.
 
-    - countdown_long: duration (in sec) for "start_and_stop" action on double press
-
-    Virtual switches to control must be passed in 
-    registered_list on registration.
+    Attributes:
+        _countdown_long (int): The duration of the long press action in seconds.
     """
 
-    def __init__(self,
-                 countdown_long=60*10) -> None:
+    def __init__(self, countdown_long=60*10) -> None:
+        """
+        Initializes a ButtonTrigger instance.
+
+        Parameters:
+            countdown_long (int): The duration of the long press action in seconds.
+        """
         super().__init__()
         self._countdown_long = countdown_long
 
-    def process_value_update(self, 
-                             v_dev: VirtualDevice, 
-                             bridge) -> None:
-        """Process button press actions on registered switches.
+    def process_value_update(self, v_dev: VirtualDevice, bridge) -> None:
+        """
+        Process button press actions on registered switches.
 
         This method is called on each button value change to trigger 
-        actions on the registered virtual switches:
+        actions on the registered virtual switches.
 
         Parameters:
-            name (str): Name of the button device
-            property_str (str): Property name that changed
-            value (int): Button press type value 
-                (Button.SINGLE_ACTION, Button.DOUBLE_ACTION, Button.LONG_ACTION)
-            registered_list (list): List of registered Switch instances
+            v_dev (VirtualDevice): The button device that triggered the action.
+            bridge: The bridge object.
 
         Actions:
-            - single press: Start registered switches with default countdown
-            - double press: Start and stop registered switches for countdown_long
-            - long press: Stop registered switches
+            - single press: Start registered switches with default countdown.
+            - double press: Start and stop registered switches for countdown_long.
+            - long press: Stop registered switches.
 
         No return value.
         """
@@ -108,16 +108,24 @@ class ButtonTrigger(VirtualDeviceProcessor):
 
 
 class MotionTrigger(VirtualDeviceProcessor):
-    """ Start registered switches when occupency is detected
-    """
+    '''
+    A class that handles motion sensor state changes and triggers registered switches 
+    when occupancy is detected.
+    '''
 
     def process_value_update(self,
                              v_dev: VirtualDevice,
                              bridge) -> None:
-        '''
-        Handle a Motion Sensor state change, turn on the registered switches \
-        when occupancy is detected
-        '''
+        """
+        Process the value update of a virtual device.
+
+        Args:
+            v_dev (VirtualDevice): The virtual device whose value is updated.
+            bridge: The bridge object.
+
+        Returns:
+            None
+        """
         if v_dev.value:
             self._logger.info('[%s] occupancy changed to "%s" '
                               '-> "start_and_stop" on registered switch',
@@ -133,6 +141,14 @@ class MotionTrigger(VirtualDeviceProcessor):
 
 
 class PropertyPublisher(VirtualDeviceProcessor):
+    """
+    A class that publishes property updates to an MQTT broker.
+
+    Args:
+        client (MQTTClient): The MQTT client used for publishing.
+        topic_base (str, optional): The base topic to which the property updates will be published.
+
+    """
 
     def __init__(self,
                  client: MQTTClient,
@@ -142,6 +158,17 @@ class PropertyPublisher(VirtualDeviceProcessor):
         self._topic_base = topic_base
 
     def process_value_update(self, v_dev, bridge) -> None:
+        """
+        Publishes the updated value of a virtual device's property to the MQTT broker.
+
+        Args:
+            v_dev (VirtualDevice): The virtual device whose property value has been updated.
+            bridge: The bridge associated with the virtual device.
+
+        Returns:
+            None
+
+        """
         _property_topic = self._topic_base
         _property_topic += '/device/' + v_dev.friendly_name
         _property_topic += '/' + v_dev.get_property().property_node
@@ -186,7 +213,8 @@ class AvailabilityPublisher(AvailabilityProcessor):
         if not isinstance(client, MQTTClient):
             raise TypeError(f"client must be MQTTClient, not {type(client)}")
         if not isinstance(device_name, str):
-            raise TypeError(f"device_name must be string, not {type(device_name)}")
+            raise TypeError(
+                f"device_name must be string, not {type(device_name)}")
 
         super().__init__()
         self._client = client

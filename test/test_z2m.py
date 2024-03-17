@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 # coding=utf-8
+# pylint: skip-file
 
 """Client test
 
@@ -69,7 +70,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
         publisher = AvailabilityLogger(device_name=self.DEVICE_NAME)
-        bridge.avail_proc_append(publisher)
+        bridge.add_availability_processor(publisher)
 
         time.sleep(2)   # Wait MQTT client connection
         # Check ONLINE availability decodding
@@ -94,7 +95,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         publisher = AvailabilityPublisher(device_name=self.DEVICE_NAME,
                                           client=mqtt_client,
                                           topic_base='TEST_A2IOT/canonical')
-        bridge.avail_proc_append(publisher)
+        bridge.add_availability_processor(publisher)
 
         time.sleep(2)   # Wait MQTT client connection
         # Check ONLINE availability decodding
@@ -119,7 +120,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
         publisher = AvailabilityPublisher(device_name='device_avail_lost',
                                           client=mqtt_client,
                                           topic_base='TEST_A2IOT/canonical')
-        bridge.avail_proc_append(publisher)
+        bridge.add_availability_processor(publisher)
 
         time.sleep(2)   # Wait MQTT client connection
         # Check ONLINE availability decodding

@@ -1,3 +1,7 @@
+#!/usr/local/bin/python3
+# coding=utf-8
+# pylint: skip-file
+
 import json
 
 from iotlib.client import MQTTClient

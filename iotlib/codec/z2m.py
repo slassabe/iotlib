@@ -67,7 +67,7 @@ class DeviceOnZigbee2MQTT(Codec):
         # true = online/offline
         # false = {"state":"online"} / {"state":"offline"}
 
-        if payload != 'online' and payload != 'offline' and payload is not None:
+        if payload not in ['online', 'offline', None]:
             raise DecodingException(f'Payload value error: {payload}')
         else:
             return payload == 'online'
@@ -75,7 +75,7 @@ class DeviceOnZigbee2MQTT(Codec):
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         """Unable to get state by default"""
         return None
-    
+
     def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
         """Unable to change state by default"""
         return None
@@ -101,12 +101,12 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                  topic_base: str = None) -> None:
         super().__init__(device_name, topic_base)
 
-        assert issubclass(type(v_temp), TemperatureSensor), \
+        assert isinstance(v_temp, TemperatureSensor), \
             f'Bad value : {v_temp} of type {type(v_temp)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_temp_pl,
                                   v_temp)
-        assert issubclass(type(v_humi), HumiditySensor), \
+        assert isinstance(v_humi, HumiditySensor), \
             f'Bad value : {v_humi} of type {type(v_humi)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_humi_pl,
@@ -143,7 +143,8 @@ class Ts0601Soil(SensorOnZigbee):
     def _decode_humi_pl(self, topic, payload: dict) -> int:
         _value = payload.get('soil_moisture')
         if _value is None:
-            raise ValueError(f'No "soil_moisture" key in payload : {payload}')
+            raise DecodingException(
+                f'No "soil_moisture" key in payload : {payload}')
         else:
             return int(_value)
 
@@ -243,7 +244,6 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                                   self.__class__._decode_state_pl,
                                   v_alarm)
 
-
     @abstractmethod
     def set_sound(self,
                   melody: int,
@@ -262,6 +262,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     def _decode_state_pl(self, topic, payload) -> bool:
         """Decode state payload."""
         raise NotImplementedError
+
 
 class NeoNasAB02B2(AlarmOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/NAS-AB02B2.html '''
@@ -335,9 +336,8 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_state_pl,
                                   v_switch)
-        #self.ask_for_state()
+        # self.ask_for_state()
         self._logger.warning('%s : unable to ask state', self)
-
 
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state":""}'
@@ -345,13 +345,14 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
     def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
         _set = {SWITCH_POWER: STATE_ON if is_on else STATE_OFF}
         return f'{self._root_topic}/set', json.dumps(_set)
-    
+
     def _decode_state_pl(self, topic, payload) -> bool:
         raise NotImplementedError
 
 
 class SonoffZbminiL(SwitchOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/ZBMINI-L.html#sonoff-zbmini-l '''
+
     def _decode_state_pl(self, topic, payload) -> bool:
         _pl = payload.get(SWITCH_POWER)
         if _pl == STATE_ON:

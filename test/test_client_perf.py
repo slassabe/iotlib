@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 # coding=utf-8
+# pylint: skip-file
 
 """Client test
 

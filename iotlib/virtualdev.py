@@ -13,31 +13,19 @@ from . import package_level_logger
 
 
 class VirtualDevice(AbstractDevice):
-    """VirtualDevice is the base class for all virtual devices.
-
-    It contains common attributes and methods for virtual devices like:
-
-    - friendly_name: Name of the device
-    - registered_list: List of devices registered to events
-
-    Main methods:
-
-    - __init__() : Constructor
-    - __repr__() : Representation for debug/logging
-    - __str__() : String representation 
-    - registers() : Register a device to events
-    - process_value() : Processes a value, must be implemented in child classes
-    - _on_event() : Called on event, to be implemented in child classes
-
-    The class allows to create virtual representations of physical devices
-    like sensors, switches etc. and attach callbacks and logic to them.
-
-    Child classes will implement device specific logic and processing.
     """
-
+    Represents a virtual device.
+    """
     _logger = package_level_logger
 
     def __init__(self, friendly_name: str, quiet_mode: bool) -> None:
+        """
+        Initializes a new instance of the VirtualDevice class.
+
+        Args:
+            friendly_name (str): The friendly name of the device.
+            quiet_mode (bool): A flag indicating whether the device is in quiet mode.
+        """
         self.friendly_name = friendly_name
         self._value = None
         self._quiet_mode = quiet_mode
@@ -56,6 +44,12 @@ class VirtualDevice(AbstractDevice):
 
     @property
     def value(self):
+        """
+        Gets the value of the device.
+
+        Returns:
+            any: The value of the device.
+        """
         return self._value
 
     def _validate_value_type(self, value: any):
@@ -67,10 +61,29 @@ class VirtualDevice(AbstractDevice):
 
     @value.setter
     def value(self, value):
+        """
+        Sets the value of the device.
+
+        Args:
+            value (any): The value to set.
+
+        Raises:
+            TypeError: If the value is not of the expected type.
+        """
         self._validate_value_type(value)
         self._value = value
 
     def handle_value(self, value, bridge: Surrogate) -> ResultType:
+        """
+        Handles the received value and performs necessary actions.
+
+        Args:
+            value (any): The received value.
+            bridge (Surrogate): The bridge object.
+
+        Returns:
+            ResultType: The result of handling the value.
+        """
         if value is None:
             # No relevant value received (can be info on device like battery level), ignore
             return ResultType.IGNORE
@@ -84,6 +97,15 @@ class VirtualDevice(AbstractDevice):
             return ResultType.SUCCESS
 
     def processor_append(self, processor: VirtualDeviceProcessor) -> None:
+        """
+        Appends a processor to the device.
+
+        Args:
+            processor (VirtualDeviceProcessor): The processor to append.
+
+        Raises:
+            TypeError: If the processor is not an instance of VirtualDeviceProcessor.
+        """
         if not isinstance(processor, VirtualDeviceProcessor):
             raise TypeError(
                 f"Processor must be instance of Processor, not {type(processor)}")
@@ -91,6 +113,12 @@ class VirtualDevice(AbstractDevice):
 
     @abstractmethod
     def get_property(self) -> str:
+        """
+        Gets the property of the device.
+
+        Returns:
+            str: The property of the device.
+        """
         raise NotImplementedError
 
 
@@ -98,7 +126,7 @@ class Operable(VirtualDevice):
     """ Root implementation of a virtual Operable device (Switch or Alarm)
     """
 
-    def __init__(self, friendly_name=None, quiet_mode=False):
+    def __init__(self, friendly_name: str = None, quiet_mode: bool = False):
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
         self._device_id = None  # Used by Shelly : relay numbers
@@ -106,24 +134,27 @@ class Operable(VirtualDevice):
         self._pulse_instruction_allowed = False
 
     @property
-    def device_id(self):
+    def device_id(self) -> str:
         return self._device_id
 
     @device_id.setter
-    def device_id(self, value):
+    def device_id(self, value: str) -> None:
         self._device_id = value
 
     @property
-    def pulse_is_allowed(self):
+    def pulse_is_allowed(self) -> bool:
         return self._pulse_instruction_allowed
 
     @pulse_is_allowed.setter
-    def pulse_is_allowed(self, value):
+    def pulse_is_allowed(self, value: bool) -> None:
+        if not isinstance(value, bool):
+            raise TypeError(
+                f"Pulse instruction allowed flag must be a bool, not {type(value)}")
         self._pulse_instruction_allowed = value
 
     def trigger_get_state(self,
                           bridge: Surrogate,
-                          device_id=None) -> None:
+                          device_id: str = None) -> None:
         """Triggers a state request to the device bridge.
 
         Sends a request message to the device bridge to retrieve the 
@@ -145,6 +176,15 @@ class Operable(VirtualDevice):
                              bridge: Surrogate,
                              is_on: bool,
                              device_id=None) -> None:
+        """
+        Triggers a change in the state of a device.
+
+        Args:
+            bridge (Surrogate): The bridge object used for communication.
+            is_on (bool): The new state of the device (True for ON, False for OFF).
+            device_id (optional): The ID of the device. Defaults to None.
+
+        """
         _request = bridge.codec.change_state_request(is_on, device_id)
         if _request is None:
             self._logger.debug('%s : unable to change state')
@@ -189,12 +229,12 @@ class Operable(VirtualDevice):
                                       device_id=self._device_id)
             return True
 
-    def _remember_to_turn_the_light_off(self, when: int, bridge) -> None:
+    def _remember_to_turn_the_light_off(self, when: int, bridge: Surrogate) -> None:
         self._logger.debug('[%s] Automatially stop after "%s" sec.',
                            self,  when)
-        if not isinstance(when, int):
+        if not isinstance(when, int) or when <= 0:
             raise TypeError(
-                f'Expecting type int for period "{when}", not {type(when)}')
+                f'Expecting a positive int for period "{when}", not {type(when)}')
         if self._stop_timer:
             self._stop_timer.cancel()    # a timer is allready set, cancel it
         self._stop_timer = threading.Timer(when, self.trigger_stop, [bridge])
@@ -202,6 +242,10 @@ class Operable(VirtualDevice):
 
 
 class Melodies(enum.IntEnum):
+    """
+    Enumeration of melodies available for virtual devices.
+    """
+
     MELO_01 = 1
     DING_DONG1 = 2
     DING_DONG2 = 3
@@ -223,6 +267,12 @@ class Melodies(enum.IntEnum):
 
 
 class Level(enum.Enum):
+    """
+    Represents the level of alarm.
+
+    The `Level` class is an enumeration that defines three levels: LOW, MEDIUM, and HIGH.
+    Each level is associated with a string value.
+    """
     LOW = 'low'
     MEDIUM = 'medium'
     HIGH = 'high'
@@ -232,7 +282,7 @@ class Alarm(Operable):
     """ Basic implementation of a virtual Alarm 
     """
 
-    def __init__(self, friendly_name=None, quiet_mode=False):
+    def __init__(self, friendly_name=None, quiet_mode: bool = False) -> None:
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
 
@@ -244,7 +294,17 @@ class Switch(Operable):
     """ Basic implementation of a virtual Switch 
     """
 
-    def __init__(self, friendly_name=None, quiet_mode=False, countdown=0):
+    def __init__(self,
+                 friendly_name=None,
+                 quiet_mode: bool = False,
+                 countdown: int = 0) -> None:
+        """Initializes a new instance of the Switch class.
+
+        Args:
+            friendly_name (str): The friendly name of the switch. Defaults to "".
+            quiet_mode (bool): A flag indicating whether the switch is in quiet mode. Defaults to False.
+            countdown (int): The countdown timer for the switch. Defaults to 0.
+        """
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
         self._device_id = None  # Used by Shelly : relay numbers

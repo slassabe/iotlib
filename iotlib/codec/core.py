@@ -1,7 +1,6 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-from abc import abstractmethod, ABC
 from collections import defaultdict
 from typing import Callable, TypeAlias
 
@@ -19,7 +18,7 @@ class Codec(AbstractCodec):
     _logger = package_level_logger
     def __init__(self,
                  device_name: str,
-                 base_topic: str):
+                 base_topic: str) -> None:
         self.device_name = device_name
         self.base_topic = base_topic
         self._message_handler_dict: HandlersListType = defaultdict(list)
@@ -73,7 +72,7 @@ class DecodingException(Exception):
     """ Exception if message received on wrong topic
     """
 
-    def __init__(self, message):
+    def __init__(self, message: str):
         self.message = message
 
     def __str__(self):

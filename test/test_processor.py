@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 # coding=utf-8
+# pylint: skip-file
 
 """Virtual Device test
 
@@ -15,8 +16,7 @@ from iotlib.client import MQTTClient
 from iotlib.virtualdev import (ADC, Alarm, Button, HumiditySensor, 
                                Motion, Switch, TemperatureSensor)
 
-from .helper import log_it, get_broker_name, logger
-from .mocks import MockBridge
+from .helper import log_it, logger, get_broker_name
 
 TOPIC_BASE = 'TEST_A2IOT/canonical'
 
@@ -53,7 +53,7 @@ class TestMotionTrigger(unittest.TestCase):
         self.assertIsNone(virt_motion.value)
         self.assertIsNone(virt_switch.started)
 
-        _result = virt_motion.handle_new_value(True, bridge=None)
+        _result = virt_motion.handle_value(True, bridge=None)
         self.assertTrue(_result == ResultType.SUCCESS)
         self.assertTrue(virt_motion.value)
         self.assertTrue(virt_switch.started)
@@ -70,12 +70,12 @@ class TestButtonTrigger(unittest.TestCase):
         self.assertIsNone(virt_button.value)
         self.assertIsNone(virt_switch.started)
 
-        _result = virt_button.handle_new_value(ButtonValues.SINGLE_ACTION.value, bridge=None)
+        _result = virt_button.handle_value(ButtonValues.SINGLE_ACTION.value, bridge=None)
         self.assertTrue(_result == ResultType.SUCCESS)
         self.assertTrue(virt_button.value == ButtonValues.SINGLE_ACTION.value)
         self.assertTrue(virt_switch.started)
 
-        _result = virt_button.handle_new_value(ButtonValues.LONG_ACTION.value, bridge=None)
+        _result = virt_button.handle_value(ButtonValues.LONG_ACTION.value, bridge=None)
         self.assertTrue(_result == ResultType.SUCCESS)
         self.assertTrue(virt_button.value == ButtonValues.LONG_ACTION.value)
         self.assertFalse(virt_switch.started)
@@ -93,31 +93,31 @@ class TestPropertyPublisher(unittest.TestCase):
 
         virt_temperature = TemperatureSensor("fake_sensor")
         virt_temperature.processor_append(publisher)
-        virt_temperature.handle_new_value(37.2, bridge=None)
+        virt_temperature.handle_value(37.2, bridge=None)
 
         virt_temperature = HumiditySensor("fake_sensor")
         virt_temperature.processor_append(publisher)
-        virt_temperature.handle_new_value(100, bridge=None)
+        virt_temperature.handle_value(100, bridge=None)
 
         virt_button = Button("fake_button")
         virt_button.processor_append(publisher)
-        virt_button.handle_new_value(ButtonValues.LONG_ACTION.value, bridge=None)
+        virt_button.handle_value(ButtonValues.LONG_ACTION.value, bridge=None)
 
         virt_motion = Motion("fake_motion")
         virt_motion.processor_append(publisher)
-        virt_motion.handle_new_value(True, bridge=None)
+        virt_motion.handle_value(True, bridge=None)
 
         virt_controler = ADC("fake_controler")
         virt_controler.processor_append(publisher)
-        virt_controler.handle_new_value(12.1, bridge=None)
+        virt_controler.handle_value(12.1, bridge=None)
 
         virt_alarm = UnpluggedAlarm("fake_alarm")
         virt_alarm.processor_append(publisher)
-        virt_alarm.handle_new_value(True, bridge=None)
+        virt_alarm.handle_value(True, bridge=None)
 
         virt_alarm = UnpluggedSwitch("fake_switch")
         virt_alarm.processor_append(publisher)
-        virt_alarm.handle_new_value(True, bridge=None)
+        virt_alarm.handle_value(True, bridge=None)
 
         time.sleep(1)
         mqtt_publisher.stop()

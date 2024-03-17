@@ -1,22 +1,46 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
+"""
+This module defines an abstract class for codecs used in IoT communication.
+It defines the methods that each codec must implement, including decoding messages,
+retrieving the topic dedicated to handling availability messages, and retrieving the current state of a device.
+
+Note: This module is part of the iotlib library.
+"""
+
 from abc import ABC, abstractmethod
 import enum
 
 from iotlib import package_level_logger
 from iotlib.client import MQTTClient
 
+from abc import ABC, abstractmethod
+
 class AbstractCodec(ABC):
+    """Abstract base class for codecs used in IoT communication."""
+
     @abstractmethod
     def decode_avail_pl(self, payload: str) -> bool:
-        ''' Decode message received on topic dedicated to availability '''
+        ''' Decode message received on topic dedicated to availability 
+        
+        Args:
+            payload (str): The payload of the message received on the availability topic.
+        
+        Returns:
+            bool: True if the decoding is successful, False otherwise.
+        
+        '''
         raise NotImplementedError
 
     @abstractmethod
     def get_availability_topic(self) -> str:
-        '''Get the topic dedicated to handle availability messages'''
-        raise NotImplementedError
+            '''Get the topic dedicated to handle availability messages
+            
+            Returns:
+                str: The topic dedicated to handle availability messages.
+            '''
+            raise NotImplementedError
 
     @abstractmethod
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
@@ -53,7 +77,12 @@ class Surrogate(ABC):
     This class acts as a surrogate for devices that use the given
     MQTT client and codec for communication. It can handle
     encoding/decoding messages to interact with real devices.
+
+    Attributes:
+        client (MQTTClient): The MQTT client used for communication.
+        codec (AbstractCodec): The codec used for encoding/decoding messages.
     """
+
     def __init__(self,
                  mqtt_client: MQTTClient,
                  codec: AbstractCodec):
@@ -65,31 +94,32 @@ class Surrogate(ABC):
         """Publish a message on the given MQTT topic.
 
         Args:
-            topic: The MQTT topic to publish the message on.
-            payload: The message payload to publish.
-        
+            topic (str): The MQTT topic to publish the message on.
+            payload (str): The message payload to publish.
         """
         raise NotImplementedError
 
 
 
 class AvailabilityProcessor(ABC):
-    """Abstract base class for processors that handle device availability updates.
-
-    This class provides a common interface for processors that need to react
-    to device availability changes reported by a Surrogate instance. 
-
-    Subclasses should implement handle_update() to define custom availability 
-    processing behavior.
     """
+    Abstract base class for availability processors.
+
+    This class defines the interface for handling updates to the availability status of a device.
+    Subclasses must implement the `process_availability_update` method.
+
+    Methods:
+        process_availability_update: Handle an update to the device availability status.
+
+    """
+
     _logger = package_level_logger
 
     def __str__(self):
         return f'{self.__class__.__name__} object'
 
     @abstractmethod
-    def process_availability_update(self,
-                      availability: bool) -> None:
+    def process_availability_update(self, availability: bool) -> None:
         """Handle an update to the device availability status.
 
         Args:
@@ -102,15 +132,15 @@ class AvailabilityProcessor(ABC):
 
 
 class VirtualDeviceProcessor(ABC):
-    """Base class for processing events from virtual devices.
+    """
+    Abstract base class for virtual device processors.
 
-    This class defines the common process_value_update() method that is called 
-    when a sensor value changes or device availability changes.
-
-    Child classes should implement process_value_update() to handle specific 
-    processing logic for the sensor or device type.
+    This class defines the interface for processing updates from virtual devices.
+    Child classes should implement the `process_value_update` method to handle
+    specific processing logic for the device type.
 
     """
+
     _logger = package_level_logger
 
     def __str__(self):
@@ -126,22 +156,63 @@ class VirtualDeviceProcessor(ABC):
 
         Args:
             v_dev (VirtualDevice): The virtual device instance.
+            bridge (Bridge): The bridge instance associated with the virtual device.
 
         """
         raise NotImplementedError
 
 
+import enum
+
 class ResultType(enum.IntEnum):
+    """
+    Enum representing the result types.
+
+    Attributes:
+        IGNORE (int): Represents an ignored result.
+        SUCCESS (int): Represents a successful result.
+        ECHO (int): Represents a value appearing twice.
+    """
     IGNORE = -1
     SUCCESS = 0
     ECHO = 1
 
 class AbstractDevice(ABC):
+    """
+    An abstract base class for devices in the IoT system.
+
+    This class defines the common interface for all devices in the system.
+    Subclasses must implement the `handle_value` and `processor_append` methods.
+
+    """
+
     @abstractmethod
     def handle_value(self, value, bridge: Surrogate) -> ResultType:
+        """
+        Handles the given value using the specified bridge.
+
+        Args:
+            value: The value to be handled.
+            bridge: The bridge to be used for handling the value.
+
+        Returns:
+            The result of handling the value.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def processor_append(self, processor: VirtualDeviceProcessor) -> None:
+        """
+        Appends a VirtualDeviceProcessor to the list of processors.
+
+        Args:
+            processor (VirtualDeviceProcessor): The VirtualDeviceProcessor to append.
+
+        Raises:
+            NotImplementedError: This method is meant to be overridden by subclasses.
+        """
         raise NotImplementedError
 
