@@ -23,6 +23,7 @@ from iotlib.client import MQTTClient
 from iotlib.abstracts import AvailabilityProcessor, VirtualDeviceProcessor
 from iotlib.virtualdev import VirtualDevice
 
+PUBLISH_TOPIC_BASE = 'canonical'
 
 class VirtualDeviceLogger(VirtualDeviceProcessor):
     """Logs updates from virtual devices.
@@ -90,16 +91,16 @@ class ButtonTrigger(VirtualDeviceProcessor):
         elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
             self._logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
-            for _sw in v_dev.get_sensor_observers:
+            for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             self._logger.info('%s -> "start_and_stop" with long period',
                               prefix)
-            for _sw in v_dev.get_sensor_observers:
+            for _sw in v_dev.get_sensor_observers():
                 _sw.start_and_stop(self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             self._logger.info('%s -> "trigger_stop"', prefix)
-            for _sw in v_dev.get_sensor_observers:
+            for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_stop(bridge)
         else:
             self._logger.error('%s : action unknown "%s"',
@@ -131,7 +132,7 @@ class MotionTrigger(VirtualDeviceProcessor):
                               '-> "start_and_stop" on registered switch',
                               v_dev.friendly_name,
                               v_dev.value)
-            for _sw in v_dev.get_sensor_observers:
+            for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         else:
             self._logger.debug('[%s] occupancy changed to "%s" '
@@ -152,10 +153,10 @@ class PropertyPublisher(VirtualDeviceProcessor):
 
     def __init__(self,
                  client: MQTTClient,
-                 topic_base: str = None):
+                 publish_topic_base: str = None):
         super().__init__()
         self._client = client
-        self._topic_base = topic_base
+        self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
     def process_value_update(self, v_dev, bridge) -> None:
         """
@@ -169,7 +170,7 @@ class PropertyPublisher(VirtualDeviceProcessor):
             None
 
         """
-        _property_topic = self._topic_base
+        _property_topic = self._publish_topic_base
         _property_topic += '/device/' + v_dev.friendly_name
         _property_topic += '/' + v_dev.get_property().property_node
         _property_topic += '/' + v_dev.get_property().property_name
@@ -209,7 +210,7 @@ class AvailabilityPublisher(AvailabilityProcessor):
     def __init__(self,
                  device_name: str,
                  client: MQTTClient,
-                 topic_base: str = None):
+                 publish_topic_base: str = None):
         if not isinstance(client, MQTTClient):
             raise TypeError(f"client must be MQTTClient, not {type(client)}")
         if not isinstance(device_name, str):
@@ -218,8 +219,8 @@ class AvailabilityPublisher(AvailabilityProcessor):
 
         super().__init__()
         self._client = client
-        self._topic_base = topic_base
-        self._state_topic = f"{topic_base}/device/{device_name}/$state"
+        _publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
+        self._state_topic = f"{_publish_topic_base}/device/{device_name}/$state"
         self._client.will_set(self._state_topic,
                               'lost',
                               qos=1, retain=True)

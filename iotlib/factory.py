@@ -122,12 +122,12 @@ class Cluster(ABC):
 
     def declare_virtual_devices(self, virtual_devices: List[VirtualDevice]):
         for virt_dev in virtual_devices:
-            assert isinstance(
-                virt_dev, VirtualDevice), f"Item {virt_dev} is not a VirtualDevice instance"
+            assert isinstance(virt_dev, VirtualDevice),  \
+                f"Item {virt_dev} is not a VirtualDevice instance"
             virt_dev.processor_append(VirtualDeviceLogger())
             # This will publish property changes on MQTT
             virt_dev.processor_append(PropertyPublisher(client=mqqtt_from_somewhere,
-                                                        topic_base=topic_base_from_somewhere))
+                                                        publish_topic_base=topic_base_from_somewhere))
 
     @abstractmethod
     def get_codec(self) -> Codec:

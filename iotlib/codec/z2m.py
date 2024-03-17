@@ -161,18 +161,18 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         assert issubclass(type(v_button), Button), \
             f'Bad value : {v_button} of type {type(v_button)}'
         self._set_message_handler(self._root_topic,
-                                  self.__class__._decode_action_pl,
+                                  self.__class__._decode_value_pl,
                                   v_button)
 
     @abstractmethod
-    def _decode_action_pl(self, topic, payload) -> str:
+    def _decode_value_pl(self, topic, payload) -> str:
         raise NotImplementedError
 
 
 class SonoffSnzb01(ButtonOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/SNZB-01.html#sonoff-snzb-01 '''
 
-    def _decode_action_pl(self, topic, payload) -> str:
+    def _decode_value_pl(self, topic, payload) -> str:
         _pl = payload.get('action')
         if _pl is None:
             return None
@@ -199,18 +199,18 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         assert issubclass(type(v_motion), Motion), \
             f'Bad value : {v_motion} of type {type(v_motion)}'
         self._set_message_handler(self._root_topic,
-                                  self.__class__._decode_motion_pl,
+                                  self.__class__._decode_value_pl,
                                   v_motion)
 
     @abstractmethod
-    def _decode_motion_pl(self, topic, payload) -> dict:
+    def _decode_value_pl(self, topic, payload) -> dict:
         raise NotImplementedError
 
 
 class SonoffSnzb3(MotionOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/SNZB-03.html#sonoff-snzb-03 '''
 
-    def _decode_motion_pl(self, topic, payload) -> bool:
+    def _decode_value_pl(self, topic, payload) -> bool:
         _value = payload.get('occupancy')
         if _value is None:
             raise DecodingException(
@@ -241,7 +241,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         assert issubclass(type(v_alarm), Alarm), \
             f'Bad value : {v_alarm} of type {type(v_alarm)}'
         self._set_message_handler(self._root_topic,
-                                  self.__class__._decode_state_pl,
+                                  self.__class__._decode_value_pl,
                                   v_alarm)
 
     @abstractmethod
@@ -259,7 +259,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def _decode_state_pl(self, topic, payload) -> bool:
+    def _decode_value_pl(self, topic, payload) -> bool:
         """Decode state payload."""
         raise NotImplementedError
 
@@ -301,7 +301,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
         self._logger.debug('Encode payload : %s', _set)
         return f'{self._root_topic}/set', json.dumps(_set)
 
-    def _decode_state_pl(self, topic, payload) -> bool:
+    def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(self._key_alarm)
         if not issubclass(type(_pl), bool):
             raise DecodingException(
@@ -334,7 +334,7 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
         self._v_switch = v_switch
 
         self._set_message_handler(self._root_topic,
-                                  self.__class__._decode_state_pl,
+                                  self.__class__._decode_value_pl,
                                   v_switch)
         # self.ask_for_state()
         self._logger.warning('%s : unable to ask state', self)
@@ -346,14 +346,14 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
         _set = {SWITCH_POWER: STATE_ON if is_on else STATE_OFF}
         return f'{self._root_topic}/set', json.dumps(_set)
 
-    def _decode_state_pl(self, topic, payload) -> bool:
+    def _decode_value_pl(self, topic, payload) -> bool:
         raise NotImplementedError
 
 
 class SonoffZbminiL(SwitchOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/ZBMINI-L.html#sonoff-zbmini-l '''
 
-    def _decode_state_pl(self, topic, payload) -> bool:
+    def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(SWITCH_POWER)
         if _pl == STATE_ON:
             return True

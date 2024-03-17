@@ -89,7 +89,7 @@ class TestPropertyPublisher(unittest.TestCase):
         mqtt_publisher.start()
         time.sleep(2)
 
-        publisher = PropertyPublisher(client=mqtt_publisher, topic_base=TOPIC_BASE)
+        publisher = PropertyPublisher(client=mqtt_publisher, publish_topic_base=TOPIC_BASE)
 
         virt_temperature = TemperatureSensor("fake_sensor")
         virt_temperature.processor_append(publisher)
