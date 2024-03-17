@@ -15,8 +15,6 @@ import enum
 from iotlib import package_level_logger
 from iotlib.client import MQTTClient
 
-from abc import ABC, abstractmethod
-
 class AbstractCodec(ABC):
     """Abstract base class for codecs used in IoT communication."""
 
