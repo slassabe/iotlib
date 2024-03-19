@@ -4,7 +4,8 @@
 """
 This module defines an abstract class for codecs used in IoT communication.
 It defines the methods that each codec must implement, including decoding messages,
-retrieving the topic dedicated to handling availability messages, and retrieving the current state of a device.
+retrieving the topic dedicated to handling availability messages, and retrieving the 
+current state of a device.
 
 Note: This module is part of the iotlib library.
 """

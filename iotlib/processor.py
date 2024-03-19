@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 # coding=utf-8
+
 """Processor classes for handling device events.
 
 This module defines the VirtualDeviceProcessor abstract base class 
@@ -153,7 +154,7 @@ class PropertyPublisher(VirtualDeviceProcessor):
 
     def __init__(self,
                  client: MQTTClient,
-                 publish_topic_base: str = None):
+                 publish_topic_base: str | None = None):
         super().__init__()
         self._client = client
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
@@ -188,15 +189,17 @@ class AvailabilityLogger(AvailabilityProcessor):
 
     """
 
-    def __init__(self, device_name: str):
+    def __init__(self, device_name: str, debug: bool = False):
         super().__init__()
         self.device_name = device_name
+        self.debug = debug
 
     def process_availability_update(self, availability: bool) -> None:
         if availability:
-            self._logger.debug("[%s] is available", self.device_name)
+            _log_fn = self._logger.info if self.debug else self._logger.debug
+            _log_fn("[%s] is available", self.device_name)
         else:
-            self._logger.info("[%s] is unavailable", self.device_name)
+            self._logger.warning("[%s] is unavailable", self.device_name)
 
 
 class AvailabilityPublisher(AvailabilityProcessor):

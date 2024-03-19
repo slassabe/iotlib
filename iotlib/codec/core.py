@@ -14,18 +14,38 @@ MessageHandlerType: TypeAlias = tuple[
     VirtualDevice]
 HandlersListType: TypeAlias = dict[str, MessageHandlerType]
 
+
 class Codec(AbstractCodec):
     _logger = package_level_logger
+
     def __init__(self,
                  device_name: str,
                  base_topic: str) -> None:
+        """
+        Initialize a Codec object.
+
+        Args:
+            device_name (str): The name of the device.
+            base_topic (str): The base topic for MQTT communication.
+        """
         self.device_name = device_name
         self.base_topic = base_topic
+        self._managed_virtual_devices: list[VirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
     def __str__(self) -> str:
         _dev = self.device_name if hasattr(self, 'device_name') else 'UNSET'
         return f'{self.__class__.__name__} ("{_dev}")'
+
+    def get_managed_virtual_devices(self) -> list[VirtualDevice]:
+        """Return the list of virtual devices managed by the codec.
+        """
+        return self._managed_virtual_devices
+
+    def _add_virtual_device(self, vdev: VirtualDevice) -> None:
+        """Add a virtual device to the list of managed virtual devices.
+        """
+        self._managed_virtual_devices.append(vdev)
 
     def get_subscription_topics(self) -> list[str]:
         """Return the topics the client must subscribe according to message handler set
@@ -36,12 +56,13 @@ class Codec(AbstractCodec):
                              topic: str,
                              decoder: Callable,
                              vdev: VirtualDevice) -> None:
-        """Set a message handler function for a MQTT topic.
+        """
+        Sets the message handler for a given topic.
 
         Args:
-            topic (str): The MQTT topic to handle.
-            decoder (callable): The function to decode messages from the topic.
-            vdev (VirtualDevice): The virtual device associated with the topic.
+            topic (str): The topic to set the message handler for.
+            decoder (Callable): The decoder function to be used for decoding messages.
+            vdev (VirtualDevice): The virtual device associated with the message handler.
 
         This method associates a topic with a decoding function, virtual device, 
         and node name. It stores this association in a dictionary self._handler_list
@@ -50,6 +71,7 @@ class Codec(AbstractCodec):
         """
         _tuple = (decoder, vdev)
         self._message_handler_dict[topic].append(_tuple)
+        self._add_virtual_device(vdev)
 
     def get_message_handlers(self, topic: str) -> list[MessageHandlerType]:
         """Get the message handler functions for a given MQTT topic.
@@ -67,6 +89,7 @@ class Codec(AbstractCodec):
         """Adjust payload to be decoded, that is, fit in string
         """
         return payload
+
 
 class DecodingException(Exception):
     """ Exception if message received on wrong topic

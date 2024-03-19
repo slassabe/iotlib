@@ -47,6 +47,8 @@ class DeviceOnZigbee2MQTT(Codec):
         '''
         # Topics to subscribe to
         base_topic = base_topic or Z2M_BASE_TOPIC
+        assert isinstance(device_name, str), \
+            f'Bad value for device_name : {device_name} of type {type(device_name)}'
         super().__init__(device_name, base_topic)
 
         self._root_topic = f'{base_topic}/{device_name}'
@@ -95,24 +97,38 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     ''' Bridge between SENSOR devices and MQTT Clients '''
 
     def __init__(self,
-                 device_name: SystemError,
-                 v_temp: TemperatureSensor,
-                 v_humi: HumiditySensor,
-                 topic_base: str = None) -> None:
+                 device_name: str,
+                 friendly_name: str | None = None,
+                 topic_base: str = None,
+                 v_temp: TemperatureSensor | None = None,
+                 v_humi: HumiditySensor | None = None) -> None:
+        """
+        Initialize the object.
+
+        Args:
+            device_name (str): The name of the device.
+            v_temp (TemperatureSensor, optional): The temperature sensor.
+            v_humi (HumiditySensor, optional): The humidity sensor.
+            topic_base (str, optional): The base topic.
+        """
         super().__init__(device_name, topic_base)
 
+        friendly_name = friendly_name or device_name
+        v_temp = v_temp or TemperatureSensor(friendly_name)
         assert isinstance(v_temp, TemperatureSensor), \
             f'Bad value : {v_temp} of type {type(v_temp)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_temp_pl,
                                   v_temp)
+
+        v_humi = v_humi or HumiditySensor(friendly_name)
         assert isinstance(v_humi, HumiditySensor), \
             f'Bad value : {v_humi} of type {type(v_humi)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_humi_pl,
                                   v_humi)
 
-    def _decode_temp_pl(self, topic, payload: dict) -> float:
+    def _decode_temp_pl(self, _topic, payload: dict) -> float:
         _value = payload.get('temperature')
         if _value is None:
             raise DecodingException(
@@ -154,11 +170,22 @@ class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
     def __init__(self,
                  device_name: str,
-                 v_button: Button,
-                 topic_base: str = None) -> None:
+                 friendly_name: str | None = None,
+                 topic_base: str = None,
+                 v_button: Button | None = None) -> None:
+        """
+        Initialize the object.
+
+        Args:
+            device_name (str): The name of the device.
+            v_button (Button, optional): The button. Defaults to None.
+            topic_base (str, optional): The base topic. Defaults to None.
+        """
         super().__init__(device_name, topic_base)
 
-        assert issubclass(type(v_button), Button), \
+        friendly_name = friendly_name or device_name
+        v_button = v_button or Button(friendly_name)
+        assert isinstance(v_button, Button), \
             f'Bad value : {v_button} of type {type(v_button)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_value_pl,
@@ -174,17 +201,15 @@ class SonoffSnzb01(ButtonOnZigbee):
 
     def _decode_value_pl(self, topic, payload) -> str:
         _pl = payload.get('action')
-        if _pl is None:
-            return None
-        elif _pl == 'single':
-            return BUTTON_SINGLE_ACTION
-        elif _pl == 'double':
-            return BUTTON_DOUBLE_ACTION
-        elif _pl == 'long':
-            return BUTTON_LONG_ACTION
-        else:
-            raise DecodingException(
-                f'Received erroneous Action value : "{_pl}"')
+        action_map = {
+            'single': BUTTON_SINGLE_ACTION,
+            'double': BUTTON_DOUBLE_ACTION,
+            'long': BUTTON_LONG_ACTION
+        }
+        if _pl in action_map:
+            return action_map[_pl]
+        raise DecodingException(
+            f'Received erroneous Action value : "{_pl}"')
 
 
 class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
@@ -192,11 +217,22 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
     def __init__(self,
                  device_name: str,
-                 v_motion: Motion,
-                 topic_base: str = None) -> None:
+                 friendly_name: str | None = None,
+                 topic_base: str = None,
+                 v_motion: Motion | None = None) -> None:
+        """
+        Initialize the object.
+
+        Args:
+            device_name (str): The name of the device.
+            v_motion (Motion, optional): The motion sensor. Defaults to None.
+            topic_base (str, optional): The base topic. Defaults to None.
+        """
         super().__init__(device_name, topic_base)
 
-        assert issubclass(type(v_motion), Motion), \
+        friendly_name = friendly_name or device_name
+        v_motion = v_motion or Motion(friendly_name)
+        assert isinstance(v_motion, Motion), \
             f'Bad value : {v_motion} of type {type(v_motion)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_value_pl,
@@ -234,11 +270,22 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
     def __init__(self,
                  device_name: str,
-                 v_alarm: Alarm,
-                 topic_base: str = None) -> None:
+                 friendly_name: str | None = None,
+                 topic_base: str = None,
+                 v_alarm: Alarm | None = None) -> None:
+        """
+        Initialize the object.
+
+        Args:
+            device_name (str): The name of the device.
+            v_alarm (Alarm, optional): The alarm. Defaults to None.
+            topic_base (str, optional): The base topic. Defaults to None.
+        """
         super().__init__(device_name, topic_base)
 
-        assert issubclass(type(v_alarm), Alarm), \
+        friendly_name = friendly_name or device_name
+        v_alarm = v_alarm or Alarm(friendly_name)
+        assert isinstance(v_alarm, Alarm), \
             f'Bad value : {v_alarm} of type {type(v_alarm)}'
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_value_pl,
@@ -281,18 +328,14 @@ class NeoNasAB02B2(AlarmOnZigbee):
                   melody: int,
                   alarm_level: str,
                   alarm_duration: int) -> None:
-        assert issubclass(type(melody), int) and melody in range(1, 19), \
+        assert isinstance(melody, int) and melody in range(1, 19), \
             f'Bad value for melody : {melody}'
-        assert issubclass(type(alarm_level), str) and alarm_level in ['low', 'medium', 'high'], \
+        assert isinstance(alarm_level, str) and alarm_level in ['low', 'medium', 'high'], \
             f'Bad value for alarm_level : {alarm_level}'
-        assert issubclass(type(alarm_duration), int) and alarm_duration in range(1, 120), \
+        assert isinstance(alarm_duration, int) and alarm_duration in range(1, 120), \
             f'Bad value for alarm_duration : {alarm_duration}'
-        self._melody = melody
-        self._alarm_level = alarm_level
-        self._alarm_duration = alarm_duration
 
     def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
-        # _set = {self._key_alarm: STATE_ON if is_on else STATE_OFF,
         _set = {self._key_alarm: is_on,
                 self._key_melody: self._melody,
                 self._key_alarm_level: self._alarm_level,
@@ -303,7 +346,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
 
     def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(self._key_alarm)
-        if not issubclass(type(_pl), bool):
+        if not isinstance(_pl, bool):
             raise DecodingException(
                 f'Received erroneous payload : "{payload}"')
         return _pl
@@ -325,11 +368,14 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
 
     def __init__(self,
                  device_name: str,
-                 v_switch: Switch,
-                 topic_base: str = None) -> None:
+                 friendly_name: str | None = None,
+                 topic_base: str = None,
+                 v_switch: Switch | None = None) -> None:
         super().__init__(device_name, topic_base)
 
-        assert issubclass(type(v_switch), Switch), \
+        friendly_name = friendly_name or device_name
+        v_switch = v_switch or Switch(friendly_name)
+        assert isinstance(v_switch, Switch), \
             f'Bad value : {v_switch} of type {type(v_switch)}'
         self._v_switch = v_switch
 

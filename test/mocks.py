@@ -76,7 +76,7 @@ class MockZigbeeSensor:
     def __init__(self,
                  client: MQTTClient,
                  device_name: str,
-                 topic_base) -> None:
+                 topic_base: str) -> None:
         self.client = client
         self.device_name = device_name
         self.topic_base = topic_base
@@ -108,7 +108,6 @@ class MockZigbeeSwitch:
                  topic_base) -> None:
         self.client = client
         self.device_name = device_name
-        v_switch.concrete_device = self
         self._v_switch = v_switch
 
         self.topic_base = topic_base

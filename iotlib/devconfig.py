@@ -1,7 +1,8 @@
+#!/usr/local/bin/python3
+# coding=utf-8
+
 
 from enum import Enum
-
-
 
 class PropertyConfig(Enum):
     """Defines property name enums for virtual devices.

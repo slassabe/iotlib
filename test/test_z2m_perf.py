@@ -61,7 +61,7 @@ class TestSonoffZbminiL(unittest.TestCase):
         v_switch.processor_append(FlipFlopMessage())  # No loop
 
         codec = SonoffZbminiL(self.DEVICE_NAME,
-                              v_switch,
+                              v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -90,11 +90,11 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         mock = MockZigbeeSwitch(mqtt_client,
                                 device_name=self.DEVICE_NAME,
-                                v_switch=Switch(),  # not used
+                                v_switch=Switch(),
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
-                              v_switch,
+                              v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)

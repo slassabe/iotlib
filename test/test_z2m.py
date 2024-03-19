@@ -164,8 +164,8 @@ class TestSonoffSnzb02(unittest.TestCase):
         v_temp = TemperatureSensor()
         v_humi = HumiditySensor()
         codec = SonoffSnzb02(self.DEVICE_NAME,
-                             v_temp,
-                             v_humi,
+                             v_temp=v_temp,
+                             v_humi=v_humi,
                              topic_base=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
@@ -186,8 +186,8 @@ class TestSonoffSnzb02(unittest.TestCase):
         v_temp = TemperatureSensor()
         v_humi = HumiditySensor()
         codec = SonoffSnzb02(self.DEVICE_NAME,
-                             v_temp,
-                             v_humi,
+                             v_temp=v_temp,
+                             v_humi=v_humi,
                              topic_base=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
@@ -220,7 +220,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client.client.enable_logger()
         v_button = Button()
         codec = SonoffSnzb01(self.DEVICE_NAME,
-                             v_button,
+                             v_button=v_button,
                              topic_base=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
@@ -250,7 +250,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         v_button = Button()
         codec = SonoffSnzb01(self.DEVICE_NAME,
-                             v_button,
+                             v_button=v_button,
                              topic_base=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
@@ -267,7 +267,7 @@ class TestSonoffSnzb01(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         v_button = Button()
         codec = SonoffSnzb01(self.DEVICE_NAME,
-                             v_button,
+                             v_button=v_button,
                              topic_base=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
@@ -293,7 +293,7 @@ class TestSonoffSnzb3(unittest.TestCase):
         v_motion = Motion()
 
         codec = SonoffSnzb3(self.DEVICE_NAME,
-                            v_motion,
+                            v_motion=v_motion,
                             topic_base=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
@@ -323,7 +323,7 @@ class TestNeoNasAB02B2(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         v_alarm = Alarm()
         codec = NeoNasAB02B2(self.DEVICE_NAME,
-                             v_alarm,
+                             v_alarm=v_alarm,
                              topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -345,7 +345,7 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client = MQTTClient('', self.TARGET)
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
-                              v_switch,
+                              v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -364,7 +364,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
-                              v_switch,
+                              v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -395,7 +395,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
-                              v_switch,
+                              v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)
@@ -425,7 +425,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch()
         codec = SonoffZbminiL(self.DEVICE_NAME,
-                              v_switch,
+                              v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
 
         bridge = MQTTBridge(mqtt_client, codec)

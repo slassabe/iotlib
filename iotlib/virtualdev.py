@@ -26,9 +26,13 @@ class VirtualDevice(AbstractDevice):
             friendly_name (str): The friendly name of the device.
             quiet_mode (bool): A flag indicating whether the device is in quiet mode.
         """
+        if friendly_name is not None:
+            assert isinstance(friendly_name, str), \
+                f'Bad value for friendly_name : {friendly_name} of type {type(friendly_name)}'
         self.friendly_name = friendly_name
         self._value = None
         self._quiet_mode = quiet_mode
+        # List of processors associated with this device
         self._processor_list: list[VirtualDeviceProcessor] = []
 
     def __repr__(self):
@@ -40,7 +44,7 @@ class VirtualDevice(AbstractDevice):
         return f'{self.__class__.__name__} ({_res})'
 
     def __str__(self):
-        return f'{self.__class__.__name__} ({self.friendly_name})'
+        return f'{self.__class__.__name__} ({self.friendly_name} | value: {self.value})'
 
     @property
     def value(self):
