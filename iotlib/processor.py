@@ -23,10 +23,18 @@ from iotlib.devconfig import ButtonValues
 from iotlib.client import MQTTClient
 from iotlib.abstracts import AvailabilityProcessor, Surrogate, VirtualDeviceProcessor
 from iotlib.virtualdev import VirtualDevice
+from iotlib import package_level_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
 
-class VirtualDeviceLogger(VirtualDeviceProcessor):
+class VirtualDeviceProcessorCore(VirtualDeviceProcessor):
+    _logger = package_level_logger
+
+    def __str__(self):
+        return f'{self.__class__.__name__} object'
+
+
+class VirtualDeviceLogger(VirtualDeviceProcessorCore):
     """Logs updates from virtual devices.
 
     This processor logs a debug message when a virtual 
@@ -44,7 +52,7 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
                            v_dev.value)
 
 
-class ButtonTrigger(VirtualDeviceProcessor):
+class ButtonTrigger(VirtualDeviceProcessorCore):
     """
     A class that processes button press actions on registered switches.
 
@@ -109,7 +117,7 @@ class ButtonTrigger(VirtualDeviceProcessor):
                                v_dev.value)
 
 
-class MotionTrigger(VirtualDeviceProcessor):
+class MotionTrigger(VirtualDeviceProcessorCore):
     '''
     A class that handles motion sensor state changes and triggers registered switches 
     when occupancy is detected.
@@ -142,7 +150,7 @@ class MotionTrigger(VirtualDeviceProcessor):
                                v_dev.value)
 
 
-class PropertyPublisher(VirtualDeviceProcessor):
+class PropertyPublisher(VirtualDeviceProcessorCore):
     """
     A class that publishes property updates to an MQTT broker.
 
@@ -191,24 +199,18 @@ class AvailabilityLogger(AvailabilityProcessor):
 
     def __init__(self, debug: bool = False):
         super().__init__()
-        self.device_name = None
-        self.debug = debug
+        self._device_name = None
+        self._debug = debug
 
     def attach(self, bridge: Surrogate) -> None:
-        """Attach the processor to a bridge instance.
-
-        Args:
-            bridge (Surrogate): The bridge instance to attach to.
-        """
-        self.device_name = bridge.codec.device_name
+        self._device_name = bridge.codec.device_name
 
     def process_availability_update(self, availability: bool) -> None:
-
         if availability:
-            _log_fn = self._logger.info if self.debug else self._logger.debug
-            _log_fn("[%s] is available", self.device_name)
+            _log_fn = self._logger.info if self._debug else self._logger.debug
+            _log_fn("[%s] is available", self._device_name)
         else:
-            self._logger.warning("[%s] is unavailable", self.device_name)
+            self._logger.warning("[%s] is unavailable", self._device_name)
 
 
 class AvailabilityPublisher(AvailabilityProcessor):

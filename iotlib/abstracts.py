@@ -151,11 +151,6 @@ class VirtualDeviceProcessor(ABC):
 
     """
 
-    _logger = package_level_logger
-
-    def __str__(self):
-        return f'{self.__class__.__name__} object'
-
     @abstractmethod
     def process_value_update(self, 
                              v_dev: any, 
