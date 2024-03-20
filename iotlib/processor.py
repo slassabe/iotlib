@@ -21,7 +21,7 @@ Typical usage:
 
 from iotlib.devconfig import ButtonValues
 from iotlib.client import MQTTClient
-from iotlib.abstracts import AvailabilityProcessor, VirtualDeviceProcessor
+from iotlib.abstracts import AvailabilityProcessor, Surrogate, VirtualDeviceProcessor
 from iotlib.virtualdev import VirtualDevice
 
 PUBLISH_TOPIC_BASE = 'canonical'
@@ -189,12 +189,21 @@ class AvailabilityLogger(AvailabilityProcessor):
 
     """
 
-    def __init__(self, device_name: str, debug: bool = False):
+    def __init__(self, debug: bool = False):
         super().__init__()
-        self.device_name = device_name
+        self.device_name = None
         self.debug = debug
 
+    def attach(self, bridge: Surrogate) -> None:
+        """Attach the processor to a bridge instance.
+
+        Args:
+            bridge (Surrogate): The bridge instance to attach to.
+        """
+        self.device_name = bridge.codec.device_name
+
     def process_availability_update(self, availability: bool) -> None:
+
         if availability:
             _log_fn = self._logger.info if self.debug else self._logger.debug
             _log_fn("[%s] is available", self.device_name)
@@ -211,22 +220,24 @@ class AvailabilityPublisher(AvailabilityProcessor):
     """
 
     def __init__(self,
-                 device_name: str,
-                 client: MQTTClient,
                  publish_topic_base: str = None):
-        if not isinstance(client, MQTTClient):
-            raise TypeError(f"client must be MQTTClient, not {type(client)}")
-        if not isinstance(device_name, str):
+        if not isinstance(publish_topic_base, str):
             raise TypeError(
-                f"device_name must be string, not {type(device_name)}")
+                f"publish_topic_base must be string, not {type(publish_topic_base)}")
 
         super().__init__()
-        self._client = client
-        _publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
-        self._state_topic = f"{_publish_topic_base}/device/{device_name}/$state"
+        self._client = None
+        self._state_topic = None
+        self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
+
+    def attach(self, bridge: Surrogate) -> None:
+        _device_name = bridge.codec.device_name
+        self._client = bridge.client
+        self._state_topic = f"{self._publish_topic_base}/device/{_device_name}/$state"
         self._client.will_set(self._state_topic,
                               'lost',
                               qos=1, retain=True)
+
 
     def process_availability_update(self, availability: bool) -> None:
         if availability is None:

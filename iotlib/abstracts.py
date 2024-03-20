@@ -118,11 +118,22 @@ class AvailabilityProcessor(ABC):
         return f'{self.__class__.__name__} object'
 
     @abstractmethod
-    def process_availability_update(self, availability: bool) -> None:
+    def attach(self, bridge: Surrogate) -> None:
+        """Attach the processor to a bridge instance.
+
+        Args:
+            bridge (Surrogate): The bridge instance to attach to.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def process_availability_update(self, 
+                                    availability: bool) -> None:
         """Handle an update to the device availability status.
 
         Args:
             availability (bool): The new availability status of the device.
+            bridge (Surrogate): The bridge instance receiving availability.
 
         Returns:
             None
@@ -146,7 +157,9 @@ class VirtualDeviceProcessor(ABC):
         return f'{self.__class__.__name__} object'
 
     @abstractmethod
-    def process_value_update(self, v_dev, bridge) -> None:
+    def process_value_update(self, 
+                             v_dev: any, 
+                             bridge: Surrogate) -> None:
         """Handle an update from a virtual device.
 
         This method is called when a value changes on a virtual 
@@ -155,13 +168,11 @@ class VirtualDeviceProcessor(ABC):
 
         Args:
             v_dev (VirtualDevice): The virtual device instance.
-            bridge (Bridge): The bridge instance associated with the virtual device.
+            bridge (Surrogate): The bridge instance receiving value.
 
         """
         raise NotImplementedError
 
-
-import enum
 
 class ResultType(enum.IntEnum):
     """

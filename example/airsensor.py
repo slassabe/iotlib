@@ -45,14 +45,14 @@ def loop_infinite() -> None:
 if __name__ == "__main__":
     DEVICE_NAME = 'TEMP_SALON'
     BROCKER_NAME = 'groseille.back.internal'
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     # Create a client
     client = MQTTClient('', BROCKER_NAME)
     codec = SonoffSnzb02(DEVICE_NAME)
     bridge = MQTTBridge(client, codec)
     
-    logger = AvailabilityLogger(device_name=DEVICE_NAME, debug=True)
+    logger = AvailabilityLogger(debug=True)
     bridge.add_availability_processor(logger)
     client.start()
 

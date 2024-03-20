@@ -89,6 +89,7 @@ class MQTTBridge(Surrogate):
             _msg = f"Processor must be instance of AvailabilityProcessor, not {type(processor)}"
             raise TypeError(_msg)
         self._availability_processors.append(processor)
+        processor.attach(self)
 
     def _avalability_callback(self,
                               client: mqtt.Client,  # pylint: disable=unused-argument

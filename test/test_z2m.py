@@ -69,7 +69,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
                                     base_topic=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
-        publisher = AvailabilityLogger(device_name=self.DEVICE_NAME)
+        publisher = AvailabilityLogger()
         bridge.add_availability_processor(publisher)
 
         time.sleep(2)   # Wait MQTT client connection
@@ -92,9 +92,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
                                     base_topic=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
-        publisher = AvailabilityPublisher(device_name=self.DEVICE_NAME,
-                                          client=mqtt_client,
-                                          publish_topic_base='TEST_A2IOT/canonical')
+        publisher = AvailabilityPublisher(publish_topic_base='TEST_A2IOT/canonical')
         bridge.add_availability_processor(publisher)
 
         time.sleep(2)   # Wait MQTT client connection
@@ -117,9 +115,7 @@ class TestAvailabilityOnZigbee2MQTT(unittest.TestCase):
                                     base_topic=self.TOPIC_BASE)
         bridge = MQTTBridge(mqtt_client, codec)
         mqtt_client.start()
-        publisher = AvailabilityPublisher(device_name='device_avail_lost',
-                                          client=mqtt_client,
-                                          publish_topic_base='TEST_A2IOT/canonical')
+        publisher = AvailabilityPublisher(publish_topic_base='TEST_A2IOT/canonical')
         bridge.add_availability_processor(publisher)
 
         time.sleep(2)   # Wait MQTT client connection
