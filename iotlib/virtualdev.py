@@ -178,18 +178,16 @@ class Operable(VirtualDevice):
 
     def trigger_change_state(self,
                              bridge: Surrogate,
-                             is_on: bool,
-                             device_id=None) -> None:
+                             is_on: bool) -> None:
         """
         Triggers a change in the state of a device.
 
         Args:
             bridge (Surrogate): The bridge object used for communication.
             is_on (bool): The new state of the device (True for ON, False for OFF).
-            device_id (optional): The ID of the device. Defaults to None.
 
         """
-        _request = bridge.codec.change_state_request(is_on, device_id)
+        _request = bridge.codec.change_state_request(is_on, self.device_id)
         if _request is None:
             self._logger.debug('%s : unable to change state')
         else:
@@ -208,8 +206,7 @@ class Operable(VirtualDevice):
             return False
         self._logger.debug('[%s] is "off" -> request to turn it "on"', self)
         self.trigger_change_state(bridge,
-                                  is_on=True,
-                                  device_id=self._device_id)
+                                  is_on=True)
         return True
 
     def trigger_stop(self, bridge: Surrogate) -> bool:
@@ -229,8 +226,7 @@ class Operable(VirtualDevice):
             self._logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                self)
             self.trigger_change_state(bridge,
-                                      is_on=False,
-                                      device_id=self._device_id)
+                                      is_on=False)
             return True
 
     def _remember_to_turn_the_light_off(self, when: int, bridge: Surrogate) -> None:

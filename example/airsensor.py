@@ -60,4 +60,4 @@ if __name__ == "__main__":
     # Should display ;
     #  - if the device is configured and available : [INFO] [TEMP_SALON] is available
     #  - if the device is configured and unavailable : [INFO] [TEMP_SALON] is unavailable
-    #  Nothing is displayed if the device is not not configured
+    #  Nothing is displayed if the device is not not configured in Zigbee2MQTT

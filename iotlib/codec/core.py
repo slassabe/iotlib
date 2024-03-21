@@ -33,6 +33,14 @@ class Codec(AbstractCodec):
         self._managed_virtual_devices: list[VirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
+    def __repr__(self) -> str:
+        _sep = ''
+        _res = ''
+        for _attr, _val in self.__dict__.items():
+            _res += f'{_sep}{_attr} : {_val}'
+            _sep = ' | '
+        return f'{self.__class__.__name__} ({_res})'
+
     def __str__(self) -> str:
         _dev = self.device_name if hasattr(self, 'device_name') else 'UNSET'
         return f'{self.__class__.__name__} ("{_dev}")'

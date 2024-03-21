@@ -9,6 +9,7 @@ from iotlib.virtualdev import Switch
 from iotlib.virtualdev import (HumiditySensor, TemperatureSensor)
 from iotlib.bridge import MQTTBridge, DecodingException
 from iotlib.codec.core import Codec
+from iotlib.factory import Model
 from .helper import logger
 
 
@@ -76,9 +77,11 @@ class MockZigbeeSensor:
     def __init__(self,
                  client: MQTTClient,
                  device_name: str,
-                 topic_base: str) -> None:
+                 topic_base: str,
+                 model: str) -> None:
         self.client = client
         self.device_name = device_name
+        self.model = model
         self.topic_base = topic_base
         self.topic_root = f'{topic_base}/{device_name}'
         self.state = False
@@ -89,7 +92,7 @@ class MockZigbeeSensor:
 
     def publish(self, temperature: float, humidity: int):
         _properties = {"battery": 67.5,
-                       "humidity": humidity,
+                       "humidity" if self.model == Model.ZB_AIRSENSOR else "soil_moisture": humidity,
                        "linkquality": 60,
                        "temperature": temperature,
                        "voltage": 2900}
@@ -147,6 +150,65 @@ class MockZigbeeSwitch:
         self._process_message_count(message.topic, payload)
         _state = "ON" if self.state else "OFF"
         message = {"state": _state, "message_count": self.message_count}
+        self.client.publish(self.topic_root, json.dumps(message))
+
+    def on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+        self.client.subscribe(self.topic_root + '/+', qos=1)
+
+class MockZigbeeMultiSwitch:
+    MESSAGE_SWITCH0_ON = '{"state_right": "ON"}'
+    MESSAGE_SWITCH0_OFF = '{"state_right": "OFF"}'
+    MESSAGE_SWITCH1_ON = '{"state_left": "ON"}'
+    MESSAGE_SWITCH1_OFF = '{"state_left": "OFF"}'
+
+    def __init__(self,
+                 client: MQTTClient,
+                 device_name: str,
+                 v_switch0: Switch,
+                 v_switch1: Switch,
+                 topic_base) -> None:
+        self.client = client
+        self.device_name = device_name
+        self._v_switch0 = v_switch0
+        self._v_switch1 = v_switch1
+
+        self.topic_base = topic_base
+        self.topic_root = f'{topic_base}/{device_name}'
+        self.state0 = False
+        self.state1 = False
+
+        self.client.connect_handler_add(self.on_connect_cb)
+        self.client.message_callback_add(
+            self.topic_root + '/set', self.on_message_set)
+        self.client.message_callback_add(
+            self.topic_root + '/get', self.on_message_get)
+
+
+    def on_message_set(self, client, userdata, message):
+        payload = message.payload.decode("utf-8")
+        if payload == self.MESSAGE_SWITCH0_ON:
+            self.state0 = True
+        elif payload == self.MESSAGE_SWITCH0_OFF:
+            self.state0 = False
+        elif payload == self.MESSAGE_SWITCH1_ON:
+            self.state1 = True
+        elif payload == self.MESSAGE_SWITCH1_OFF:
+            self.state1 = False
+        else:
+            logger.error('Receive bad message : %s', payload)
+        self.client.publish(self.topic_root, json.dumps(payload))
+
+    def on_message_get(self, client, userdata, message):
+        payload = message.payload.decode("utf-8")
+        _json_pl = json.loads(payload)
+        _the_switch = next(iter(_json_pl))
+        if _the_switch == 'state_right':
+            _the_state = "ON" if self.state0 else "OFF"
+        elif _the_switch == 'state_left':
+            _the_state = "ON" if self.state1 else "OFF"
+        else:
+            raise ValueError(f'Bad message: {payload}')
+        message = {_the_switch: _the_state}
         self.client.publish(self.topic_root, json.dumps(message))
 
     def on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
