@@ -13,7 +13,7 @@ from .helper import get_broker_name, log_it, logger
 from iotlib.abstracts import DiscoveryProcessor
 from iotlib.bridge import MQTTBridge
 from iotlib.client import MQTTClient
-from iotlib.discoverer import ZigbeeDiscoverer, TasmotaDiscoverer
+from iotlib.discoverer import ZigbeeDiscoverer, TasmotaDiscoverer, UnifiedDiscoverer
 from iotlib.factory import CodecFactory, Model, Protocol
 from iotlib.processor import AvailabilityLogger
 
@@ -118,3 +118,37 @@ class TestDiscoTasmota(unittest.TestCase):
         client2.disconnect()
 
 
+class TestUnifiedDisco(unittest.TestCase):
+    TARGET = 'groseille.back.internal'
+    def test_discoverer01(self):
+        log_it("Testing Unified Discoverer")
+        client = MQTTClient('', self.TARGET)
+        _discoverer = UnifiedDiscoverer(client)
+        client.start()
+        time.sleep(2)
+        self.assertGreater(len(_discoverer.get_devices()), 0)
+        client.disconnect()
+
+    def test_discoverer02(self):
+        log_it("Testing Unified Discoverer with processor")
+        client = MQTTClient('', self.TARGET)
+        _discoverer = UnifiedDiscoverer(client)
+        _disco_process = BasicDiscoveryProc()
+        _discoverer.add_discovery_processor(_disco_process)
+        client.start()
+        time.sleep(2)
+        self.assertGreater(_disco_process.nb_devices, 0)
+        client.disconnect()
+
+    def test_discoverer03(self):
+        log_it("Testing Unified Discoverer : create codec and get availability")
+        client1 = MQTTClient('', self.TARGET)
+        client2 = MQTTClient('', self.TARGET)
+        _discoverer = UnifiedDiscoverer(client1)
+        _discoverer.add_discovery_processor(ExtendedDiscoveryProc(mqtt_client=client2))
+
+        client1.start()
+
+        time.sleep(2)
+        client1.disconnect()
+        client2.disconnect()

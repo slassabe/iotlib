@@ -70,6 +70,27 @@ class Device():
         """Returns a developer-friendly representation of the device."""
         return f"<{self.__class__.__name__} : {self.friendly_name}>"
 
+class UnifiedDiscoverer():
+    """
+    A class that unifies the discovery of devices from different protocols.
+    """
+    def __init__(self, mqtt_client: MQTTClient):
+        """
+        Initializes the UnifiedDiscoverer with a list of specific protocol discoverers.
+        """
+        self._discoverers = [ZigbeeDiscoverer(mqtt_client), TasmotaDiscoverer(mqtt_client)]
+
+    def get_devices(self) -> list[Device]:
+        """
+        Returns a list of all devices discovered by all protocol discoverers.
+        """
+        return [device for _discoverer in self._discoverers for device in _discoverer.get_devices()]
+
+    def add_discovery_processor(self, processor: DiscoveryProcessor) -> None:
+        """Appends an Discovery Processor instance to the processor list
+        """
+        for _discoverer in self._discoverers:
+            _discoverer.add_discovery_processor(processor)
 
 class Discoverer():
     """Discovers devices."""
