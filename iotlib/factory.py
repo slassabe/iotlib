@@ -51,14 +51,14 @@ class Model(Enum):
     - EL_ZBSW02: eWeLink ZB-SW02 Zigbee wireless switch module
 
     """
-    EL_ZBSW02 = 'eWeLink:ZB-SW02'
+    EL_ZBSW02 = 'eWeLink:ZB-SW02' # eWeLink ZB-SW02 Zigbee wireless switch module
     MIFLORA = 'Miflora'
     NEO_ALARM = 'NAS-AB02B2'  # Neo NAS-AB02B2 Zigbee Siren
     RING_CAMERA = 'RingCamera'
-    SHELLY_PLUGS = 'ShellyPlugS'
-    SHELLY_UNI = 'ShellyUni'
-    TUYA_SOIL = 'TS0601_soil' # TuYa TS0601_soil Zigbee soil moisture sensor
-    ZB_AIRSENSOR = "SNZB-02" # SONOFF Zigbee air temperature/humidity sensor
+    SHELLY_PLUGS = 'Shelly Plug S'  # Shelly Plug S WiFi smart plug
+    SHELLY_UNI = 'Shelly Uni'  # Shelly Uni WiFi relay/dimmer
+    TUYA_SOIL = 'TS0601_soil'  # TuYa TS0601_soil Zigbee soil moisture sensor
+    ZB_AIRSENSOR = "SNZB-02"  # SONOFF Zigbee air temperature/humidity sensor
     ZB_BUTTON = "SNZB-01"   # SONOFF SNZB-01 Zigbee wireless button
     ZB_MOTION = 'SNZB-03'   # SONOFF SNZB-03 Zigbee motion sensor
     ZB_MINI = 'ZBMINI-L'    # SONOFF ZBMINI-L Zigbee wireless switch module
@@ -74,6 +74,7 @@ class Model(Enum):
             if model.value == label:
                 return model
         return Model.UNKNOWN
+
 
 class Protocol(Enum):
     """ An enumeration defining constants for different device communication protocols.
@@ -199,6 +200,7 @@ class CodecFactory(metaclass=Singleton):
         _constructor = self._get_constructor(model, protocol)
         _codec = _constructor(*args, **kwargs)
         return _codec
+
 
 CodecFactory().registers(Model.EL_ZBSW02, Protocol.Z2M, SonoffZbSw02)
 CodecFactory().registers(Model.NEO_ALARM, Protocol.Z2M, NeoNasAB02B2)

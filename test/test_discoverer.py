@@ -13,7 +13,7 @@ from .helper import get_broker_name, log_it, logger
 from iotlib.abstracts import DiscoveryProcessor
 from iotlib.bridge import MQTTBridge
 from iotlib.client import MQTTClient
-from iotlib.discoverer import ZigbeeDiscoverer
+from iotlib.discoverer import ZigbeeDiscoverer, TasmotaDiscoverer
 from iotlib.factory import CodecFactory, Model, Protocol
 from iotlib.processor import AvailabilityLogger
 
@@ -37,8 +37,8 @@ class ExtendedDiscoveryProc(DiscoveryProcessor):
     def process_discovery_update(self, devices):
         logger.info(f"Discovered {len(devices)} devices")
         for device in devices:
-            _codec = CodecFactory().create_instance(model=Model.ZB_AIRSENSOR,
-                                                    protocol=Protocol.Z2M,
+            _codec = CodecFactory().create_instance(model=device.model,
+                                                    protocol=device.protocol,
                                                     device_name=device.friendly_name)
             _bridge = MQTTBridge(self.mqtt_client, _codec)
             _logger = AvailabilityLogger(debug=True)
@@ -46,7 +46,7 @@ class ExtendedDiscoveryProc(DiscoveryProcessor):
         self.mqtt_client.start()
 
 
-class TestDisco(unittest.TestCase):
+class TestDiscoZ2M(unittest.TestCase):
     TARGET = 'groseille.back.internal'
     def test_discoverer01(self):
         log_it("Testing Zigbee Discoverer")
@@ -70,7 +70,7 @@ class TestDisco(unittest.TestCase):
         client.disconnect()
 
     def test_discoverer03(self):
-        log_it("Testing Zigbee Discoverer and create codec")
+        log_it("Testing Zigbee Discoverer : create codec and get availability")
         client1 = MQTTClient('', self.TARGET)
         client2 = MQTTClient('', self.TARGET)
         _discoverer = ZigbeeDiscoverer(client1)
@@ -81,3 +81,40 @@ class TestDisco(unittest.TestCase):
         time.sleep(2)
         client1.disconnect()
         client2.disconnect()
+
+class TestDiscoTasmota(unittest.TestCase):
+    TARGET = 'groseille.back.internal'
+    def test_discoverer01(self):
+        log_it("Testing Tasmota Discoverer")
+        client = MQTTClient('', self.TARGET)
+        _discoverer = TasmotaDiscoverer(client)
+        client.start()
+        time.sleep(2)
+        self.assertGreater(len(_discoverer.get_devices()), 0)
+        client.disconnect()
+
+    def test_discoverer02(self):
+        log_it("Testing Tasmota Tasmota with processor")
+        client = MQTTClient('', self.TARGET)
+        _discoverer = TasmotaDiscoverer(client)
+        _disco_process = BasicDiscoveryProc()
+        _discoverer.add_discovery_processor(_disco_process)
+        client.start()
+        time.sleep(2)
+        self.assertGreater(_disco_process.nb_devices, 0)
+        client.disconnect()
+
+    def X_test_discoverer03(self):
+        log_it("Testing Tasmota Discoverer : create codec and get availability")
+        client1 = MQTTClient('', self.TARGET)
+        client2 = MQTTClient('', self.TARGET)
+        _discoverer = TasmotaDiscoverer(client1)
+        _discoverer.add_discovery_processor(ExtendedDiscoveryProc(mqtt_client=client2))
+
+        client1.start()
+
+        time.sleep(2)
+        client1.disconnect()
+        client2.disconnect()
+
+

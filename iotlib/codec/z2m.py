@@ -10,11 +10,10 @@ from abc import abstractmethod, ABCMeta
 from iotlib import package_level_logger
 
 from iotlib.codec.core import Codec, DecodingException
+from iotlib.codec.config import BaseTopic
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                Switch0, Switch1, TemperatureSensor)
 
-# Zigbee2mqtt base topics configuration :
-Z2M_BASE_TOPIC = 'zigbee2mqtt'
 
 # Zigbee devices
 # Buttons
@@ -46,7 +45,7 @@ class DeviceOnZigbee2MQTT(Codec):
             device_name (str): the device name to subscribe
         '''
         # Topics to subscribe to
-        base_topic = base_topic or Z2M_BASE_TOPIC
+        base_topic = base_topic or BaseTopic.Z2M_BASE_TOPIC.value
         assert isinstance(device_name, str), \
             f'Bad value for device_name : {device_name} of type {type(device_name)}'
         super().__init__(device_name, base_topic)
