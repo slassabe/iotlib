@@ -131,8 +131,8 @@ class MQTTBridge(Surrogate):
         """Subscribes to MQTT topics for availability and value topics.
         """
         if reason_code == 0:
-            self._logger.debug(
-                'Connection accepted -> launch connect handlers')
+            self._logger.debug('[%s] Connection accepted -> subscribe',
+                               client)
             _topic_avail = self.codec.get_availability_topic()
             self.client.subscribe(_topic_avail, qos=1)
             for _topic_property in self.codec.get_subscription_topics():

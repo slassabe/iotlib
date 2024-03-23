@@ -53,16 +53,27 @@ class Model(Enum):
     """
     EL_ZBSW02 = 'eWeLink:ZB-SW02'
     MIFLORA = 'Miflora'
-    NEO_ALARM = 'NeoAlarm'
+    NEO_ALARM = 'NAS-AB02B2'  # Neo NAS-AB02B2 Zigbee Siren
     RING_CAMERA = 'RingCamera'
     SHELLY_PLUGS = 'ShellyPlugS'
     SHELLY_UNI = 'ShellyUni'
-    TUYA_SOIL = 'TuyaSoilSensor'
-    ZB_AIRSENSOR = "ZBairsensor"
-    ZB_BUTTON = "ZBbutton"
-    ZB_MOTION = 'ZBmotion'
-    ZB_MINI = 'ZBmini'
+    TUYA_SOIL = 'TS0601_soil' # TuYa TS0601_soil Zigbee soil moisture sensor
+    ZB_AIRSENSOR = "SNZB-02" # SONOFF Zigbee air temperature/humidity sensor
+    ZB_BUTTON = "SNZB-01"   # SONOFF SNZB-01 Zigbee wireless button
+    ZB_MOTION = 'SNZB-03'   # SONOFF SNZB-03 Zigbee motion sensor
+    ZB_MINI = 'ZBMINI-L'    # SONOFF ZBMINI-L Zigbee wireless switch module
+    NONE = 'None'          # No model
+    UNKNOWN = 'Unknown'    # Unknown model
 
+    @staticmethod
+    def from_str(label: str):
+        """Return the Model enum value corresponding to the given label."""
+        if label is None:
+            return Model.NONE
+        for model in Model:
+            if model.value == label:
+                return model
+        return Model.UNKNOWN
 
 class Protocol(Enum):
     """ An enumeration defining constants for different device communication protocols.

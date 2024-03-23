@@ -26,7 +26,7 @@ TOPIC_BASE = 'TEST_A2IOT/factory'
 class TestZ2MAirsensor(unittest.TestCase):
     target = get_broker_name()
 
-    def X_test_Snzb02(self):
+    def test_Snzb02(self):
         DEVICE_NAME = 'fake_sensor'
         log_it("Testing Snzb02 : publish to mock")
         mqtt_client = MQTTClient('', get_broker_name())
@@ -56,7 +56,7 @@ class TestZ2MAirsensor(unittest.TestCase):
         self.assertEqual(_v_humi.value, 50)
         mqtt_client.stop()
 
-    def X_test_Ts0601Soil(self):
+    def test_Ts0601Soil(self):
         DEVICE_NAME = 'fake_sensor'
         log_it("Testing Ts0601Soil : publish to mock")
         mqtt_client = MQTTClient('', get_broker_name())
@@ -86,7 +86,9 @@ class TestZ2MAirsensor(unittest.TestCase):
         self.assertEqual(_v_humi.value, 60)
         mqtt_client.stop()
 
-    def X_test_ZbminiL(self):
+class TestSwitchs(unittest.TestCase):
+
+    def test_ZbminiL(self):
         DEVICE_NAME = 'fake_ZbminiL'
         log_it("Testing SonoffZbminiL : publish to mock")
         mqtt_client = MQTTClient('', get_broker_name())

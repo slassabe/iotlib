@@ -86,10 +86,11 @@ class MQTTClient():
         self.client.enable_logger(package_level_logger)
 
     def __str__(self):
-        # return f'<{self.__class__.__name__} object "{self.hostname}:{self.port}">'
-        return f'<{self.__class__.__name__} obj.">'
+        return f'<{self.__class__.__name__} "{self.client}">'
+        # return f'<{self.__class__.__name__} obj. "{self.hostname}:{self.port}">'
+        # return f'<{self.__class__.__name__} obj.">'
 
-    def start(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
+    def start_OLD(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
         """Starts the client MQTT network loop.
 
         Connects the client if not already connected, starts the network loop
@@ -107,6 +108,30 @@ class MQTTClient():
                                    mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_start failed')
             _rc = self.connect(properties=properties)
+            return _rc
+        except ConnectionRefusedError as exp:
+            self._logger.fatal('[%s] cannot connect host %s',
+                               exp, self.hostname)
+            raise RuntimeError('[%s] connection refused') from exp
+
+    def start(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
+        """Starts the client MQTT network loop.
+
+        Connects the client if not already connected, starts the network loop
+
+        Returns:
+            mqtt.MQTTErrorCode: The result of calling client.loop_start().
+
+        Raises:
+            RuntimeError: If loop_stop fails.
+        """
+        try:
+            _rc = self.connect(properties=properties)
+            if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
+                self._logger.error('[%s] loop_start failed : %s', 
+                                   self,
+                                   mqtt.error_string(mqtt.MQTTErrorCode))
+                raise RuntimeError('loop_start failed')
             return _rc
         except ConnectionRefusedError as exp:
             self._logger.fatal('[%s] cannot connect host %s',

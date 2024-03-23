@@ -98,7 +98,32 @@ class Surrogate(ABC):
         """
         raise NotImplementedError
 
+class DiscoveryProcessor(ABC):
+    """
+    Abstract base class for discovery processors.
 
+    This class defines the interface for handling updates to the device discovery status.
+    Subclasses must implement the `process_discovery_update` method.
+
+    Methods:
+        process_discovery_update: Handle an update to the device discovery status.
+
+    """
+
+    _logger = package_level_logger
+
+    def __str__(self):
+        return f'{self.__class__.__name__} object'
+
+    @abstractmethod
+    def process_discovery_update(self, 
+                                 devices: list) -> None:
+        """Handle an update to the device discovery status.
+
+        Args:
+            devices (list): The list of devices discovered.
+        """
+        raise NotImplementedError
 
 class AvailabilityProcessor(ABC):
     """
