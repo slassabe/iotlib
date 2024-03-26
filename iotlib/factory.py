@@ -22,7 +22,7 @@ Example usage:
     
     cluster = factory.create_instance(Model.CUSTOM_DEVICE, Protocol.ZIGBEE)
 """
-from iotlib import package_level_logger
+from iotlib.utils import iotlib_logger
 
 from collections import defaultdict
 from enum import Enum
@@ -127,7 +127,7 @@ class CodecFactory(metaclass=Singleton):
             TypeError: If constructor is not callable.
 
         """
-        package_level_logger.debug('Registering constructor for model %s and protocol %s',
+        iotlib_logger.debug('Registering constructor for model %s and protocol %s',
                            model, protocol)
         if not isinstance(model, Model):
             raise TypeError(f'Model {model} is not of type "Model"')

@@ -7,7 +7,7 @@ from json.decoder import JSONDecodeError
 from abc import abstractmethod, ABCMeta
 
 # Non standard lib
-from iotlib import package_level_logger
+from iotlib.utils import iotlib_logger
 
 from iotlib.codec.core import Codec, DecodingException
 from iotlib.codec.config import BaseTopic
@@ -52,7 +52,7 @@ class DeviceOnZigbee2MQTT(Codec):
         self._root_topic = f'{base_topic}/{device_name}'
         self._availability_topic = f'{base_topic}/{device_name}/availability'
 
-        package_level_logger.debug(
+        iotlib_logger.debug(
             'Z2M codec created for device %s', device_name)
 
     def get_availability_topic(self) -> str:
@@ -340,7 +340,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
                 self._key_alarm_level: self._alarm_level,
                 self._key_alarm_duration: on_time,
                 }
-        package_level_logger.debug('Encode payload : %s', _set)
+        iotlib_logger.debug('Encode payload : %s', _set)
         return f'{self._root_topic}/set', json.dumps(_set)
 
     def _decode_value_pl(self, topic, payload) -> bool:
@@ -382,7 +382,7 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
                                   self.__class__._decode_value_pl,
                                   v_switch)
         # self.ask_for_state()
-        package_level_logger.warning('%s : unable to ask state', self)
+        iotlib_logger.warning('%s : unable to ask state', self)
 
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state":""}'
@@ -466,7 +466,7 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
                                   self.__class__._decode_switch1_value_pl,
                                   v_switch1)
         # self.ask_for_state()
-        package_level_logger.warning('%s : unable to ask state', self)
+        iotlib_logger.warning('%s : unable to ask state', self)
 
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state_left":"","state_right":""}'

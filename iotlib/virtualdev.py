@@ -5,11 +5,11 @@ import enum
 import threading
 from abc import abstractmethod
 
-from iotlib.abstracts import (
-    AbstractDevice, Surrogate, ResultType, VirtualDeviceProcessor)
+from iotlib.abstracts import (AbstractDevice, Surrogate, ResultType, 
+                              VirtualDeviceProcessor)
 from iotlib.devconfig import PropertyConfig, ButtonValues
 
-from . import package_level_logger
+from iotlib.utils import iotlib_logger
 
 
 class VirtualDevice(AbstractDevice):
@@ -95,7 +95,7 @@ class VirtualDevice(AbstractDevice):
         else:
             self.value = value
             for _processor in self._processor_list:
-                package_level_logger.debug(
+                iotlib_logger.debug(
                     'Execute processor : %s', _processor)
                 _processor.process_value_update(self, bridge)
             return ResultType.SUCCESS
@@ -171,7 +171,7 @@ class Operable(VirtualDevice):
         """
         _request = bridge.codec.get_state_request(device_id)
         if _request is None:
-            package_level_logger.debug('%s : unable to get state')
+            iotlib_logger.debug('%s : unable to get state')
         else:
             _topic, _payload = _request
             bridge.publish_message(_topic, _payload)
@@ -200,7 +200,7 @@ class Operable(VirtualDevice):
                                                      device_id=self.device_id,
                                                      on_time=on_time)
         if _request is None:
-            package_level_logger.warning('%s : unable to change state')
+            iotlib_logger.warning('%s : unable to change state')
         else:
             _topic, _payload = _request
             bridge.publish_message(_topic, _payload)
@@ -224,10 +224,10 @@ class Operable(VirtualDevice):
             bool: Returns True if the switch state is OFF when the method is called.
         '''
         if self.value:
-            package_level_logger.debug('[%s] is already "on" -> no action required',
+            iotlib_logger.debug('[%s] is already "on" -> no action required',
                                        self)
             return False
-        package_level_logger.debug(
+        iotlib_logger.debug(
             '[%s] is "off" -> request to turn it "on"', self)
         self.trigger_change_state(bridge,
                                   is_on=True,
@@ -248,16 +248,16 @@ class Operable(VirtualDevice):
                that a request to turn it OFF has been sent.
 
         '''
-        package_level_logger.debug(
+        iotlib_logger.debug(
             '[%s] stop switch and reset stop timer', self)
         self._stop_timer = None
 
         if not self.value:
-            package_level_logger.debug('\t > [%s] is already "off" -> no action required',
+            iotlib_logger.debug('\t > [%s] is already "off" -> no action required',
                                        self)
             return False
         else:
-            package_level_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
+            iotlib_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                        self)
             self.trigger_change_state(bridge,
                                       is_on=False,
@@ -265,7 +265,7 @@ class Operable(VirtualDevice):
             return True
 
     def _remember_to_turn_the_light_off(self, when: int, bridge: Surrogate) -> None:
-        package_level_logger.debug('[%s] Automatially stop after "%s" sec.',
+        iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
                                    self,  when)
         if not isinstance(when, int) or when <= 0:
             raise TypeError(

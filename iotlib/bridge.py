@@ -15,7 +15,7 @@ to encode/decode these messages.
 from typing import Any
 import paho.mqtt.client as mqtt
 
-from iotlib import package_level_logger
+from iotlib.utils import iotlib_logger
 from iotlib.abstracts import Surrogate, AvailabilityProcessor
 from iotlib.client import MQTTClient
 from iotlib.codec.core import AbstractCodec, DecodingException
@@ -99,7 +99,7 @@ class MQTTBridge(Surrogate):
         try:
             self._handle_availability(payload)
         except DecodingException as exp:
-            package_level_logger.exception('"[%s]" : Exception occurred decoding : %s / %s',
+            iotlib_logger.exception('"[%s]" : Exception occurred decoding : %s / %s',
                                            exp,
                                            message.topic,
                                            payload[:100])
@@ -114,7 +114,7 @@ class MQTTBridge(Surrogate):
         try:
             self._handle_values(message.topic, payload)
         except DecodingException as exp:
-            package_level_logger.exception('"[%s]" : Exception occured decoding : %s / %s',
+            iotlib_logger.exception('"[%s]" : Exception occured decoding : %s / %s',
                                            exp,
                                            message.topic,
                                            payload[:100])
@@ -129,14 +129,14 @@ class MQTTBridge(Surrogate):
         """Subscribes to MQTT topics for availability and value topics.
         """
         if reason_code == 0:
-            package_level_logger.debug('[%s] Connection accepted -> subscribe',
+            iotlib_logger.debug('[%s] Connection accepted -> subscribe',
                                        client)
             _topic_avail = self.codec.get_availability_topic()
             self.client.subscribe(_topic_avail, qos=1)
             for _topic_property in self.codec.get_subscription_topics():
                 self.client.subscribe(_topic_property, qos=1)
         else:
-            package_level_logger.warning('[%s] connection refused - reason : %s',
+            iotlib_logger.warning('[%s] connection refused - reason : %s',
                                          self,
                                          mqtt.connack_string(reason_code))
 
@@ -150,11 +150,11 @@ class MQTTBridge(Surrogate):
         """Subscribes to MQTT topics for availability and value topics.
         """
         if reason_code == 0:
-            package_level_logger.debug('Disconnection occures - rc : %s -> stop loop',
+            iotlib_logger.debug('Disconnection occures - rc : %s -> stop loop',
                                        reason_code)
             client.loop_stop()
         else:
-            package_level_logger.warning('[%s] disconnection not required with rc "%s"',
+            iotlib_logger.warning('[%s] disconnection not required with rc "%s"',
                                          self,
                                          reason_code)
 
@@ -193,18 +193,18 @@ class MQTTBridge(Surrogate):
         Raises:
             DecodingException: If an error occurs decoding the payload
         """
-        package_level_logger.debug('Handle availability message with payload: %s',
+        iotlib_logger.debug('Handle availability message with payload: %s',
                                    payload)
         new_avail = self.codec.decode_avail_pl(payload)
         if self.availability != new_avail:
             self.availability = new_avail
-            package_level_logger.debug(
+            iotlib_logger.debug(
                 'Availability updated: %s',  self.availability)
             # Notify
             for _processor in self._availability_processors:
                 _processor.process_availability_update(self.availability)
         else:
-            package_level_logger.debug('Availability unchanged: %s',
+            iotlib_logger.debug('Availability unchanged: %s',
                                        self.availability)
         return new_avail
 
@@ -214,7 +214,7 @@ class MQTTBridge(Surrogate):
         if not isinstance(payload, str):
             raise TypeError(f"payload must be string, not {type(payload)}")
 
-        package_level_logger.debug('Publish messageon topic : %s - payload : %s',
+        iotlib_logger.debug('Publish messageon topic : %s - payload : %s',
                                    topic, payload)
         _reason_code: mqtt.MQTTMessageInfo = self.client.publish(topic,
                                                                  payload,

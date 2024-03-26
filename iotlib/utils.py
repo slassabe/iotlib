@@ -2,12 +2,13 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-import threading
 from abc import ABC, abstractmethod
 
+import logging
 import schedule
+import threading
 
-from . import package_level_logger
+iotlib_logger = logging.getLogger(__name__)
 
 
 class Singleton(type):
@@ -54,7 +55,7 @@ class InfiniteTimer():
             self._should_continue = True
             self._start_timer()
         else:
-            package_level_logger.error(
+            iotlib_logger.error(
                 "Timer already running, wait if you're restarting.")
 
     def cancel(self):
@@ -63,7 +64,7 @@ class InfiniteTimer():
             self._should_continue = False
             self.thread.cancel()
         else:
-            package_level_logger.error(
+            iotlib_logger.error(
                 "Timer never started or failed to initialize.")
 
 

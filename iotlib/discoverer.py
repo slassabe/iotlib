@@ -22,7 +22,7 @@ for getting string representations of the device.
 """
 import json
 
-from iotlib import package_level_logger
+from iotlib.utils import iotlib_logger
 from iotlib.abstracts import DiscoveryProcessor
 from iotlib.client import MQTTClient
 from iotlib.codec.config import BaseTopic
@@ -107,7 +107,7 @@ class ZigbeeDiscoverer(Discoverer):
 
     def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Handles the MQTT connection event."""
-        package_level_logger.debug(
+        iotlib_logger.debug(
             '[%s] Connection accepted -> subscribe', self.mqtt_client)
         self.mqtt_client.subscribe(self._base_topic)
 
@@ -150,7 +150,7 @@ class TasmotaDiscoverer(Discoverer):
 
     def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Handles the MQTT connection event."""
-        package_level_logger.debug(
+        iotlib_logger.debug(
             '[%s] Connection accepted -> subscribe', self.mqtt_client)
         self.mqtt_client.subscribe(self._base_topic)
 

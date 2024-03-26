@@ -4,7 +4,7 @@
 from collections import defaultdict
 from typing import Callable, TypeAlias
 
-from iotlib import package_level_logger
+from iotlib.utils import iotlib_logger
 from iotlib.abstracts import AbstractCodec
 from iotlib.virtualdev import VirtualDevice
 

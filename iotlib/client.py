@@ -32,7 +32,7 @@ from typing import Callable, Any, Optional, List
 import certifi
 import paho.mqtt.client as mqtt
 
-from . import package_level_logger
+from iotlib.utils import iotlib_logger
 
 
 class MQTTClient():
@@ -100,7 +100,7 @@ class MQTTClient():
         self.on_disconnect_handlers: List[Callable] = []
         self._default_message_callbacks: List[Callable] = []
         self.on_subscribe_handlers: List[Callable] = []
-        self.client.enable_logger(package_level_logger)
+        self.client.enable_logger(iotlib_logger)
 
     @property
     def connected(self) -> bool:
@@ -142,14 +142,14 @@ class MQTTClient():
         try:
             _rc = self.connect(properties=properties)
             if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                package_level_logger.error('[%s] loop_start failed : %s',
+                iotlib_logger.error('[%s] loop_start failed : %s',
                                            self,
                                            mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_start failed')
             self._started = True
             return _rc
         except ConnectionRefusedError as exp:
-            package_level_logger.fatal('[%s] cannot connect host %s',
+            iotlib_logger.fatal('[%s] cannot connect host %s',
                                        exp, self.hostname)
             raise RuntimeError('[%s] connection refused') from exp
 
@@ -163,13 +163,13 @@ class MQTTClient():
             RuntimeError: If loop_stop fails.
         """
         if not self._connected:
-            package_level_logger.error(
+            iotlib_logger.error(
                 '[%s] Unable to stop disconnected client', self)
             raise RuntimeError('loop_stop failed')
         _rc = self.disconnect()
         if not self._loop_forever_used:
             if self.client.loop_stop() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                package_level_logger.error('[%s] loop_stop failed : %s',
+                iotlib_logger.error('[%s] loop_stop failed : %s',
                                            self,
                                            mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_stop failed')
@@ -186,11 +186,11 @@ class MQTTClient():
                                       clean_start=self.clean_start,
                                       properties=properties,
                                       )
-            package_level_logger.debug(
+            iotlib_logger.debug(
                 '[%s] Connection request returns : %s', self, _rc)
             return _rc
         except socket.gaierror as exp:
-            package_level_logger.fatal('[%s] cannot connect host %s',
+            iotlib_logger.fatal('[%s] cannot connect host %s',
                                        exp, self.hostname)
             raise RuntimeError('connect failed') from exp
 
@@ -207,7 +207,7 @@ class MQTTClient():
                 on_connect_handler(client, userdata, flags,
                                    reason_code, properties)
             except Exception as error:
-                package_level_logger.exception(
+                iotlib_logger.exception(
                     "Failed handling connect %s", error)
 
     def connect_handler_add(self, handler: Callable) -> None:
@@ -222,7 +222,7 @@ class MQTTClient():
         ''' Disconnect from a remote broker.
         '''
         _rc = self.client.disconnect()
-        package_level_logger.debug(
+        iotlib_logger.debug(
             '[%s] Disconnection request returns : %s', self, _rc)
         return _rc
 
@@ -243,7 +243,7 @@ class MQTTClient():
                                       reason_code,
                                       properties)
             except Exception as error:
-                package_level_logger.exception(
+                iotlib_logger.exception(
                     "Failed handling disconnect %s", error)
 
     def disconnect_handler_add(self, handler: Callable) -> None:
@@ -267,7 +267,7 @@ class MQTTClient():
             try:
                 on_message_handler(client, userdata, message)
             except Exception as error:
-                package_level_logger.exception("Exception occured : %s", error)
+                iotlib_logger.exception("Exception occured : %s", error)
 
     def default_message_callback_add(self, callback: Callable) -> None:
         """
@@ -309,7 +309,7 @@ class MQTTClient():
                 on_subscribe_handler(client, userdata, mid,
                                      reason_code_list, properties)
             except Exception as error:
-                package_level_logger.exception(
+                iotlib_logger.exception(
                     "Failed handling subscribe %s", error)
 
     def subscribe_handler_add(self, handler: Callable):
@@ -326,7 +326,7 @@ class MQTTClient():
 
     def publish(self, topic, payload, **kwargs):
         ''' Publish a message on a topic. '''
-        package_level_logger.debug(
+        iotlib_logger.debug(
             'Publish on topic : %s - payload : %s', topic, payload)
         return self.client.publish(topic, payload, **kwargs)
 

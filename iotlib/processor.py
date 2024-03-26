@@ -23,7 +23,7 @@ from iotlib.devconfig import ButtonValues
 from iotlib.client import MQTTClient
 from iotlib.abstracts import AvailabilityProcessor, Surrogate, VirtualDeviceProcessor
 from iotlib.virtualdev import VirtualDevice
-from iotlib import package_level_logger
+from iotlib.utils import iotlib_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
 
@@ -45,7 +45,7 @@ class VirtualDeviceLogger(VirtualDeviceProcessorCore):
     def process_value_update(self,
                              v_dev: VirtualDevice,
                              bridge) -> None:
-        package_level_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
+        iotlib_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                                    self,
                                    v_dev,
                                    v_dev.get_property(),
@@ -94,25 +94,25 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
         """
         prefix = f'[{v_dev}] : event "{v_dev.value}" occured'
         if v_dev.value is None:
-            package_level_logger.debug(
+            iotlib_logger.debug(
                 '%s -> discarded', prefix)
             return
         elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
-            package_level_logger.info(
+            iotlib_logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
-            package_level_logger.info('%s -> "start_and_stop" with long period',
+            iotlib_logger.info('%s -> "start_and_stop" with long period',
                                       prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.start_and_stop(self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
-            package_level_logger.info('%s -> "trigger_stop"', prefix)
+            iotlib_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_stop(bridge)
         else:
-            package_level_logger.error('%s : action unknown "%s"',
+            iotlib_logger.error('%s : action unknown "%s"',
                                        prefix,
                                        v_dev.value)
 
@@ -137,14 +137,14 @@ class MotionTrigger(VirtualDeviceProcessorCore):
             None
         """
         if v_dev.value:
-            package_level_logger.info('[%s] occupancy changed to "%s" '
+            iotlib_logger.info('[%s] occupancy changed to "%s" '
                                       '-> "start_and_stop" on registered switch',
                                       v_dev.friendly_name,
                                       v_dev.value)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         else:
-            package_level_logger.debug('[%s] occupancy changed to "%s" '
+            iotlib_logger.debug('[%s] occupancy changed to "%s" '
                                        '-> nothing to do (timer will stop switch)',
                                        v_dev.friendly_name,
                                        v_dev.value)
@@ -207,10 +207,10 @@ class AvailabilityLogger(AvailabilityProcessor):
 
     def process_availability_update(self, availability: bool) -> None:
         if availability:
-            _log_fn = package_level_logger.info if self._debug else package_level_logger.debug
+            _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
             _log_fn("[%s] is available", self._device_name)
         else:
-            package_level_logger.warning(
+            iotlib_logger.warning(
                 "[%s] is unavailable", self._device_name)
 
 

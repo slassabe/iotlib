@@ -13,7 +13,6 @@ Note: This module is part of the iotlib library.
 from abc import ABC, abstractmethod
 import enum
 
-from iotlib import package_level_logger
 from iotlib.client import MQTTClient
 
 
