@@ -64,38 +64,14 @@ class Device():
 
     def __str__(self):
         """Returns a string representation of the device."""
-        return f"<{self.__class__.__name__} : {self.friendly_name}, address : {self.address}, model: {self.model}, protocol: {self.protocol}>"
+        return f"<{self.__class__.__name__} : {self.friendly_name}>"
 
     def __repr__(self):
         """Returns a developer-friendly representation of the device."""
-        return f"<{self.__class__.__name__} : {self.friendly_name}>"
-
-class UnifiedDiscoverer():
-    """
-    A class that unifies the discovery of devices from different protocols.
-    """
-    def __init__(self, mqtt_client: MQTTClient):
-        """
-        Initializes the UnifiedDiscoverer with a list of specific protocol discoverers.
-        """
-        self._discoverers = [ZigbeeDiscoverer(mqtt_client), TasmotaDiscoverer(mqtt_client)]
-
-    def get_devices(self) -> list[Device]:
-        """
-        Returns a list of all devices discovered by all protocol discoverers.
-        """
-        return [device for _discoverer in self._discoverers for device in _discoverer.get_devices()]
-
-    def add_discovery_processor(self, processor: DiscoveryProcessor) -> None:
-        """Appends an Discovery Processor instance to the processor list
-        """
-        for _discoverer in self._discoverers:
-            _discoverer.add_discovery_processor(processor)
+        return f"<{self.__class__.__name__} : {self.friendly_name}, address : {self.address}, model: {self.model}, protocol: {self.protocol}>"
 
 class Discoverer():
     """Discovers devices."""
-    _logger = package_level_logger
-
     def __init__(self, mqtt_client: MQTTClient):
         self.mqtt_client = mqtt_client
         self.devices = []
@@ -119,30 +95,40 @@ class ZigbeeDiscoverer(Discoverer):
         super().__init__(mqtt_client)
         self._base_topic = BaseTopic.Z2M_BASE_TOPIC.value + '/bridge/devices'
         self.mqtt_client.message_callback_add(self._base_topic,
-                                              self.on_message_cb)
-        self.mqtt_client.connect_handler_add(self.on_connect_cb)
+                                              self._on_message_cb)
+        self.mqtt_client.connect_handler_add(self._on_connect_cb)
 
-    def on_message_cb(self, client, userdata, message) -> None:
+    def _on_message_cb(self, client, userdata, message) -> None:
         """Handles incoming MQTT messages."""
         payload = str(message.payload.decode("utf-8"))
-        self._parse_devices(json.loads(payload))
+        _new_devices = self._parse_devices(json.loads(payload))
         for _processor in self._discovery_processors:
-            _processor.process_discovery_update(self.devices)
+            _processor.process_discovery_update(_new_devices)
 
-    def on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+    def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Handles the MQTT connection event."""
-        self._logger.debug(
+        package_level_logger.debug(
             '[%s] Connection accepted -> subscribe', self.mqtt_client)
         self.mqtt_client.subscribe(self._base_topic)
 
-    def _parse_devices(self, payload: json) -> None:
-        """Parses the devices from the given payload."""
-        self.devices = [Device(entry.get("ieee_address"),
-                               entry.get("friendly_name"),
-                               Model.from_str(entry.get("definition", {}).get("model")),
-                               Protocol.Z2M)
-                        for entry in payload if entry.get("type") == 'EndDevice']
-        return self.devices
+    def _parse_devices(self, payload: json) -> list[Device]:
+            """
+            Parses the devices from the given payload.
+
+            Args:
+                payload (json): The payload containing the device information.
+
+            Returns:
+                List[Device]: The list of newly discovered devices.
+            """
+            devices = [Device(entry.get("ieee_address"),
+                                   entry.get("friendly_name"),
+                                   Model.from_str(entry.get("definition", {}).get("model")),
+                                   Protocol.Z2M)
+                            for entry in payload if entry.get("type") == 'EndDevice']
+            self.devices.append(devices)
+
+            return devices
 
 
 class TasmotaDiscoverer(Discoverer):
@@ -152,23 +138,23 @@ class TasmotaDiscoverer(Discoverer):
         self.devices = []
         self._base_topic = BaseTopic.TASMOTA_DISCOVERY_TOPIC.value + '/+/config'
         self.mqtt_client.message_callback_add(self._base_topic,
-                                              self.on_message_cb)
-        self.mqtt_client.connect_handler_add(self.on_connect_cb)
+                                              self._on_message_cb)
+        self.mqtt_client.connect_handler_add(self._on_connect_cb)
 
-    def on_message_cb(self, client, userdata, message) -> None:
+    def _on_message_cb(self, client, userdata, message) -> None:
         """Handles incoming MQTT messages."""
         payload = str(message.payload.decode("utf-8"))
-        self._parse_devices(payload=json.loads(payload))
+        new_devices = self._parse_devices(payload=json.loads(payload))
         for _processor in self._discovery_processors:
-            _processor.process_discovery_update(self.devices)
+            _processor.process_discovery_update(new_devices)
 
-    def on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+    def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Handles the MQTT connection event."""
-        self._logger.debug(
+        package_level_logger.debug(
             '[%s] Connection accepted -> subscribe', self.mqtt_client)
         self.mqtt_client.subscribe(self._base_topic)
 
-    def _parse_devices(self, payload: dict) -> None:
+    def _parse_devices(self, payload: dict) -> list[Device]:
         """Parses the devices from the given payload."""
         if all (k in payload for k in ("hn", "t", "md")):
             device = Device(payload.get("hn"),
@@ -176,3 +162,27 @@ class TasmotaDiscoverer(Discoverer):
                             Model.from_str(payload.get('md')),
                             Protocol.TASMOTA)
             self.devices.append(device)
+            return [device]
+
+
+class UnifiedDiscoverer():
+    """
+    A class that unifies the discovery of devices from different protocols.
+    """
+    def __init__(self, mqtt_client: MQTTClient):
+        """
+        Initializes the UnifiedDiscoverer with a list of specific protocol discoverers.
+        """
+        self._discoverers = [ZigbeeDiscoverer(mqtt_client), TasmotaDiscoverer(mqtt_client)]
+
+    def get_devices(self) -> list[Device]:
+        """
+        Returns a list of all devices discovered by all protocol discoverers.
+        """
+        return [device for _discoverer in self._discoverers for device in _discoverer.get_devices()]
+
+    def add_discovery_processor(self, processor: DiscoveryProcessor) -> None:
+        """Appends an Discovery Processor instance to the processor list
+        """
+        for _discoverer in self._discoverers:
+            _discoverer.add_discovery_processor(processor)

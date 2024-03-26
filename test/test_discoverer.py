@@ -22,11 +22,12 @@ class BasicDiscoveryProc(DiscoveryProcessor):
     def __init__(self) -> None:
         super().__init__()
         self.nb_devices = None
+
     def process_discovery_update(self, devices):
         self.nb_devices = len(devices)
         logger.debug(f"Discovered {len(devices)} devices")
         for device in devices:
-            logger.debug(f"Device: {device}")
+            logger.debug(f"Device: {repr(device)}")
 
 
 class ExtendedDiscoveryProc(DiscoveryProcessor):
@@ -35,15 +36,23 @@ class ExtendedDiscoveryProc(DiscoveryProcessor):
         self.mqtt_client = mqtt_client
 
     def process_discovery_update(self, devices):
-        logger.info(f"Discovered {len(devices)} devices")
+        logger.debug(f"Discovered {len(devices)} devices")
         for device in devices:
-            _codec = CodecFactory().create_instance(model=device.model,
-                                                    protocol=device.protocol,
-                                                    device_name=device.friendly_name)
-            _bridge = MQTTBridge(self.mqtt_client, _codec)
-            _logger = AvailabilityLogger(debug=True)
-            _bridge.add_availability_processor(_logger)
-        self.mqtt_client.start()
+            if device.protocol != Protocol.Z2M:
+                continue
+            if device.model != Model.UNKNOWN:
+                _codec = CodecFactory().create_instance(model=device.model,
+                                                        protocol=device.protocol,
+                                                        device_name=device.friendly_name)
+                _bridge = MQTTBridge(self.mqtt_client, _codec)
+                _logger = AvailabilityLogger(debug=False)
+                _bridge.add_availability_processor(_logger)
+
+        if self.mqtt_client.started is not True:
+            try:
+                self.mqtt_client.start()
+            except Exception as e:
+                logger.error('>>> Error when starting: %s', e)
 
 
 class TestDiscoZ2M(unittest.TestCase):

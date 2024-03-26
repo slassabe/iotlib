@@ -3,6 +3,7 @@
 # pylint: skip-file
 
 import json
+import time
 
 from iotlib.client import MQTTClient
 from iotlib.virtualdev import Switch
@@ -124,9 +125,14 @@ class MockZigbeeSwitch:
         self.client.message_callback_add(
             self.topic_root + '/get', self.on_message_get)
 
-    def _state_to_json(self):
+    def _state_to_json(self, on_time: int = None):
         _state = "ON" if self.state else "OFF"
-        _json = json.dumps({"state": _state})
+        _json_dict = {"state": _state}
+        
+        if on_time is not None:
+            _json_dict["on_time"] = on_time
+
+        _json = json.dumps(_json_dict)
         return _json
 
     def _process_message_count(self, topic, payload):
@@ -137,13 +143,25 @@ class MockZigbeeSwitch:
     def on_message_set(self, client, userdata, message):
         payload = message.payload.decode("utf-8")
         self._process_message_count(message.topic, payload)
-        if payload == self.MESSAGE_ON:
+        _json_payload = json.loads(payload)
+        if 'state' not in _json_payload:
+            raise DecodingException(f'No state in message: {payload}')
+        _state = _json_payload['state']
+        if _state == 'ON':
             self.state = True
-        elif payload == self.MESSAGE_OFF:
+        elif _state == 'OFF':
             self.state = False
         else:
-            logger.error('Receive bad message : %s', payload)
-        self.client.publish(self.topic_root, self._state_to_json())
+            raise DecodingException(f'Bad state in message: {payload}')
+        _on_time = _json_payload.get('on_time')
+        if _on_time is not None:
+            _on_time = int(_on_time)
+        self.client.publish(self.topic_root, self._state_to_json(_on_time))
+        if _on_time is not None:
+            time.sleep(_on_time)
+            self.state = False
+            self.client.publish(self.topic_root, self._state_to_json())
+
 
     def on_message_get(self, client, userdata, message):
         payload = message.payload.decode("utf-8")

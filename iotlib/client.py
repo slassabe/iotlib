@@ -1,36 +1,34 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-"""Module for MQTT communication.
-
-This module provides a MQTTClient class for publishing messages to and subscribing to topics on an MQTT broker.
+"""
+This module provides the MQTTClient class for establishing MQTT connections.
 
 Key features:
+- Secure connections via TLS.
+- Username/password authentication.
+- Event handling for connect, disconnect, message receipt, and subscribe.
+- Custom handler support for these events.
 
-- Connects to broker based on configuration settings
-- Supports TLS encryption and authentication
-- Automatic reconnect on connection failure
-- Publish messages with various QoS levels
-- Subscribe to topics and process messages in callbacks
-- Logging of connection state changes and errors
+Example usage:
 
-Typical usage:
+    def _on_message_cb(client, userdata, message):
+        print(f"Received message: {message.payload.decode('utf-8')}")
+    def _on_connect_cb(client, userdata, flags, rc, properties):
+        print(f"Connected with result code {rc}")
+        client.subscribe("my_topic")
+    client = MQTTClient(client_id="my_client", hostname="localhost")
+    client.message_callback_add("my_topic", _on_message_cb)
+    client.connect_handler_add(self._on_connect_cb)
+    client.start()
 
-- Create MQTTClient instance, passing client ID
-- client.start()
-- client.subscribe(self.topic)
-- client.message_callback_add(self.topic, self.on_message_cb)
-- client.connect_handler_add(self._on_connect_cb)
-- client.subscribe_handler_add(self._on_subscribe_cb)
-- client.disconnect_handler_add(self._on_disconnect_cb)
-- loop
-- client.stop()
-
+Author: Serge LASSABE
+Date: Creation Date
 """
 
 import socket
 
-from typing import Callable, Any
+from typing import Callable, Any, Optional, List
 import certifi
 import paho.mqtt.client as mqtt
 
@@ -38,27 +36,46 @@ from . import package_level_logger
 
 
 class MQTTClient():
-    _logger = package_level_logger
+    """    A class to handle MQTT connections.
+
+    This class provides methods to establish a connection to an MQTT server,
+    handle events such as connect, disconnect, message receipt, and subscribe,
+    and add custom handlers for these events.
+    """
 
     def __init__(self,
-                 client_id,
-                 hostname="127.0.0.1",
-                 port=1883,
-                 user_name: str = None,
-                 user_pwd: str = None,
-                 keepalive=60,
-                 tls=False,
-                 clean_start=False,
-                 ):
-        self.hostname = hostname
-        self.port = port
-        self.user_name = user_name
-        self.user_pwd = user_pwd
-        self.keepalive = keepalive
-        self.tls = tls
-        self.clean_start = clean_start
+                 client_id: str,
+                 hostname: str = "127.0.0.1",
+                 port: int = 1883,
+                 user_name: Optional[str] = None,
+                 user_pwd: Optional[str] = None,
+                 keepalive: int = 60,
+                 tls: bool = False,
+                 clean_start: bool = False,
+                 ) -> None:
+        """
+        Initializes a new instance of the `Client` class.
+
+        Args:
+            client_id (str): The unique identifier for the client.
+            hostname (str, optional): The hostname or IP address of the MQTT broker. Defaults to "127.0.0.1".
+            port (int, optional): The port number of the MQTT broker. Defaults to 1883.
+            user_name (str, optional): The username for authentication. Defaults to None.
+            user_pwd (str, optional): The password for authentication. Defaults to None.
+            keepalive (int, optional): The keepalive interval in seconds. Defaults to 60.
+            tls (bool, optional): Specifies whether to use TLS for secure connection. Defaults to False.
+            clean_start (bool, optional): Specifies whether to start with a clean session. Defaults to False.
+        """
+        self.hostname: str = hostname
+        self.port: int = port
+        self.user_name: Optional[str] = user_name
+        self.user_pwd: Optional[str] = user_pwd
+        self.keepalive: int = keepalive
+        self.tls: bool = tls
+        self.clean_start: bool = clean_start
         #
-        self.connected = False
+        self._connected = False
+        self._started = False
         #
         self._loop_forever_used = False
 
@@ -79,42 +96,39 @@ class MQTTClient():
         self.client.on_message = self._handle_on_message
         self.client.on_subscribe = self._handle_on_subscribe
 
-        self.on_connect_handlers: list[Callable] = []
-        self.on_disconnect_handlers: list[Callable] = []
-        self._default_message_callbacks: list[Callable] = []
-        self.on_subscribe_handlers: list[Callable] = []
+        self.on_connect_handlers: List[Callable] = []
+        self.on_disconnect_handlers: List[Callable] = []
+        self._default_message_callbacks: List[Callable] = []
+        self.on_subscribe_handlers: List[Callable] = []
         self.client.enable_logger(package_level_logger)
 
-    def __str__(self):
-        return f'<{self.__class__.__name__} "{self.client}">'
-        # return f'<{self.__class__.__name__} obj. "{self.hostname}:{self.port}">'
-        # return f'<{self.__class__.__name__} obj.">'
-
-    def start_OLD(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
-        """Starts the client MQTT network loop.
-
-        Connects the client if not already connected, starts the network loop
+    @property
+    def connected(self) -> bool:
+        """
+        Returns the connection status of the client.
 
         Returns:
-            mqtt.MQTTErrorCode: The result of calling client.loop_start().
-
-        Raises:
-            RuntimeError: If loop_stop fails.
+            bool: True if the client is connected, False otherwise.
         """
-        try:
-            if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                self._logger.error('[%s] loop_start failed : %s', 
-                                   self,
-                                   mqtt.error_string(mqtt.MQTTErrorCode))
-                raise RuntimeError('loop_start failed')
-            _rc = self.connect(properties=properties)
-            return _rc
-        except ConnectionRefusedError as exp:
-            self._logger.fatal('[%s] cannot connect host %s',
-                               exp, self.hostname)
-            raise RuntimeError('[%s] connection refused') from exp
+        return self._connected
 
-    def start(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
+    @property
+    def started(self) -> bool:
+        """
+        Returns the current status of the client.
+
+        Returns:
+            bool: True if the client has started, False otherwise.
+        """
+        return self._started
+
+    def __str__(self) -> str:
+        return f'<{self.__class__.__name__} "{self.client._client_id}">'
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} obj.  "{self.client._client_id}" | "{self.hostname}:{self.port}">'
+
+    def start(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
         """Starts the client MQTT network loop.
 
         Connects the client if not already connected, starts the network loop
@@ -128,14 +142,15 @@ class MQTTClient():
         try:
             _rc = self.connect(properties=properties)
             if self.client.loop_start() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                self._logger.error('[%s] loop_start failed : %s', 
-                                   self,
-                                   mqtt.error_string(mqtt.MQTTErrorCode))
+                package_level_logger.error('[%s] loop_start failed : %s',
+                                           self,
+                                           mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_start failed')
+            self._started = True
             return _rc
         except ConnectionRefusedError as exp:
-            self._logger.fatal('[%s] cannot connect host %s',
-                               exp, self.hostname)
+            package_level_logger.fatal('[%s] cannot connect host %s',
+                                       exp, self.hostname)
             raise RuntimeError('[%s] connection refused') from exp
 
     def stop(self) -> mqtt.MQTTErrorCode:
@@ -147,19 +162,21 @@ class MQTTClient():
         Raises:
             RuntimeError: If loop_stop fails.
         """
-        if not self.connected:
-            self._logger.error('Unable to stop disconnected client')
+        if not self._connected:
+            package_level_logger.error(
+                '[%s] Unable to stop disconnected client', self)
             raise RuntimeError('loop_stop failed')
         _rc = self.disconnect()
         if not self._loop_forever_used:
             if self.client.loop_stop() != mqtt.MQTTErrorCode.MQTT_ERR_SUCCESS:
-                self._logger.error('[%s] loop_stop failed : %s', 
-                                   self,
-                                   mqtt.error_string(mqtt.MQTTErrorCode))
+                package_level_logger.error('[%s] loop_stop failed : %s',
+                                           self,
+                                           mqtt.error_string(mqtt.MQTTErrorCode))
                 raise RuntimeError('loop_stop failed')
+            self._started = False
         return _rc
 
-    def connect(self, properties: mqtt.Properties | None = None) -> mqtt.MQTTErrorCode:
+    def connect(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
         ''' Connect to a remote broker according to the init properties :
         '''
         try:
@@ -167,13 +184,14 @@ class MQTTClient():
                                       port=self.port,
                                       keepalive=self.keepalive,
                                       clean_start=self.clean_start,
-                                      properties=properties
+                                      properties=properties,
                                       )
-            self._logger.debug('Connection request returns : %s', _rc)
+            package_level_logger.debug(
+                '[%s] Connection request returns : %s', self, _rc)
             return _rc
         except socket.gaierror as exp:
-            self._logger.fatal('[%s] cannot connect host %s',
-                               exp, self.hostname)
+            package_level_logger.fatal('[%s] cannot connect host %s',
+                                       exp, self.hostname)
             raise RuntimeError('connect failed') from exp
 
     def _handle_on_connect(self,
@@ -183,15 +201,16 @@ class MQTTClient():
                            reason_code: mqtt.ReasonCode,
                            properties: mqtt.Properties) -> None:
         if reason_code == 0:
-            self.connected = True
+            self._connected = True
         for on_connect_handler in self.on_connect_handlers:
             try:
                 on_connect_handler(client, userdata, flags,
                                    reason_code, properties)
             except Exception as error:
-                self._logger.exception("Failed handling connect %s", error)
+                package_level_logger.exception(
+                    "Failed handling connect %s", error)
 
-    def connect_handler_add(self, handler: Callable):
+    def connect_handler_add(self, handler: Callable) -> None:
         """Adds a connect event handler.
 
         Args:
@@ -203,7 +222,8 @@ class MQTTClient():
         ''' Disconnect from a remote broker.
         '''
         _rc = self.client.disconnect()
-        self._logger.debug('Disconnection request returns : %s', _rc)
+        package_level_logger.debug(
+            '[%s] Disconnection request returns : %s', self, _rc)
         return _rc
 
     def _handle_on_disconnect(self,
@@ -214,7 +234,7 @@ class MQTTClient():
                               properties: mqtt.Properties) -> None:
         ''' Define the default disconnect callback implementation. 
         '''
-        self.connected = False
+        self._connected = False
         for on_disconnect_handler in self.on_disconnect_handlers:
             try:
                 on_disconnect_handler(client,
@@ -223,10 +243,10 @@ class MQTTClient():
                                       reason_code,
                                       properties)
             except Exception as error:
-                self._logger.exception(
+                package_level_logger.exception(
                     "Failed handling disconnect %s", error)
 
-    def disconnect_handler_add(self, handler: Callable):
+    def disconnect_handler_add(self, handler: Callable) -> None:
         """Adds a disconnect event handler.
 
         Args:
@@ -247,32 +267,66 @@ class MQTTClient():
             try:
                 on_message_handler(client, userdata, message)
             except Exception as error:
-                self._logger.exception("Exception occured : %s", error)
+                package_level_logger.exception("Exception occured : %s", error)
 
     def default_message_callback_add(self, callback: Callable) -> None:
+        """
+        Adds a callback function to the list of default message callbacks.
+
+        Parameters:
+        - callback (Callable): The callback function to be added.
+
+        Returns:
+        - None
+        """
         self._default_message_callbacks.append(callback)
 
     def message_callback_add(self, topic: str, callback: Callable) -> None:
+        """
+        Adds a callback function for a specific topic.
+
+        Args:
+            topic (str): The topic to add the callback for.
+            callback (Callable): The callback function to be executed when a message is received on the specified topic.
+
+        Returns:
+            None
+        """
         self.client.message_callback_add(topic, callback)
 
     def subscribe(self, topic, **kwargs):
         ''' Subscribes to the specified topic. '''
         return self.client.subscribe(topic, **kwargs)
 
-    def _handle_on_subscribe(self, client, userdata, mid, reason_code_list, properties):
+    def _handle_on_subscribe(self,
+                             client: mqtt.Client,
+                             userdata: Any,
+                             mid: int,
+                             reason_code_list: List[mqtt.ReasonCode],
+                             properties: mqtt.Properties) -> None:
         for on_subscribe_handler in self.on_subscribe_handlers:
             try:
                 on_subscribe_handler(client, userdata, mid,
                                      reason_code_list, properties)
             except Exception as error:
-                self._logger.exception("Failed handling subscribe %s", error)
+                package_level_logger.exception(
+                    "Failed handling subscribe %s", error)
 
     def subscribe_handler_add(self, handler: Callable):
+        """
+        Adds a handler function to the list of subscribe event handlers.
+
+        Args:
+            handler (Callable): The handler function to be added.
+
+        Returns:
+            None
+        """
         self.on_subscribe_handlers.append(handler)
 
     def publish(self, topic, payload, **kwargs):
         ''' Publish a message on a topic. '''
-        self._logger.debug(
+        package_level_logger.debug(
             'Publish on topic : %s - payload : %s', topic, payload)
         return self.client.publish(topic, payload, **kwargs)
 
@@ -286,8 +340,19 @@ class MQTTClient():
                  payload: str,
                  qos: int = 1,
                  retain: bool = False):
+        """
+        Set the Last Will and Testament (LWT) message for the client.
+
+        Args:
+            topic (str): The topic to publish the LWT message to.
+            payload (str): The payload of the LWT message.
+            qos (int, optional): The quality of service level for the LWT message. Defaults to 1.
+            retain (bool, optional): Whether the LWT message should be retained. Defaults to False.
+
+        Returns:
+            bool: True if the LWT message was successfully set, False otherwise.
+        """
         return self.client.will_set(topic,
                                     payload=payload,
                                     qos=qos,
                                     retain=retain)
-

@@ -9,6 +9,7 @@ import schedule
 
 from . import package_level_logger
 
+
 class Singleton(type):
     """ ref : Python Cookbook Recipes for Mastering Python 3, (David Beazley, Brian K. Jones)
         Using a Metaclass to Control Instance Creation
@@ -16,6 +17,7 @@ class Singleton(type):
     def __init__(cls, *args, **kwargs):
         cls.__instance = None
         super().__init__(*args, **kwargs)
+
     def __call__(cls, *args, **kwargs):
         if cls.__instance is None:
             cls.__instance = super().__call__(*args, **kwargs)
@@ -23,11 +25,11 @@ class Singleton(type):
         else:
             return cls.__instance
 
+
 class InfiniteTimer():
     """A Timer class that does not stop, unless you want it to.
     https://stackoverflow.com/questions/12435211/threading-timer-repeat-function-every-n-seconds
     """
-    _logger = package_level_logger
 
     def __init__(self, seconds, target):
         self._should_continue = False
@@ -52,7 +54,7 @@ class InfiniteTimer():
             self._should_continue = True
             self._start_timer()
         else:
-            self._logger.error(
+            package_level_logger.error(
                 "Timer already running, wait if you're restarting.")
 
     def cancel(self):
@@ -61,12 +63,13 @@ class InfiniteTimer():
             self._should_continue = False
             self.thread.cancel()
         else:
-            self._logger.error("Timer never started or failed to initialize.")
+            package_level_logger.error(
+                "Timer never started or failed to initialize.")
 
 
 class Trigger(ABC):
 
-    def __init__(self, name:str):
+    def __init__(self, name: str):
         self._name = name
         self._registered_list = []
 
@@ -83,9 +86,7 @@ class Trigger(ABC):
 
 
 class Timer(Trigger):
-    _logger = package_level_logger
-
-    def __init__(self, name: str, every : int):
+    def __init__(self, name: str, every: int):
         super().__init__(name)
         self._timer = InfiniteTimer(every, self._handle_switches)
         self._timer.start()
@@ -96,9 +97,7 @@ class Timer(Trigger):
 
 
 class Scheduler(Trigger):
-    _logger = package_level_logger
-
-    def __init__(self, name: str, at : str):
+    def __init__(self, name: str, at: str):
         super().__init__(name)
         self._schedule = schedule.every().day.at(at).do(self._handle_switches)
 

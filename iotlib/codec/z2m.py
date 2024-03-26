@@ -32,7 +32,6 @@ STATE_OFF = 'OFF'
 class DeviceOnZigbee2MQTT(Codec):
     ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
     '''
-    _logger = package_level_logger
 
     def __init__(self,
                  device_name: str,
@@ -53,7 +52,8 @@ class DeviceOnZigbee2MQTT(Codec):
         self._root_topic = f'{base_topic}/{device_name}'
         self._availability_topic = f'{base_topic}/{device_name}/availability'
 
-        self._logger.debug('Z2M codec created for device %s', device_name)
+        package_level_logger.debug(
+            'Z2M codec created for device %s', device_name)
 
     def get_availability_topic(self) -> str:
         """Return the availability topic the client must subscribe
@@ -77,7 +77,10 @@ class DeviceOnZigbee2MQTT(Codec):
         """Unable to get state by default"""
         return None
 
-    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
+    def change_state_request(self,
+                             is_on: bool,
+                             device_id: int | None = None,
+                             on_time: int | None = None) -> tuple[str, str]:
         """Unable to change state by default"""
         return None
 
@@ -293,14 +296,12 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     @abstractmethod
     def set_sound(self,
                   melody: int,
-                  alarm_level: str,
-                  alarm_duration: int) -> None:
+                  alarm_level: str) -> None:
         """Change the alarm parameters.
 
         Args:
             melody (int): The alarm melody number.
             alarm_level (str): The alarm volume level.
-            alarm_duration (int): The alarm duration in seconds.
 
         """
         raise NotImplementedError
@@ -321,26 +322,25 @@ class NeoNasAB02B2(AlarmOnZigbee):
         super().__init__(*args, **kwargs)
         self._melody = 1
         self._alarm_level = 'low'
-        self._alarm_duration = 5
 
     def set_sound(self,
                   melody: int,
-                  alarm_level: str,
-                  alarm_duration: int) -> None:
+                  alarm_level: str) -> None:
         assert isinstance(melody, int) and melody in range(1, 19), \
             f'Bad value for melody : {melody}'
         assert isinstance(alarm_level, str) and alarm_level in ['low', 'medium', 'high'], \
             f'Bad value for alarm_level : {alarm_level}'
-        assert isinstance(alarm_duration, int) and alarm_duration in range(1, 120), \
-            f'Bad value for alarm_duration : {alarm_duration}'
 
-    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
+    def change_state_request(self,
+                             is_on: bool,
+                             device_id: int | None = None,
+                             on_time: int | None = None) -> tuple[str, str]:
         _set = {self._key_alarm: is_on,
                 self._key_melody: self._melody,
                 self._key_alarm_level: self._alarm_level,
-                self._key_alarm_duration: self._alarm_duration,
+                self._key_alarm_duration: on_time,
                 }
-        self._logger.debug('Encode payload : %s', _set)
+        package_level_logger.debug('Encode payload : %s', _set)
         return f'{self._root_topic}/set', json.dumps(_set)
 
     def _decode_value_pl(self, topic, payload) -> bool:
@@ -382,14 +382,31 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
                                   self.__class__._decode_value_pl,
                                   v_switch)
         # self.ask_for_state()
-        self._logger.warning('%s : unable to ask state', self)
+        package_level_logger.warning('%s : unable to ask state', self)
 
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state":""}'
 
-    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
-        _set = {SWITCH_POWER: STATE_ON if is_on else STATE_OFF}
-        return f'{self._root_topic}/set', json.dumps(_set)
+    def change_state_request(self,
+                             is_on: bool,
+                             device_id: int | None = None,
+                             on_time: int | None = None) -> tuple[str, str]:
+        """
+        Constructs a change state request for the device.
+
+        Args:
+            is_on (bool): Indicates whether the device should be turned on or off.
+            device_id (int | None): The ID of the device. If None, the request is for all devices.
+            on_time (int | None): The duration in seconds for which the device should remain on. If None, the device will stay on indefinitely.
+
+        Returns:
+            tuple[str, str]: A tuple containing the MQTT topic and the payload in JSON format.
+        """
+        _topic = f'{self._root_topic}/set'
+        _payload = {SWITCH_POWER: STATE_ON if is_on else STATE_OFF}
+        if on_time is not None:
+            _payload["on_time"] = on_time
+        return _topic, json.dumps(_payload)
 
     def _decode_value_pl(self, topic, payload) -> bool:
         raise NotImplementedError
@@ -408,11 +425,6 @@ class SonoffZbminiL(SwitchOnZigbee):
             raise DecodingException(
                 f'Received erroneous State value : "{_pl}"')
 
-
-class SonoffZbSw02Right(SonoffZbminiL):
-    ''' https://www.zigbee2mqtt.io/devices/ZB-SW02.html '''
-    # Left channel is not yet implemented !!!
-    _key_power = SWITCH0_POWER
 
 class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
     ''' Bridge between SWITCH devices connected via Zigbee2MQTT and MQTT Clients
@@ -441,11 +453,11 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
         v_switch0 = v_switch0 or Switch(friendly_name)
         assert isinstance(v_switch0, Switch0), \
             f'Bad value : {v_switch0} of type {type(v_switch0)}'
-        #self._v_switch0 = v_switch0
+        # self._v_switch0 = v_switch0
         v_switch1 = v_switch1 or Switch(friendly_name)
         assert isinstance(v_switch1, Switch1), \
             f'Bad value : {v_switch1} of type {type(v_switch1)}'
-        #self._v_switch1 = v_switch1
+        # self._v_switch1 = v_switch1
 
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_switch0_value_pl,
@@ -454,12 +466,26 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
                                   self.__class__._decode_switch1_value_pl,
                                   v_switch1)
         # self.ask_for_state()
-        self._logger.warning('%s : unable to ask state', self)
+        package_level_logger.warning('%s : unable to ask state', self)
 
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state_left":"","state_right":""}'
 
-    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
+    def change_state_request(self,
+                             is_on: bool,
+                             device_id: int | None = None,
+                             on_time: int | None = None) -> tuple[str, str]:
+        """
+        Constructs a change state request for the device.
+
+        Args:
+            is_on (bool): Indicates whether the device should be turned on or off.
+            device_id (int | None): The ID of the device. If None, the request is for all devices.
+            on_time (int | None): The duration in seconds for which the device should remain on. If None, the device will stay on indefinitely.
+
+        Returns:
+            tuple[str, str]: A tuple containing the MQTT topic and the payload in JSON format.
+        """
         if device_id is None:
             _key_power = SWITCH_POWER
         elif device_id == 0:
@@ -468,8 +494,12 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
             _key_power = SWITCH1_POWER
         else:
             raise ValueError(f'Bad value for device_id : {device_id}')
-        _set = {_key_power: STATE_ON if is_on else STATE_OFF}
-        return f'{self._root_topic}/set', json.dumps(_set)
+
+        _topic = f'{self._root_topic}/set'
+        _payload = {_key_power: STATE_ON if is_on else STATE_OFF}
+        if on_time is not None:
+            _payload["on_time"] = on_time
+        return _topic, json.dumps(_payload)
 
     def _decode_switch0_value_pl(self, topic, payload) -> bool:
         raise NotImplementedError
@@ -478,15 +508,29 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
         raise NotImplementedError
 
 
-class SonoffZbSw02(MultiSwitchOnZigbee):
+class EweLinkZbSw02(MultiSwitchOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/ZB-SW02.html '''
-    def _decode_switch0_value_pl(self, topic, payload) -> bool | None:
+
+    def _decode_switch_value_pl(self, topic, payload, switch_power) -> bool | None:
+        """
+        Decode the switch value from the payload.
+
+        Args:
+            topic (str): The topic of the message.
+            payload (str): The payload of the message.
+            switch_power (str): The switch power identifier.
+
+        Returns:
+            bool | None: The decoded switch value. Returns True if the switch is on,
+            False if the switch is off, and None if the switch identifier is invalid.
+
+        Raises:
+            DecodingException: If the state value or switch identifier is erroneous.
+        """
         _json_pl = json.loads(payload)
         _the_switch = next(iter(_json_pl))
-        if _the_switch == SWITCH1_POWER:
-            return None
-        elif _the_switch == SWITCH0_POWER:
-            _pl = _json_pl.get(SWITCH0_POWER)
+        if _the_switch == switch_power:
+            _pl = _json_pl.get(switch_power)
             if _pl == STATE_ON:
                 return True
             elif _pl == STATE_OFF:
@@ -494,26 +538,14 @@ class SonoffZbSw02(MultiSwitchOnZigbee):
             else:
                 raise DecodingException(
                     f'Received erroneous State value : "{_pl}"')
+        elif _the_switch in [SWITCH0_POWER, SWITCH1_POWER]:
+            return None
         else:
             raise DecodingException(
                 f'Received erroneous Switch identifier : "{_the_switch}"')
 
+    def _decode_switch0_value_pl(self, topic, payload) -> bool | None:
+        return self._decode_switch_value_pl(topic, payload, SWITCH0_POWER)
 
     def _decode_switch1_value_pl(self, topic, payload) -> bool | None:
-        _json_pl = json.loads(payload)
-        _the_switch = next(iter(_json_pl))
-        if _the_switch == SWITCH0_POWER:
-            return None
-        elif _the_switch == SWITCH1_POWER:
-            _pl = _json_pl.get(SWITCH1_POWER)
-            if _pl == STATE_ON:
-                return True
-            elif _pl == STATE_OFF:
-                return False
-            else:
-                raise DecodingException(
-                    f'Received erroneous State value : "{_pl}"')
-        else:
-            raise DecodingException(
-                f'Received erroneous Switch identifier : "{_the_switch}"')
-
+        return self._decode_switch_value_pl(topic, payload, SWITCH1_POWER)

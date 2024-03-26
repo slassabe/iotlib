@@ -22,7 +22,7 @@ Example usage:
     
     cluster = factory.create_instance(Model.CUSTOM_DEVICE, Protocol.ZIGBEE)
 """
-import logging
+from iotlib import package_level_logger
 
 from collections import defaultdict
 from enum import Enum
@@ -30,7 +30,7 @@ from typing import Callable
 
 from iotlib.abstracts import AbstractCodec
 from iotlib.codec.z2m import (NeoNasAB02B2, SonoffSnzb01, SonoffSnzb02, SonoffSnzb3,
-                              SonoffZbminiL, Ts0601Soil, SonoffZbSw02)
+                              SonoffZbminiL, Ts0601Soil, EweLinkZbSw02)
 
 from .utils import Singleton
 
@@ -51,7 +51,7 @@ class Model(Enum):
     - EL_ZBSW02: eWeLink ZB-SW02 Zigbee wireless switch module
 
     """
-    EL_ZBSW02 = 'eWeLink:ZB-SW02' # eWeLink ZB-SW02 Zigbee wireless switch module
+    EL_ZBSW02 = 'ZB-SW02' # eWeLink ZB-SW02 Zigbee wireless switch module
     MIFLORA = 'Miflora'
     NEO_ALARM = 'NAS-AB02B2'  # Neo NAS-AB02B2 Zigbee Siren
     RING_CAMERA = 'RingCamera'
@@ -106,8 +106,6 @@ class CodecFactory(metaclass=Singleton):
         _constructors (dict): Registered constructors mapped to model name.
 
     """
-    _logger = logging.getLogger(__name__)
-
     def __init__(self):
         """Initialize the factory by creating an empty constructors dict."""
         self._constructors = defaultdict(dict)
@@ -129,7 +127,7 @@ class CodecFactory(metaclass=Singleton):
             TypeError: If constructor is not callable.
 
         """
-        self._logger.debug('Registering constructor for model %s and protocol %s',
+        package_level_logger.debug('Registering constructor for model %s and protocol %s',
                            model, protocol)
         if not isinstance(model, Model):
             raise TypeError(f'Model {model} is not of type "Model"')
@@ -156,9 +154,9 @@ class CodecFactory(metaclass=Singleton):
         """
         _constructor_dict = self._constructors.get(model)
         if not _constructor_dict:
-            raise ValueError(f'Model {model} unknown')
+            raise ValueError(f'Cannot create instance for model: {model}')
         if _constructor_dict is None:
-            raise ValueError(f'Model {model} unknown')
+            raise ValueError(f'Cannot create instance for model: {model}')
         if len(_constructor_dict) == 1 and protocol is Protocol.DEFAULT:
             protocol = list(_constructor_dict.keys())[0]
 
@@ -202,7 +200,7 @@ class CodecFactory(metaclass=Singleton):
         return _codec
 
 
-CodecFactory().registers(Model.EL_ZBSW02, Protocol.Z2M, SonoffZbSw02)
+CodecFactory().registers(Model.EL_ZBSW02, Protocol.Z2M, EweLinkZbSw02)
 CodecFactory().registers(Model.NEO_ALARM, Protocol.Z2M, NeoNasAB02B2)
 CodecFactory().registers(Model.TUYA_SOIL, Protocol.Z2M, Ts0601Soil)
 CodecFactory().registers(Model.ZB_AIRSENSOR, Protocol.Z2M, SonoffSnzb02)

@@ -16,38 +16,39 @@ import enum
 from iotlib import package_level_logger
 from iotlib.client import MQTTClient
 
+
 class AbstractCodec(ABC):
     """Abstract base class for codecs used in IoT communication."""
 
     @abstractmethod
     def decode_avail_pl(self, payload: str) -> bool:
         ''' Decode message received on topic dedicated to availability 
-        
+
         Args:
             payload (str): The payload of the message received on the availability topic.
-        
+
         Returns:
             bool: True if the decoding is successful, False otherwise.
-        
+
         '''
         raise NotImplementedError
 
     @abstractmethod
     def get_availability_topic(self) -> str:
-            '''Get the topic dedicated to handle availability messages
-            
-            Returns:
-                str: The topic dedicated to handle availability messages.
-            '''
-            raise NotImplementedError
+        '''Get the topic dedicated to handle availability messages
+
+        Returns:
+            str: The topic dedicated to handle availability messages.
+        '''
+        raise NotImplementedError
 
     @abstractmethod
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         """Get the current state request for a device.
-    
+
         Args:
             device_id: The device ID to get the state request for.
-        
+
         Returns:
             A tuple containing the state request topic and payload or None
             if such a request is not accepted.
@@ -67,7 +68,6 @@ class AbstractCodec(ABC):
             if such a request is not accepted.
         """
         raise NotImplementedError
-
 
 
 class Surrogate(ABC):
@@ -98,6 +98,7 @@ class Surrogate(ABC):
         """
         raise NotImplementedError
 
+
 class DiscoveryProcessor(ABC):
     """
     Abstract base class for discovery processors.
@@ -110,13 +111,11 @@ class DiscoveryProcessor(ABC):
 
     """
 
-    _logger = package_level_logger
-
     def __str__(self):
         return f'{self.__class__.__name__} object'
 
     @abstractmethod
-    def process_discovery_update(self, 
+    def process_discovery_update(self,
                                  devices: list) -> None:
         """Handle an update to the device discovery status.
 
@@ -124,6 +123,7 @@ class DiscoveryProcessor(ABC):
             devices (list): The list of devices discovered.
         """
         raise NotImplementedError
+
 
 class AvailabilityProcessor(ABC):
     """
@@ -136,8 +136,6 @@ class AvailabilityProcessor(ABC):
         process_availability_update: Handle an update to the device availability status.
 
     """
-
-    _logger = package_level_logger
 
     def __str__(self):
         return f'{self.__class__.__name__} object'
@@ -152,7 +150,7 @@ class AvailabilityProcessor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def process_availability_update(self, 
+    def process_availability_update(self,
                                     availability: bool) -> None:
         """Handle an update to the device availability status.
 
@@ -177,8 +175,8 @@ class VirtualDeviceProcessor(ABC):
     """
 
     @abstractmethod
-    def process_value_update(self, 
-                             v_dev: any, 
+    def process_value_update(self,
+                             v_dev: any,
                              bridge: Surrogate) -> None:
         """Handle an update from a virtual device.
 
@@ -206,6 +204,7 @@ class ResultType(enum.IntEnum):
     IGNORE = -1
     SUCCESS = 0
     ECHO = 1
+
 
 class AbstractDevice(ABC):
     """
@@ -245,4 +244,3 @@ class AbstractDevice(ABC):
             NotImplementedError: This method is meant to be overridden by subclasses.
         """
         raise NotImplementedError
-

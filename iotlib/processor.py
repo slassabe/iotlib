@@ -27,8 +27,8 @@ from iotlib import package_level_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
 
+
 class VirtualDeviceProcessorCore(VirtualDeviceProcessor):
-    _logger = package_level_logger
 
     def __str__(self):
         return f'{self.__class__.__name__} object'
@@ -45,11 +45,11 @@ class VirtualDeviceLogger(VirtualDeviceProcessorCore):
     def process_value_update(self,
                              v_dev: VirtualDevice,
                              bridge) -> None:
-        self._logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
-                           self,
-                           v_dev,
-                           v_dev.get_property(),
-                           v_dev.value)
+        package_level_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
+                                   self,
+                                   v_dev,
+                                   v_dev.get_property(),
+                                   v_dev.value)
 
 
 class ButtonTrigger(VirtualDeviceProcessorCore):
@@ -94,27 +94,27 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
         """
         prefix = f'[{v_dev}] : event "{v_dev.value}" occured'
         if v_dev.value is None:
-            self._logger.debug(
+            package_level_logger.debug(
                 '%s -> discarded', prefix)
             return
         elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
-            self._logger.info(
+            package_level_logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
-            self._logger.info('%s -> "start_and_stop" with long period',
-                              prefix)
+            package_level_logger.info('%s -> "start_and_stop" with long period',
+                                      prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.start_and_stop(self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
-            self._logger.info('%s -> "trigger_stop"', prefix)
+            package_level_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_stop(bridge)
         else:
-            self._logger.error('%s : action unknown "%s"',
-                               prefix,
-                               v_dev.value)
+            package_level_logger.error('%s : action unknown "%s"',
+                                       prefix,
+                                       v_dev.value)
 
 
 class MotionTrigger(VirtualDeviceProcessorCore):
@@ -137,17 +137,17 @@ class MotionTrigger(VirtualDeviceProcessorCore):
             None
         """
         if v_dev.value:
-            self._logger.info('[%s] occupancy changed to "%s" '
-                              '-> "start_and_stop" on registered switch',
-                              v_dev.friendly_name,
-                              v_dev.value)
+            package_level_logger.info('[%s] occupancy changed to "%s" '
+                                      '-> "start_and_stop" on registered switch',
+                                      v_dev.friendly_name,
+                                      v_dev.value)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         else:
-            self._logger.debug('[%s] occupancy changed to "%s" '
-                               '-> nothing to do (timer will stop switch)',
-                               v_dev.friendly_name,
-                               v_dev.value)
+            package_level_logger.debug('[%s] occupancy changed to "%s" '
+                                       '-> nothing to do (timer will stop switch)',
+                                       v_dev.friendly_name,
+                                       v_dev.value)
 
 
 class PropertyPublisher(VirtualDeviceProcessorCore):
@@ -207,10 +207,11 @@ class AvailabilityLogger(AvailabilityProcessor):
 
     def process_availability_update(self, availability: bool) -> None:
         if availability:
-            _log_fn = self._logger.info if self._debug else self._logger.debug
+            _log_fn = package_level_logger.info if self._debug else package_level_logger.debug
             _log_fn("[%s] is available", self._device_name)
         else:
-            self._logger.warning("[%s] is unavailable", self._device_name)
+            package_level_logger.warning(
+                "[%s] is unavailable", self._device_name)
 
 
 class AvailabilityPublisher(AvailabilityProcessor):
@@ -239,7 +240,6 @@ class AvailabilityPublisher(AvailabilityProcessor):
         self._client.will_set(self._state_topic,
                               'lost',
                               qos=1, retain=True)
-
 
     def process_availability_update(self, availability: bool) -> None:
         if availability is None:

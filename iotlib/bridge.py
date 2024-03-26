@@ -37,8 +37,6 @@ class MQTTBridge(Surrogate):
 
     """
 
-    _logger = package_level_logger
-
     def __init__(self,
                  mqtt_client: MQTTClient,
                  codec: AbstractCodec):
@@ -101,10 +99,10 @@ class MQTTBridge(Surrogate):
         try:
             self._handle_availability(payload)
         except DecodingException as exp:
-            self._logger.exception('"[%s]" : Exception occurred decoding : %s / %s',
-                                   exp,
-                                   message.topic,
-                                   payload[:100])
+            package_level_logger.exception('"[%s]" : Exception occurred decoding : %s / %s',
+                                           exp,
+                                           message.topic,
+                                           payload[:100])
 
     def _value_callback(self,
                         client: mqtt.Client,   # pylint: disable=unused-argument
@@ -116,10 +114,10 @@ class MQTTBridge(Surrogate):
         try:
             self._handle_values(message.topic, payload)
         except DecodingException as exp:
-            self._logger.exception('"[%s]" : Exception occured decoding : %s / %s',
-                                   exp,
-                                   message.topic,
-                                   payload[:100])
+            package_level_logger.exception('"[%s]" : Exception occured decoding : %s / %s',
+                                           exp,
+                                           message.topic,
+                                           payload[:100])
 
     def _on_connect_callback(self,
                              client: mqtt.Client,   # pylint: disable=unused-argument
@@ -131,16 +129,16 @@ class MQTTBridge(Surrogate):
         """Subscribes to MQTT topics for availability and value topics.
         """
         if reason_code == 0:
-            self._logger.debug('[%s] Connection accepted -> subscribe',
-                               client)
+            package_level_logger.debug('[%s] Connection accepted -> subscribe',
+                                       client)
             _topic_avail = self.codec.get_availability_topic()
             self.client.subscribe(_topic_avail, qos=1)
             for _topic_property in self.codec.get_subscription_topics():
                 self.client.subscribe(_topic_property, qos=1)
         else:
-            self._logger.warning('[%s] connection refused - reason : %s',
-                                 self,
-                                 mqtt.connack_string(reason_code))
+            package_level_logger.warning('[%s] connection refused - reason : %s',
+                                         self,
+                                         mqtt.connack_string(reason_code))
 
     def _on_disconnect_callback(self,
                                 client: mqtt.Client,
@@ -152,13 +150,13 @@ class MQTTBridge(Surrogate):
         """Subscribes to MQTT topics for availability and value topics.
         """
         if reason_code == 0:
-            self._logger.debug('Disconnection occures - rc : %s -> stop loop',
-                               reason_code)
+            package_level_logger.debug('Disconnection occures - rc : %s -> stop loop',
+                                       reason_code)
             client.loop_stop()
         else:
-            self._logger.warning('[%s] disconnection not required with rc "%s"',
-                                 self,
-                                 reason_code)
+            package_level_logger.warning('[%s] disconnection not required with rc "%s"',
+                                         self,
+                                         reason_code)
 
     def _handle_values(self, topic: str, payload: bytes) -> None:
         """Handle an incoming sensor value message.
@@ -195,18 +193,19 @@ class MQTTBridge(Surrogate):
         Raises:
             DecodingException: If an error occurs decoding the payload
         """
-        self._logger.debug('Handle availability message with payload: %s',
-                           payload)
+        package_level_logger.debug('Handle availability message with payload: %s',
+                                   payload)
         new_avail = self.codec.decode_avail_pl(payload)
         if self.availability != new_avail:
             self.availability = new_avail
-            self._logger.debug('Availability updated: %s',  self.availability)
+            package_level_logger.debug(
+                'Availability updated: %s',  self.availability)
             # Notify
             for _processor in self._availability_processors:
                 _processor.process_availability_update(self.availability)
         else:
-            self._logger.debug('Availability unchanged: %s',
-                               self.availability)
+            package_level_logger.debug('Availability unchanged: %s',
+                                       self.availability)
         return new_avail
 
     def publish_message(self, topic: str, payload: str) -> None:
@@ -215,8 +214,8 @@ class MQTTBridge(Surrogate):
         if not isinstance(payload, str):
             raise TypeError(f"payload must be string, not {type(payload)}")
 
-        self._logger.debug('Publish messageon topic : %s - payload : %s',
-                           topic, payload)
+        package_level_logger.debug('Publish messageon topic : %s - payload : %s',
+                                   topic, payload)
         _reason_code: mqtt.MQTTMessageInfo = self.client.publish(topic,
                                                                  payload,
                                                                  qos=1,

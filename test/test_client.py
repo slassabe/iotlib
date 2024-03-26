@@ -253,12 +253,10 @@ class TestMQTTClient(unittest.TestCase):
 
         time.sleep(2)
 
-        # 3) Verify test1 shut down
-        logger.warning("Test1 status : %s", test1.status_on_root)
-        logger.warning("Test2 status : %s", test2.status_on_root)
-        self.assertTrue(test1.status_on_root == "disconnected")
-        self.assertTrue(test2.status_on_root == "connected")
-        test2.client.stop()
+        # 3) Verify client status
+        self.assertTrue(test1.status_on_root == "connected")
+        self.assertTrue(test2.status_on_root == "disconnected")
+        test1.client.stop()
 
     def X_test_properties(self):
         ##

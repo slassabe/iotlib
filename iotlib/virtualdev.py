@@ -16,7 +16,6 @@ class VirtualDevice(AbstractDevice):
     """
     Represents a virtual device.
     """
-    _logger = package_level_logger
 
     def __init__(self, friendly_name: str, quiet_mode: bool) -> None:
         """
@@ -96,7 +95,8 @@ class VirtualDevice(AbstractDevice):
         else:
             self.value = value
             for _processor in self._processor_list:
-                self._logger.debug('Execute processor : %s', _processor)
+                package_level_logger.debug(
+                    'Execute processor : %s', _processor)
                 _processor.process_value_update(self, bridge)
             return ResultType.SUCCESS
 
@@ -171,67 +171,102 @@ class Operable(VirtualDevice):
         """
         _request = bridge.codec.get_state_request(device_id)
         if _request is None:
-            self._logger.debug('%s : unable to get state')
+            package_level_logger.debug('%s : unable to get state')
         else:
             _topic, _payload = _request
             bridge.publish_message(_topic, _payload)
 
     def trigger_change_state(self,
                              bridge: Surrogate,
-                             is_on: bool) -> None:
+                             is_on: bool,
+                             on_time: int | None = None) -> None:
         """
         Triggers a change in the state of a device.
 
         Args:
             bridge (Surrogate): The bridge object used for communication.
             is_on (bool): The new state of the device (True for ON, False for OFF).
+            on_time (int | None): The duration for which the device should remain ON, in seconds.
+                If None, the device will remain ON indefinitely.
+
+        Returns:
+            None
+
+        Raises:
+            None
 
         """
-        _request = bridge.codec.change_state_request(is_on, self.device_id)
+        _request = bridge.codec.change_state_request(is_on,
+                                                     device_id=self.device_id,
+                                                     on_time=on_time)
         if _request is None:
-            self._logger.debug('%s : unable to change state')
+            package_level_logger.warning('%s : unable to change state')
         else:
             _topic, _payload = _request
             bridge.publish_message(_topic, _payload)
 
-    def trigger_start(self, bridge: Surrogate) -> bool:
+    def trigger_start(self,
+                      bridge: Surrogate,
+                      on_time: int | None = None) -> bool:
         ''' Ask the device to start
 
+        This method triggers the device to start. If the device is already in the "on" state,
+        no action is required and the method returns False. Otherwise, the method requests
+        the device to turn on by calling the `trigger_change_state` method with the `is_on`
+        parameter set to True.
+
+        Args:
+            bridge (Surrogate): The bridge object used to communicate with the device.
+            on_time (int | None, optional): The time duration for which the device should
+                remain on. Defaults to None.
+
         Returns:
-            bool: returns True if switch state is OFF when method called      
+            bool: Returns True if the switch state is OFF when the method is called.
         '''
         if self.value:
-            self._logger.debug('[%s] is already "on" -> no action required',
-                               self)
+            package_level_logger.debug('[%s] is already "on" -> no action required',
+                                       self)
             return False
-        self._logger.debug('[%s] is "off" -> request to turn it "on"', self)
+        package_level_logger.debug(
+            '[%s] is "off" -> request to turn it "on"', self)
         self.trigger_change_state(bridge,
-                                  is_on=True)
+                                  is_on=True,
+                                  on_time=on_time)
         return True
 
     def trigger_stop(self, bridge: Surrogate) -> bool:
         ''' Ask the device to stop
 
+        This method is used to send a request to the device to stop its operation.
+        If the switch state is currently ON, it will send a request to turn it OFF via MQTT.
+
+        Args:
+            bridge (Surrogate): The bridge object used to communicate with the device.
+
         Returns:
-            bool: returns True if switch state is ON  when method called    
+            bool: Returns True if the switch state is ON when the method is called, indicating 
+               that a request to turn it OFF has been sent.
+
         '''
-        self._logger.debug('[%s] stop switch and reset stop timer', self)
+        package_level_logger.debug(
+            '[%s] stop switch and reset stop timer', self)
         self._stop_timer = None
 
         if not self.value:
-            self._logger.debug('\t > [%s] is already "off" -> no action required',
-                               self)
+            package_level_logger.debug('\t > [%s] is already "off" -> no action required',
+                                       self)
             return False
         else:
-            self._logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
-                               self)
+            package_level_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
+                                       self)
             self.trigger_change_state(bridge,
-                                      is_on=False)
+                                      is_on=False,
+                                      on_time=None)
             return True
 
     def _remember_to_turn_the_light_off(self, when: int, bridge: Surrogate) -> None:
-        self._logger.debug('[%s] Automatially stop after "%s" sec.',
-                           self,  when)
+        package_level_logger.debug('[%s] Automatially stop after "%s" sec.',
+                                   self,  when)
         if not isinstance(when, int) or when <= 0:
             raise TypeError(
                 f'Expecting a positive int for period "{when}", not {type(when)}')
@@ -307,7 +342,7 @@ class Switch(Operable):
         """
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
-        self._device_id = None  # Used by Shelly : relay numbers
+        self._device_id = None  # Relay numbers of multi-channel devices
         self._count_down = countdown
 
     def handle_value(self, value: bool, bridge) -> list:

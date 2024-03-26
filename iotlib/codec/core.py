@@ -16,7 +16,6 @@ HandlersListType: TypeAlias = dict[str, MessageHandlerType]
 
 
 class Codec(AbstractCodec):
-    _logger = package_level_logger
 
     def __init__(self,
                  device_name: str,
