@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import Callable, TypeAlias
 
 from iotlib.utils import iotlib_logger
-from iotlib.abstracts import AbstractCodec
+from iotlib.abstracts import AbstractCodec, AbstractEncoder
 from iotlib.virtualdev import VirtualDevice
 
 
@@ -29,6 +29,7 @@ class Codec(AbstractCodec):
         """
         self.device_name = device_name
         self.base_topic = base_topic
+        self.encoder: AbstractEncoder = None
         self._managed_virtual_devices: list[VirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
@@ -43,6 +44,11 @@ class Codec(AbstractCodec):
     def __str__(self) -> str:
         _dev = self.device_name if hasattr(self, 'device_name') else 'UNSET'
         return f'{self.__class__.__name__} ("{_dev}")'
+
+    def get_encoder(self) -> AbstractEncoder | None:
+        """Get the encoder for this codec.
+        """
+        return self.encoder
 
     def get_managed_virtual_devices(self) -> list[VirtualDevice]:
         """Return the list of virtual devices managed by the codec.

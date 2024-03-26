@@ -5,7 +5,7 @@ import enum
 import threading
 from abc import abstractmethod
 
-from iotlib.abstracts import (AbstractDevice, Surrogate, ResultType, 
+from iotlib.abstracts import (AbstractDevice, Surrogate, ResultType,
                               VirtualDeviceProcessor)
 from iotlib.devconfig import PropertyConfig, ButtonValues
 
@@ -169,12 +169,13 @@ class Operable(VirtualDevice):
         bridge: The device bridge instance.
         device_id: Optional device ID to retrieve state for.
         """
-        _request = bridge.codec.get_state_request(device_id)
-        if _request is None:
+        _encoder = bridge.codec.get_encoder()
+        _state_request = _encoder.get_state_request(device_id)
+        if _state_request is None:
             iotlib_logger.debug('%s : unable to get state')
         else:
-            _topic, _payload = _request
-            bridge.publish_message(_topic, _payload)
+            _state_topic, _state_payload = _state_request
+            bridge.publish_message(_state_topic, _state_payload)
 
     def trigger_change_state(self,
                              bridge: Surrogate,
@@ -196,14 +197,15 @@ class Operable(VirtualDevice):
             None
 
         """
-        _request = bridge.codec.change_state_request(is_on,
-                                                     device_id=self.device_id,
-                                                     on_time=on_time)
-        if _request is None:
+        _encoder = bridge.codec.get_encoder()
+        _state_request = _encoder.change_state_request(is_on,
+                                                       device_id=self.device_id,
+                                                       on_time=on_time)
+        if _state_request is None:
             iotlib_logger.warning('%s : unable to change state')
         else:
-            _topic, _payload = _request
-            bridge.publish_message(_topic, _payload)
+            _state_topic, _state_payload = _state_request
+            bridge.publish_message(_state_topic, _state_payload)
 
     def trigger_start(self,
                       bridge: Surrogate,
@@ -225,7 +227,7 @@ class Operable(VirtualDevice):
         '''
         if self.value:
             iotlib_logger.debug('[%s] is already "on" -> no action required',
-                                       self)
+                                self)
             return False
         iotlib_logger.debug(
             '[%s] is "off" -> request to turn it "on"', self)
@@ -254,11 +256,11 @@ class Operable(VirtualDevice):
 
         if not self.value:
             iotlib_logger.debug('\t > [%s] is already "off" -> no action required',
-                                       self)
+                                self)
             return False
         else:
             iotlib_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
-                                       self)
+                                self)
             self.trigger_change_state(bridge,
                                       is_on=False,
                                       on_time=None)
@@ -266,7 +268,7 @@ class Operable(VirtualDevice):
 
     def _remember_to_turn_the_light_off(self, when: int, bridge: Surrogate) -> None:
         iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
-                                   self,  when)
+                            self,  when)
         if not isinstance(when, int) or when <= 0:
             raise TypeError(
                 f'Expecting a positive int for period "{when}", not {type(when)}')

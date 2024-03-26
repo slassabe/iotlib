@@ -16,31 +16,7 @@ import enum
 from iotlib.client import MQTTClient
 
 
-class AbstractCodec(ABC):
-    """Abstract base class for codecs used in IoT communication."""
-
-    @abstractmethod
-    def decode_avail_pl(self, payload: str) -> bool:
-        ''' Decode message received on topic dedicated to availability 
-
-        Args:
-            payload (str): The payload of the message received on the availability topic.
-
-        Returns:
-            bool: True if the decoding is successful, False otherwise.
-
-        '''
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_availability_topic(self) -> str:
-        '''Get the topic dedicated to handle availability messages
-
-        Returns:
-            str: The topic dedicated to handle availability messages.
-        '''
-        raise NotImplementedError
-
+class AbstractEncoder(ABC):
     @abstractmethod
     def get_state_request(self, device_id: int | None) -> tuple[str, str]:
         """Get the current state request for a device.
@@ -66,6 +42,40 @@ class AbstractCodec(ABC):
             A tuple containing the state change request topic and payload or None
             if such a request is not accepted.
         """
+        raise NotImplementedError
+
+class AbstractCodec(ABC):
+    """Abstract base class for codecs used in IoT communication."""
+
+    @abstractmethod
+    def get_encoder(self) -> AbstractEncoder| None:
+        """Get the encoder for this codec.
+
+        Returns:
+            The encoder for this codec.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def decode_avail_pl(self, payload: str) -> bool:
+        ''' Decode message received on topic dedicated to availability 
+
+        Args:
+            payload (str): The payload of the message received on the availability topic.
+
+        Returns:
+            bool: True if the decoding is successful, False otherwise.
+
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_availability_topic(self) -> str:
+        '''Get the topic dedicated to handle availability messages
+
+        Returns:
+            str: The topic dedicated to handle availability messages.
+        '''
         raise NotImplementedError
 
 
