@@ -12,13 +12,14 @@ Note: This module is part of the iotlib library.
 
 from abc import ABC, abstractmethod
 import enum
+from typing import Optional
 
 from iotlib.client import MQTTClient
 
 
 class AbstractEncoder(ABC):
     @abstractmethod
-    def get_state_request(self, device_id: int | None) -> tuple[str, str]:
+    def get_state_request(self, device_id: Optional[int]) -> tuple[str, str]:
         """Get the current state request for a device.
 
         Args:
@@ -31,7 +32,19 @@ class AbstractEncoder(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def change_state_request(self, is_on: bool, device_id: int | None) -> tuple[str, str]:
+    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        """Check if a pulse request is allowed for a device.
+
+        Args:
+            device_id: The device ID to check if a pulse request is allowed for.
+
+        Returns:
+            True if a pulse request is allowed, False otherwise.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def change_state_request(self, is_on: bool, device_id: Optional[int]) -> tuple[str, str]:
         """Get the state change request for a device.
 
         Args:
@@ -44,11 +57,12 @@ class AbstractEncoder(ABC):
         """
         raise NotImplementedError
 
+
 class AbstractCodec(ABC):
     """Abstract base class for codecs used in IoT communication."""
 
     @abstractmethod
-    def get_encoder(self) -> AbstractEncoder| None:
+    def get_encoder(self) -> AbstractEncoder | None:
         """Get the encoder for this codec.
 
         Returns:
@@ -124,8 +138,7 @@ class DiscoveryProcessor(ABC):
         return f'{self.__class__.__name__} object'
 
     @abstractmethod
-    def process_discovery_update(self,
-                                 devices: list) -> None:
+    def process_discovery_update(self, devices: list) -> None:
         """Handle an update to the device discovery status.
 
         Args:
@@ -159,8 +172,7 @@ class AvailabilityProcessor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def process_availability_update(self,
-                                    availability: bool) -> None:
+    def process_availability_update(self, availability: bool) -> None:
         """Handle an update to the device availability status.
 
         Args:

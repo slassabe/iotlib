@@ -24,23 +24,19 @@ class UnpluggedSwitch(Switch):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.started = None
-    def trigger_start(self, bridge) -> bool:
+    def trigger_start(self, bridge, on_time: int | None = None) -> bool:
         self.started = True
-    def trigger_stop(self, bridge) -> bool:
+    def trigger_stop(self, bridge, on_time: int | None = None) -> bool:
         self.started = False
-    def start_and_stop(self, period: int, bridge) -> None:
-        self.started = True
 
 class UnpluggedAlarm(Alarm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.started = None
-    def trigger_start(self, bridge) -> bool:
+    def trigger_start(self, bridge, on_time: int | None = None) -> bool:
         self.started = True
-    def trigger_stop(self, bridge) -> bool:
+    def trigger_stop(self, bridge, on_time: int | None = None) -> bool:
         self.started = False
-    def start_and_stop(self, period: int, bridge) -> None:
-        self.started = True
 
 class TestMotionTrigger(unittest.TestCase):
     def test_motion_00(self):

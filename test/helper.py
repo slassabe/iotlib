@@ -85,8 +85,8 @@ def get_broker_name():
     #return 'test.mosquitto.org'
     #return 'groseille.back.internal'
 
-init_logger(logging.getLogger('test'), debug=False)
-init_logger(logging.getLogger('iotlib'), debug=False)
+init_logger(logging.getLogger('test'), debug=True)
+init_logger(logging.getLogger('iotlib'), debug=True)
 init_logger(logging.getLogger('paho.mqtt.client'), debug=False)
 init_logger(logging.getLogger('utilities'), debug=False)
 

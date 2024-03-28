@@ -131,6 +131,7 @@ class MockZigbeeSwitch:
         
         if on_time is not None:
             _json_dict["on_time"] = on_time
+            logger.info("Switch %s will be turned off in %s seconds", self, on_time)
 
         _json = json.dumps(_json_dict)
         return _json
@@ -156,11 +157,13 @@ class MockZigbeeSwitch:
         _on_time = _json_payload.get('on_time')
         if _on_time is not None:
             _on_time = int(_on_time)
+        #logger.info(">>> [%s] state set to %s", self, self._state_to_json(_on_time))
         self.client.publish(self.topic_root, self._state_to_json(_on_time))
         if _on_time is not None:
             time.sleep(_on_time)
             self.state = False
             self.client.publish(self.topic_root, self._state_to_json())
+            logger.info("<<< [%s] state set to %s", self, self._state_to_json())
 
 
     def on_message_get(self, client, userdata, message):

@@ -4,6 +4,7 @@
 import enum
 import threading
 from abc import abstractmethod
+from typing import Optional
 
 from iotlib.abstracts import (AbstractDevice, Surrogate, ResultType,
                               VirtualDeviceProcessor)
@@ -130,12 +131,15 @@ class Operable(VirtualDevice):
     """ Root implementation of a virtual Operable device (Switch or Alarm)
     """
 
-    def __init__(self, friendly_name: str = None, quiet_mode: bool = False):
+    def __init__(self,
+                 friendly_name: str = None,
+                 quiet_mode: bool = False,
+                 countdown: Optional[int] = None) -> None:
         super().__init__(friendly_name,
                          quiet_mode=quiet_mode)
-        self._device_id = None  # Used by Shelly : relay numbers
+        self._device_id = None
         self._stop_timer = None
-        self._pulse_instruction_allowed = False
+        self._count_down = countdown
 
     @property
     def device_id(self) -> str:
@@ -145,16 +149,8 @@ class Operable(VirtualDevice):
     def device_id(self, value: str) -> None:
         self._device_id = value
 
-    @property
-    def pulse_is_allowed(self) -> bool:
-        return self._pulse_instruction_allowed
-
-    @pulse_is_allowed.setter
-    def pulse_is_allowed(self, value: bool) -> None:
-        if not isinstance(value, bool):
-            raise TypeError(
-                f"Pulse instruction allowed flag must be a bool, not {type(value)}")
-        self._pulse_instruction_allowed = value
+    def get_countdown(self) -> int:
+        return self._count_down
 
     def trigger_get_state(self,
                           bridge: Surrogate,
@@ -198,6 +194,8 @@ class Operable(VirtualDevice):
 
         """
         _encoder = bridge.codec.get_encoder()
+        iotlib_logger.warning(
+            '[%s] change state to "%s" - encoder : %s', self, is_on, _encoder)
         _state_request = _encoder.change_state_request(is_on,
                                                        device_id=self.device_id,
                                                        on_time=on_time)
@@ -231,7 +229,7 @@ class Operable(VirtualDevice):
             return False
         iotlib_logger.debug(
             '[%s] is "off" -> request to turn it "on"', self)
-        self.trigger_change_state(bridge,
+        self.trigger_change_state(bridge=bridge,
                                   is_on=True,
                                   on_time=on_time)
         return True
@@ -261,7 +259,7 @@ class Operable(VirtualDevice):
         else:
             iotlib_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                 self)
-            self.trigger_change_state(bridge,
+            self.trigger_change_state(bridge=bridge,
                                       is_on=False,
                                       on_time=None)
             return True
@@ -319,9 +317,13 @@ class Alarm(Operable):
     """ Basic implementation of a virtual Alarm 
     """
 
-    def __init__(self, friendly_name=None, quiet_mode: bool = False) -> None:
+    def __init__(self,
+                 friendly_name=None,
+                 quiet_mode: bool = False,
+                 countdown: Optional[int] = None) -> None:
         super().__init__(friendly_name,
-                         quiet_mode=quiet_mode)
+                         quiet_mode=quiet_mode,
+                         countdown=countdown)
 
     def get_property(self) -> str:
         return PropertyConfig.ALARM_PROPERTY
@@ -334,22 +336,23 @@ class Switch(Operable):
     def __init__(self,
                  friendly_name=None,
                  quiet_mode: bool = False,
-                 countdown: int = 0) -> None:
+                 countdown: Optional[int] = None) -> None:
         """Initializes a new instance of the Switch class.
 
         Args:
             friendly_name (str): The friendly name of the switch. Defaults to "".
-            quiet_mode (bool): A flag indicating whether the switch is in quiet mode. Defaults to False.
-            countdown (int): The countdown timer for the switch. Defaults to 0.
+            quiet_mode (bool): A flag indicating whether the switch is in quiet mode. 
+                Defaults to False.
+            countdown (int): The countdown timer for the switch. Defaults to None.
         """
         super().__init__(friendly_name,
-                         quiet_mode=quiet_mode)
+                         quiet_mode=quiet_mode,
+                         countdown=countdown)
         self._device_id = None  # Relay numbers of multi-channel devices
-        self._count_down = countdown
 
     def handle_value(self, value: bool, bridge) -> list:
         _result = super().handle_value(value, bridge)
-        if self._count_down != 0:
+        if self._count_down is not None:
             if value and not self._stop_timer:
                 # Automatically turn the switch off when manually turned on
                 self._remember_to_turn_the_light_off(self._count_down, bridge)

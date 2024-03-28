@@ -134,7 +134,7 @@ class TestSwitchs(unittest.TestCase):
                                 topic_base=TOPIC_BASE)
         v_switch0 = Switch0('switch0')
         v_switch1 = Switch1('switch1')
-        _codec = CodecFactory().create_instance(model=Model.EL_ZBSW02,
+        _codec = CodecFactory().create_instance(model=Model.TUYA_TS0002,
                                                  protocol=Protocol.Z2M,
                                                  device_name=DEVICE_NAME,
                                                  topic_base=TOPIC_BASE,

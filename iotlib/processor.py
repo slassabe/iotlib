@@ -46,10 +46,10 @@ class VirtualDeviceLogger(VirtualDeviceProcessorCore):
                              v_dev: VirtualDevice,
                              bridge) -> None:
         iotlib_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
-                                   self,
-                                   v_dev,
-                                   v_dev.get_property(),
-                                   v_dev.value)
+                            self,
+                            v_dev,
+                            v_dev.get_property(),
+                            v_dev.value)
 
 
 class ButtonTrigger(VirtualDeviceProcessorCore):
@@ -101,20 +101,23 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
             iotlib_logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(bridge)
+                iotlib_logger.warning("bridge=%s, on_time=%s", repr(bridge), _sw.get_countdown())
+                _sw.trigger_start(bridge=bridge, 
+                                  on_time=_sw.get_countdown())
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             iotlib_logger.info('%s -> "start_and_stop" with long period',
-                                      prefix)
+                               prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.start_and_stop(self._countdown_long)
+                _sw.trigger_start(bridge=bridge, 
+                                  on_time=self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             iotlib_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_stop(bridge)
         else:
             iotlib_logger.error('%s : action unknown "%s"',
-                                       prefix,
-                                       v_dev.value)
+                                prefix,
+                                v_dev.value)
 
 
 class MotionTrigger(VirtualDeviceProcessorCore):
@@ -138,16 +141,16 @@ class MotionTrigger(VirtualDeviceProcessorCore):
         """
         if v_dev.value:
             iotlib_logger.info('[%s] occupancy changed to "%s" '
-                                      '-> "start_and_stop" on registered switch',
-                                      v_dev.friendly_name,
-                                      v_dev.value)
+                               '-> "start_and_stop" on registered switch',
+                               v_dev.friendly_name,
+                               v_dev.value)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(bridge)
         else:
             iotlib_logger.debug('[%s] occupancy changed to "%s" '
-                                       '-> nothing to do (timer will stop switch)',
-                                       v_dev.friendly_name,
-                                       v_dev.value)
+                                '-> nothing to do (timer will stop switch)',
+                                v_dev.friendly_name,
+                                v_dev.value)
 
 
 class PropertyPublisher(VirtualDeviceProcessorCore):

@@ -30,7 +30,7 @@ from typing import Callable
 
 from iotlib.abstracts import AbstractCodec
 from iotlib.codec.z2m import (NeoNasAB02B2, SonoffSnzb01, SonoffSnzb02, SonoffSnzb3,
-                              SonoffZbminiL, Ts0601Soil, EweLinkZbSw02)
+                              SonoffZbminiL, Ts0601Soil, TuYaTS0002)
 
 from .utils import Singleton
 
@@ -51,7 +51,7 @@ class Model(Enum):
     - EL_ZBSW02: eWeLink ZB-SW02 Zigbee wireless switch module
 
     """
-    EL_ZBSW02 = 'ZB-SW02' # eWeLink ZB-SW02 Zigbee wireless switch module
+    TUYA_TS0002 = 'TS0002' # TuYa TS0002 Zigbee wireless switch module
     MIFLORA = 'Miflora'
     NEO_ALARM = 'NAS-AB02B2'  # Neo NAS-AB02B2 Zigbee Siren
     RING_CAMERA = 'RingCamera'
@@ -200,7 +200,7 @@ class CodecFactory(metaclass=Singleton):
         return _codec
 
 
-CodecFactory().registers(Model.EL_ZBSW02, Protocol.Z2M, EweLinkZbSw02)
+CodecFactory().registers(Model.TUYA_TS0002, Protocol.Z2M, TuYaTS0002)
 CodecFactory().registers(Model.NEO_ALARM, Protocol.Z2M, NeoNasAB02B2)
 CodecFactory().registers(Model.TUYA_SOIL, Protocol.Z2M, Ts0601Soil)
 CodecFactory().registers(Model.ZB_AIRSENSOR, Protocol.Z2M, SonoffSnzb02)

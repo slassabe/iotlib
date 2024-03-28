@@ -294,7 +294,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.encoder = NeoNasAB02B2Encoder(self._root_topic )
+        self.encoder = NeoNasAB02B2Encoder(self._root_topic)
 
     def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(self._key_alarm)
@@ -302,6 +302,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
             raise DecodingException(
                 f'Received erroneous payload : "{payload}"')
         return _pl
+
 
 class NeoNasAB02B2Encoder(AbstractEncoder):
     _key_alarm = 'alarm'
@@ -331,7 +332,10 @@ class NeoNasAB02B2Encoder(AbstractEncoder):
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
         return None
-    
+
+    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        return True
+
     def change_state_request(self,
                              is_on: bool,
                              device_id: Optional[int] = None,
@@ -343,7 +347,6 @@ class NeoNasAB02B2Encoder(AbstractEncoder):
                 }
         iotlib_logger.debug('Encode payload : %s', _set)
         return f'{self._root_topic}/set', json.dumps(_set)
-
 
 
 class SwitchOnZigbee(DeviceOnZigbee2MQTT):
@@ -379,7 +382,6 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
         # self.ask_for_state()
         iotlib_logger.warning('%s : unable to ask state', self)
 
-
     def _decode_value_pl(self, topic, payload) -> bool:
         raise NotImplementedError
 
@@ -390,6 +392,7 @@ class SonoffZbminiL(SwitchOnZigbee):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = SonoffZbminiLEncoder(self._root_topic)
+        iotlib_logger.warning('SonoffZbminiL created with encoder : %s', self.encoder)
 
     def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(SWITCH_POWER)
@@ -401,12 +404,16 @@ class SonoffZbminiL(SwitchOnZigbee):
             raise DecodingException(
                 f'Received erroneous State value : "{_pl}"')
 
+
 class SonoffZbminiLEncoder(AbstractEncoder):
-    def __init__(self, root_topic : str) -> None:
+    def __init__(self, root_topic: str) -> None:
         self._root_topic = root_topic
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state":""}'
+
+    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        return True
 
     def change_state_request(self,
                              is_on: bool,
@@ -428,6 +435,7 @@ class SonoffZbminiLEncoder(AbstractEncoder):
         if on_time is not None:
             _payload["on_time"] = on_time
         return _topic, json.dumps(_payload)
+
 
 class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
     ''' Bridge between SWITCH devices connected via Zigbee2MQTT and MQTT Clients
@@ -478,13 +486,12 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
         raise NotImplementedError
 
 
-class EweLinkZbSw02(MultiSwitchOnZigbee):
-    ''' https://www.zigbee2mqtt.io/devices/ZB-SW02.html '''
+class TuYaTS0002(MultiSwitchOnZigbee):
+    ''' https://www.zigbee2mqtt.io/devices/TS0002.html '''
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.encoder = EweLinkZbSw02Encoder(self._root_topic)
-
+        self.encoder = TuYaTS0002Encoder(self._root_topic)
 
     def _decode_switch_value_pl(self, topic, payload, switch_power) -> bool | None:
         """
@@ -525,16 +532,20 @@ class EweLinkZbSw02(MultiSwitchOnZigbee):
     def _decode_switch1_value_pl(self, topic, payload) -> bool | None:
         return self._decode_switch_value_pl(topic, payload, SWITCH1_POWER)
 
-class EweLinkZbSw02Encoder(AbstractEncoder):
-    def __init__(self, root_topic : str) -> None:
+
+class TuYaTS0002Encoder(AbstractEncoder):
+    def __init__(self, root_topic: str) -> None:
         self._root_topic = root_topic
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
         return f'{self._root_topic}/get', '{"state_left":"","state_right":""}'
 
+    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        return True
+
     def change_state_request(self,
                              is_on: bool,
-                             device_id: Optional[int]  = None,
+                             device_id: Optional[int] = None,
                              on_time: Optional[int] = None) -> tuple[str, str]:
         """
         Constructs a change state request for the device.
@@ -561,4 +572,3 @@ class EweLinkZbSw02Encoder(AbstractEncoder):
         if on_time is not None:
             _payload["on_time"] = on_time
         return _topic, json.dumps(_payload)
-
