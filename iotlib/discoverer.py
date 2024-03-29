@@ -126,7 +126,7 @@ class ZigbeeDiscoverer(Discoverer):
                                    Model.from_str(entry.get("definition", {}).get("model")),
                                    Protocol.Z2M)
                             for entry in payload if entry.get("type") == 'EndDevice']
-            self.devices.append(devices)
+            self.devices = devices
 
             return devices
 

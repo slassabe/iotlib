@@ -17,12 +17,12 @@ Typical usage:
 4. The processor will receive value change events via process_value_update()
 
 """
-
+import threading
 
 from iotlib.devconfig import ButtonValues
 from iotlib.client import MQTTClient
 from iotlib.abstracts import AvailabilityProcessor, Surrogate, VirtualDeviceProcessor
-from iotlib.virtualdev import VirtualDevice
+from iotlib.virtualdev import VirtualDevice, Operable
 from iotlib.utils import iotlib_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
@@ -42,9 +42,7 @@ class VirtualDeviceLogger(VirtualDeviceProcessorCore):
 
     """
 
-    def process_value_update(self,
-                             v_dev: VirtualDevice,
-                             bridge) -> None:
+    def process_value_update(self, v_dev: VirtualDevice) -> None:
         iotlib_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                             self,
                             v_dev,
@@ -64,17 +62,21 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
         _countdown_long (int): The duration of the long press action in seconds.
     """
 
-    def __init__(self, countdown_long=60*10) -> None:
+    def __init__(self,
+                 client: MQTTClient,
+                 countdown_long=60*10) -> None:
         """
         Initializes a ButtonTrigger instance.
 
         Parameters:
+            client (MQTTClient): The MQTT client used for communication.
             countdown_long (int): The duration of the long press action in seconds.
         """
         super().__init__()
+        self._client = client
         self._countdown_long = countdown_long
 
-    def process_value_update(self, v_dev: VirtualDevice, bridge) -> None:
+    def process_value_update(self, v_dev: VirtualDevice) -> None:
         """
         Process button press actions on registered switches.
 
@@ -83,7 +85,6 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
 
         Parameters:
             v_dev (VirtualDevice): The button device that triggered the action.
-            bridge: The bridge object.
 
         Actions:
             - single press: Start registered switches with default countdown.
@@ -101,19 +102,17 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
             iotlib_logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
-                iotlib_logger.warning("bridge=%s, on_time=%s", repr(bridge), _sw.get_countdown())
-                _sw.trigger_start(bridge=bridge, 
-                                  on_time=_sw.get_countdown())
+                _sw.trigger_start(client=self._client)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             iotlib_logger.info('%s -> "start_and_stop" with long period',
                                prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(bridge=bridge, 
+                _sw.trigger_start(client=self._client,
                                   on_time=self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             iotlib_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_stop(bridge)
+                _sw.trigger_stop(client=self._client)
         else:
             iotlib_logger.error('%s : action unknown "%s"',
                                 prefix,
@@ -126,15 +125,27 @@ class MotionTrigger(VirtualDeviceProcessorCore):
     when occupancy is detected.
     '''
 
+    def __init__(self,
+                 client: MQTTClient) -> None:
+        """
+        Initializes a MotionTrigger instance.
+
+        Parameters:
+            client (MQTTClient): The MQTT client used for communication.
+
+        Returns:
+            None
+        """
+        super().__init__()
+        self._client = client
+
     def process_value_update(self,
-                             v_dev: VirtualDevice,
-                             bridge) -> None:
+                             v_dev: VirtualDevice) -> None:
         """
         Process the value update of a virtual device.
 
         Args:
             v_dev (VirtualDevice): The virtual device whose value is updated.
-            bridge: The bridge object.
 
         Returns:
             None
@@ -145,12 +156,67 @@ class MotionTrigger(VirtualDeviceProcessorCore):
                                v_dev.friendly_name,
                                v_dev.value)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(bridge)
+                _sw.trigger_start(self._client, on_time=_sw.countdown)
         else:
             iotlib_logger.debug('[%s] occupancy changed to "%s" '
                                 '-> nothing to do (timer will stop switch)',
                                 v_dev.friendly_name,
                                 v_dev.value)
+
+
+class CountdownTrigger(VirtualDeviceProcessorCore):
+    def __init__(self,
+                 client: MQTTClient) -> None:
+        """
+        Initializes a CountdownTrigger instance.
+
+        Parameters:
+            client (MQTTClient): The MQTT client used for communication.
+
+        Returns:
+            None
+        """
+        super().__init__()
+        if not isinstance(client, MQTTClient):
+            raise TypeError(
+                f"client must be MQTTClient, not {type(client)}")
+        self._client = client
+        self._stop_timer = None
+
+    def process_value_update(self, v_dev: VirtualDevice) -> None:
+        """
+        Process the value update of a virtual device.
+
+        Args:
+            v_dev (VirtualDevice): The virtual device whose value is updated.
+
+        Returns:
+            None
+        """
+        _countdown = v_dev.countdown
+        if _countdown is None:
+            iotlib_logger.warning('[%s] cannot process - no countdown set', 
+                                  self)
+            return
+        self._remember_to_turn_the_light_off(v_dev,
+                                             _countdown,
+                                             self._client)
+
+    def _remember_to_turn_the_light_off(self,
+                                        operable: Operable,
+                                        when: int,
+                                        client: MQTTClient) -> None:
+        iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
+                            self,  when)
+        if not isinstance(when, int) or when <= 0:
+            raise TypeError(
+                f'Expecting a positive int for period "{when}", not {type(when)}')
+        if self._stop_timer:
+            self._stop_timer.cancel()    # a timer is allready set, cancel it
+        self._stop_timer = threading.Timer(when,
+                                           operable.trigger_stop,
+                                           [client])
+        self._stop_timer.start()
 
 
 class PropertyPublisher(VirtualDeviceProcessorCore):
@@ -159,7 +225,7 @@ class PropertyPublisher(VirtualDeviceProcessorCore):
 
     Args:
         client (MQTTClient): The MQTT client used for publishing.
-        topic_base (str, optional): The base topic to which the property updates will be published.
+        publish_topic_base (str, optional): The base topic to which the property updates will be published.
 
     """
 
@@ -170,13 +236,12 @@ class PropertyPublisher(VirtualDeviceProcessorCore):
         self._client = client
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
-    def process_value_update(self, v_dev, bridge) -> None:
+    def process_value_update(self, v_dev) -> None:
         """
         Publishes the updated value of a virtual device's property to the MQTT broker.
 
         Args:
             v_dev (VirtualDevice): The virtual device whose property value has been updated.
-            bridge: The bridge associated with the virtual device.
 
         Returns:
             None

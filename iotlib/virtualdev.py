@@ -6,10 +6,10 @@ import threading
 from abc import abstractmethod
 from typing import Optional
 
-from iotlib.abstracts import (AbstractDevice, Surrogate, ResultType,
+from iotlib.abstracts import (AbstractDevice, AbstractEncoder, Surrogate, ResultType,
                               VirtualDeviceProcessor)
 from iotlib.devconfig import PropertyConfig, ButtonValues
-
+from iotlib.client import MQTTClient
 from iotlib.utils import iotlib_logger
 
 
@@ -32,6 +32,7 @@ class VirtualDevice(AbstractDevice):
         self.friendly_name = friendly_name
         self._value = None
         self._quiet_mode = quiet_mode
+        self._encoder = None
         # List of processors associated with this device
         self._processor_list: list[VirtualDeviceProcessor] = []
 
@@ -77,17 +78,20 @@ class VirtualDevice(AbstractDevice):
         self._validate_value_type(value)
         self._value = value
 
-    def handle_value(self, value, bridge: Surrogate) -> ResultType:
+    def set_encoder(self, encoder: AbstractEncoder) -> None:
         """
-        Handles the received value and performs necessary actions.
+        Sets the encoder for the device.
 
         Args:
-            value (any): The received value.
-            bridge (Surrogate): The bridge object.
-
-        Returns:
-            ResultType: The result of handling the value.
+            encoder (AbstractEncoder): The encoder to set.
         """
+        if not isinstance(encoder, AbstractEncoder):
+            raise TypeError(
+                f"Encoder must be instance of AbstractEncoder, not {type(encoder)}")
+        self._encoder = encoder
+
+
+    def handle_value(self, value) -> ResultType:
         if value is None:
             # No relevant value received (can be info on device like battery level), ignore
             return ResultType.IGNORE
@@ -98,7 +102,7 @@ class VirtualDevice(AbstractDevice):
             for _processor in self._processor_list:
                 iotlib_logger.debug(
                     'Execute processor : %s', _processor)
-                _processor.process_value_update(self, bridge)
+                _processor.process_value_update(self)
             return ResultType.SUCCESS
 
     def processor_append(self, processor: VirtualDeviceProcessor) -> None:
@@ -132,14 +136,29 @@ class Operable(VirtualDevice):
     """
 
     def __init__(self,
-                 friendly_name: str = None,
-                 quiet_mode: bool = False,
-                 countdown: Optional[int] = None) -> None:
+                     friendly_name: str = None,
+                     quiet_mode: bool = False,
+                     countdown: Optional[int] = None) -> None:
+        """
+        Initialize a VirtualDevice object.
+
+        Args:
+            friendly_name (str, optional): The friendly name of the device. Defaults to None.
+            quiet_mode (bool, optional): Whether to run the device in quiet mode. Defaults to False.
+            countdown (int, optional): The countdown value. Defaults to None.
+        """
+        if countdown is not None:
+            if not isinstance(countdown, int):
+                raise TypeError(
+                    f"countdown must be integer, not {type(countdown)}")
+            if not countdown > 0:
+                raise ValueError(
+                    f"countdown must be positive integer, not {countdown}")
         super().__init__(friendly_name,
-                         quiet_mode=quiet_mode)
+                            quiet_mode=quiet_mode)
         self._device_id = None
         self._stop_timer = None
-        self._count_down = countdown
+        self._countdown = countdown
 
     @property
     def device_id(self) -> str:
@@ -149,39 +168,44 @@ class Operable(VirtualDevice):
     def device_id(self, value: str) -> None:
         self._device_id = value
 
-    def get_countdown(self) -> int:
-        return self._count_down
+    @property
+    def countdown(self) -> Optional[int]:
+        return self._countdown
+
+    @countdown.setter
+    def countdown(self, value: Optional[int]) -> None:
+        self._countdown = value
 
     def trigger_get_state(self,
-                          bridge: Surrogate,
+                          mqtt_client: MQTTClient,
                           device_id: str = None) -> None:
-        """Triggers a state request to the device bridge.
+        
+        """Triggers a state request to the device .
 
-        Sends a request message to the device bridge to retrieve the 
-        current state of the device. The device bridge will publish 
-        a state update message in response.
+        Sends a request message to the device bridgeclient to retrieve the 
+        current state of the device. 
 
         Args:
-        bridge: The device bridge instance.
+        client: The client instance used for communication
         device_id: Optional device ID to retrieve state for.
         """
-        _encoder = bridge.codec.get_encoder()
+        _encoder = self._encoder
         _state_request = _encoder.get_state_request(device_id)
         if _state_request is None:
             iotlib_logger.debug('%s : unable to get state')
         else:
             _state_topic, _state_payload = _state_request
-            bridge.publish_message(_state_topic, _state_payload)
+            mqtt_client.client.publish(_state_topic, _state_payload)
 
     def trigger_change_state(self,
-                             bridge: Surrogate,
+                             mqtt_client: MQTTClient,
                              is_on: bool,
                              on_time: int | None = None) -> None:
         """
         Triggers a change in the state of a device.
 
         Args:
-            bridge (Surrogate): The bridge object used for communication.
+            client (MQTTClient): The client object used for communication.
             is_on (bool): The new state of the device (True for ON, False for OFF).
             on_time (int | None): The duration for which the device should remain ON, in seconds.
                 If None, the device will remain ON indefinitely.
@@ -193,9 +217,7 @@ class Operable(VirtualDevice):
             None
 
         """
-        _encoder = bridge.codec.get_encoder()
-        iotlib_logger.warning(
-            '[%s] change state to "%s" - encoder : %s', self, is_on, _encoder)
+        _encoder = self._encoder
         _state_request = _encoder.change_state_request(is_on,
                                                        device_id=self.device_id,
                                                        on_time=on_time)
@@ -203,10 +225,10 @@ class Operable(VirtualDevice):
             iotlib_logger.warning('%s : unable to change state')
         else:
             _state_topic, _state_payload = _state_request
-            bridge.publish_message(_state_topic, _state_payload)
+            mqtt_client.client.publish(_state_topic, _state_payload)
 
     def trigger_start(self,
-                      bridge: Surrogate,
+                      client: MQTTClient,
                       on_time: int | None = None) -> bool:
         ''' Ask the device to start
 
@@ -216,7 +238,7 @@ class Operable(VirtualDevice):
         parameter set to True.
 
         Args:
-            bridge (Surrogate): The bridge object used to communicate with the device.
+            client (MQTTClient): The client object used to communicate with the device.
             on_time (int | None, optional): The time duration for which the device should
                 remain on. Defaults to None.
 
@@ -229,19 +251,19 @@ class Operable(VirtualDevice):
             return False
         iotlib_logger.debug(
             '[%s] is "off" -> request to turn it "on"', self)
-        self.trigger_change_state(bridge=bridge,
+        self.trigger_change_state(mqtt_client=client,
                                   is_on=True,
                                   on_time=on_time)
         return True
 
-    def trigger_stop(self, bridge: Surrogate) -> bool:
+    def trigger_stop(self, client: MQTTClient) -> bool:
         ''' Ask the device to stop
 
         This method is used to send a request to the device to stop its operation.
         If the switch state is currently ON, it will send a request to turn it OFF via MQTT.
 
         Args:
-            bridge (Surrogate): The bridge object used to communicate with the device.
+            client (MQTTClient): The client object used to communicate with the device.
 
         Returns:
             bool: Returns True if the switch state is ON when the method is called, indicating 
@@ -259,21 +281,10 @@ class Operable(VirtualDevice):
         else:
             iotlib_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                 self)
-            self.trigger_change_state(bridge=bridge,
+            self.trigger_change_state(mqtt_client=client,
                                       is_on=False,
                                       on_time=None)
             return True
-
-    def _remember_to_turn_the_light_off(self, when: int, bridge: Surrogate) -> None:
-        iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
-                            self,  when)
-        if not isinstance(when, int) or when <= 0:
-            raise TypeError(
-                f'Expecting a positive int for period "{when}", not {type(when)}')
-        if self._stop_timer:
-            self._stop_timer.cancel()    # a timer is allready set, cancel it
-        self._stop_timer = threading.Timer(when, self.trigger_stop, [bridge])
-        self._stop_timer.start()
 
 
 class Melodies(enum.IntEnum):
@@ -314,18 +325,16 @@ class Level(enum.Enum):
 
 
 class Alarm(Operable):
-    """ Basic implementation of a virtual Alarm 
+    """ Basic implementation of a virtual Alarm.
     """
 
-    def __init__(self,
-                 friendly_name=None,
-                 quiet_mode: bool = False,
-                 countdown: Optional[int] = None) -> None:
-        super().__init__(friendly_name,
-                         quiet_mode=quiet_mode,
-                         countdown=countdown)
-
     def get_property(self) -> str:
+        """Returns the property of the alarm.
+
+        Returns:
+            str: The property of the alarm.
+
+        """
         return PropertyConfig.ALARM_PROPERTY
 
 
@@ -333,30 +342,16 @@ class Switch(Operable):
     """ Basic implementation of a virtual Switch 
     """
 
-    def __init__(self,
-                 friendly_name=None,
-                 quiet_mode: bool = False,
-                 countdown: Optional[int] = None) -> None:
+    def __init__(self, *argc, **kwargs) -> None:
         """Initializes a new instance of the Switch class.
 
         Args:
             friendly_name (str): The friendly name of the switch. Defaults to "".
             quiet_mode (bool): A flag indicating whether the switch is in quiet mode. 
                 Defaults to False.
-            countdown (int): The countdown timer for the switch. Defaults to None.
         """
-        super().__init__(friendly_name,
-                         quiet_mode=quiet_mode,
-                         countdown=countdown)
+        super().__init__(*argc, **kwargs)
         self._device_id = None  # Relay numbers of multi-channel devices
-
-    def handle_value(self, value: bool, bridge) -> list:
-        _result = super().handle_value(value, bridge)
-        if self._count_down is not None:
-            if value and not self._stop_timer:
-                # Automatically turn the switch off when manually turned on
-                self._remember_to_turn_the_light_off(self._count_down, bridge)
-        return _result
 
     def get_property(self) -> str:
         return PropertyConfig.SWITCH_PROPERTY
@@ -432,8 +427,8 @@ class TemperatureSensor(Sensor):
     def get_property(self) -> str:
         return PropertyConfig.TEMPERATURE_PROPERTY
 
-    def handle_value(self, value: float, bridge) -> list:
-        return super().handle_value(round(float(value), 1), bridge)
+    def handle_value(self, value: float) -> list:
+        return super().handle_value(round(float(value), 1))
 
 
 class HumiditySensor(Sensor):
@@ -511,5 +506,5 @@ class ADC(Sensor):
     def get_property(self) -> str:
         return PropertyConfig.ADC_PROPERTY
 
-    def handle_value(self, value: float, bridge) -> list:
-        return super().handle_value(round(float(value), 1), bridge)
+    def handle_value(self, value: float) -> list:
+        return super().handle_value(round(float(value), 1))

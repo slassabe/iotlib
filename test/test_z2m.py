@@ -11,7 +11,8 @@ import time
 import unittest
 
 from iotlib.bridge import DecodingException, MQTTBridge
-from iotlib.processor import AvailabilityPublisher, AvailabilityLogger, ButtonTrigger
+from iotlib.processor import (AvailabilityPublisher, AvailabilityLogger, ButtonTrigger, 
+                              CountdownTrigger)
 from iotlib.client import MQTTClient
 from iotlib.codec.z2m import DeviceOnZigbee2MQTT, SonoffSnzb02, SonoffSnzb01, SonoffSnzb3, NeoNasAB02B2, SonoffZbminiL
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
@@ -371,11 +372,11 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        v_switch.trigger_change_state(bridge, is_on=True)
+        v_switch.trigger_change_state(mqtt_client=mqtt_client, is_on=True)
         time.sleep(1)
         self.assertTrue(mock.state)
 
-        v_switch.trigger_change_state(bridge, is_on=False)
+        v_switch.trigger_change_state(mqtt_client=mqtt_client, is_on=False)
 
         time.sleep(1)
         self.assertFalse(mock.state)
@@ -402,7 +403,7 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        v_switch.trigger_change_state(bridge, is_on=True, on_time=2)
+        v_switch.trigger_change_state(mqtt_client=mqtt_client, is_on=True, on_time=2)
         time.sleep(1)
         self.assertTrue(mock.state)
 
@@ -429,11 +430,11 @@ class TestSonoffZbminiL(unittest.TestCase):
         mqtt_client.start()
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
-        v_switch.trigger_change_state(bridge, is_on=True)
+        v_switch.trigger_change_state(mqtt_client=mqtt_client, is_on=True)
         time.sleep(1)
         self.assertTrue(v_switch.value)
 
-        v_switch.trigger_change_state(bridge, is_on=False)
+        v_switch.trigger_change_state(mqtt_client=mqtt_client, is_on=False)
         time.sleep(1)
         self.assertFalse(v_switch.value)
 
@@ -481,6 +482,8 @@ class TestSonoffZbminiL(unittest.TestCase):
                                 v_switch=Switch(),  # not used
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch(countdown=2)
+        countdown_trigger = CountdownTrigger(client=mqtt_client)
+        v_switch.processor_append(countdown_trigger)
         codec = SonoffZbminiL(DEVICE_NAME,
                               v_switch=v_switch,
                               topic_base=self.TOPIC_BASE)
@@ -514,7 +517,7 @@ class TestManagedSwitch(unittest.TestCase):
         v_button = Button('the_button')
         v_switch0 = Switch('the_switch0')
         # v_switch1 = Switch(countdown=2)
-        v_button.processor_append(ButtonTrigger())
+        v_button.processor_append(ButtonTrigger(client=mqtt_client))
         v_button.add_observer(v_switch0)
         # v_button.add_observer(v_switch1)
 
@@ -537,9 +540,8 @@ class TestManagedSwitch(unittest.TestCase):
         time.sleep(2)   # Wait MQTT client connection
         bridge_button.client.publish(codec_button._root_topic,
                                     BUTTON_MESSAGE_SINGLE)
-        logger.warning('!!!! : %s', repr(bridge_switch.codec.get_encoder()))
         time.sleep(2)
-        return
+
         self.assertEqual(v_button.value, 'single')
         bridge_button.client.publish(codec_button._root_topic,
                                      BUTTON_MESSAGE_DOUBLE)

@@ -30,6 +30,18 @@ STATE_ON = 'ON'
 STATE_OFF = 'OFF'
 
 
+def get_root_topic(device_name: str, base_topic: str) -> str:
+    ''' Return the Z2M root topic for a device
+    '''
+    return f'{base_topic}/{device_name}'
+
+
+def get_availability_topic(device_name: str, base_topic: str) -> str:
+    ''' Return the Z2M availability topic for a device
+    '''
+    return f'{base_topic}/{device_name}/availability'
+
+
 class DeviceOnZigbee2MQTT(Codec):
     ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
     '''
@@ -50,11 +62,9 @@ class DeviceOnZigbee2MQTT(Codec):
             f'Bad value for device_name : {device_name} of type {type(device_name)}'
         super().__init__(device_name, base_topic)
 
-        self._root_topic = f'{base_topic}/{device_name}'
-        self._availability_topic = f'{base_topic}/{device_name}/availability'
-
-        iotlib_logger.debug(
-            'Z2M codec created for device %s', device_name)
+        self._root_topic = get_root_topic(device_name, base_topic)
+        self._availability_topic = get_availability_topic(
+            device_name, base_topic)
 
     def get_availability_topic(self) -> str:
         """Return the availability topic the client must subscribe
@@ -261,6 +271,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     """
 
     def __init__(self,
+                 encoder: AbstractEncoder,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: Optional[str] = None,
@@ -277,12 +288,17 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         friendly_name = friendly_name or device_name
         v_alarm = v_alarm or Alarm(friendly_name)
-        assert isinstance(v_alarm, Alarm), \
-            f'Bad value : {v_alarm} of type {type(v_alarm)}'
+        if not isinstance(encoder, AbstractEncoder):
+            raise ValueError(f'Bad value : {encoder} of type {type(encoder)}')
+        if not isinstance(v_alarm, Alarm):
+            raise ValueError(f'Bad value : {v_alarm} of type {type(v_alarm)}')
+        v_alarm.set_encoder(encoder)
+
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_value_pl,
                                   v_alarm)
 
+    @abstractmethod
     def _decode_value_pl(self, topic, payload) -> bool:
         """Decode state payload."""
         raise NotImplementedError
@@ -292,9 +308,16 @@ class NeoNasAB02B2(AlarmOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/NAS-AB02B2.html '''
     _key_alarm = 'alarm'
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.encoder = NeoNasAB02B2Encoder(self._root_topic)
+    def __init__(self,
+                 device_name: str,
+                 friendly_name: Optional[str] = None,
+                 topic_base: Optional[str] = None,
+                 v_alarm: Optional[Alarm] = None) -> None:
+        super().__init__(NeoNasAB02B2Encoder(get_root_topic(device_name, topic_base)),
+                         device_name=device_name,
+                         friendly_name=friendly_name,
+                         topic_base=topic_base,
+                         v_alarm=v_alarm)
 
     def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(self._key_alarm)
@@ -364,17 +387,24 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
     '''
 
     def __init__(self,
+                 encoder: AbstractEncoder,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: Optional[str] = None,
-                 v_switch: Optional[Switch] = None) -> None:
+                 v_switch: Optional[Switch] = None,
+                 ) -> None:
         super().__init__(device_name, topic_base)
 
         friendly_name = friendly_name or device_name
         v_switch = v_switch or Switch(friendly_name)
-        assert isinstance(v_switch, Switch), \
-            f'Bad value : {v_switch} of type {type(v_switch)}'
-        self._v_switch = v_switch
+        if not isinstance(encoder, AbstractEncoder):
+            raise ValueError(
+                f'Encoder must be an instance of AbstractEncoder, not {type(encoder)}')
+        if not isinstance(v_switch, Switch):
+            raise ValueError(
+                f'v_switch must be an instance of Switch, not {type(v_switch)}')
+        # self._v_switch = v_switch
+        v_switch.set_encoder(encoder)
 
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_value_pl,
@@ -387,12 +417,20 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
 
 
 class SonoffZbminiL(SwitchOnZigbee):
-    ''' https://www.zigbee2mqtt.io/devices/ZBMINI-L.html#sonoff-zbmini-l '''
+    ''' Bridge for Sonoff ZBMINI-L devices.
+     https://www.zigbee2mqtt.io/devices/ZBMINI-L.html#sonoff-zbmini-l 
+     '''
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.encoder = SonoffZbminiLEncoder(self._root_topic)
-        iotlib_logger.warning('SonoffZbminiL created with encoder : %s', self.encoder)
+    def __init__(self,
+                 device_name: str,
+                 friendly_name: Optional[str] = None,
+                 topic_base: Optional[str] = None,
+                 v_switch: Optional[Switch] = None,) -> None:
+        super().__init__(SonoffZbminiLEncoder(get_root_topic(device_name, topic_base)),
+                         device_name=device_name,
+                         friendly_name=friendly_name,
+                         topic_base=topic_base,
+                         v_switch=v_switch)
 
     def _decode_value_pl(self, topic, payload) -> bool:
         _pl = payload.get(SWITCH_POWER)
@@ -452,6 +490,7 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
     '''
 
     def __init__(self,
+                 encoder: AbstractEncoder,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: str = None,
@@ -462,12 +501,18 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
 
         friendly_name = friendly_name or device_name
         v_switch0 = v_switch0 or Switch(friendly_name)
-        assert isinstance(v_switch0, Switch0), \
-            f'Bad value : {v_switch0} of type {type(v_switch0)}'
-        # self._v_switch0 = v_switch0
         v_switch1 = v_switch1 or Switch(friendly_name)
-        assert isinstance(v_switch1, Switch1), \
-            f'Bad value : {v_switch1} of type {type(v_switch1)}'
+        if not isinstance(encoder, AbstractEncoder):
+            raise ValueError(f'Bad value : {encoder} of type {type(encoder)}')
+        if not isinstance(v_switch0, Switch0):
+            raise ValueError(
+                f'Bad value : {v_switch0} of type {type(v_switch0)}')
+        if not isinstance(v_switch1, Switch1):
+            raise ValueError(
+                f'Bad value : {v_switch1} of type {type(v_switch1)}')
+        v_switch0.set_encoder(encoder)
+        # self._v_switch0 = v_switch0
+        v_switch1.set_encoder(encoder)
         # self._v_switch1 = v_switch1
 
         self._set_message_handler(self._root_topic,
@@ -489,9 +534,20 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
 class TuYaTS0002(MultiSwitchOnZigbee):
     ''' https://www.zigbee2mqtt.io/devices/TS0002.html '''
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.encoder = TuYaTS0002Encoder(self._root_topic)
+    def __init__(self,
+                 device_name: str,
+                 friendly_name: Optional[str] = None,
+                 topic_base: str = None,
+                 v_switch0: Optional[Switch0] = None,
+                 v_switch1: Optional[Switch1] = None,
+                 ) -> None:
+
+        super().__init__(TuYaTS0002Encoder(get_root_topic(device_name, topic_base)),
+                         device_name,
+                         friendly_name=friendly_name,
+                         topic_base=topic_base,
+                         v_switch0=v_switch0,
+                         v_switch1=v_switch1)
 
     def _decode_switch_value_pl(self, topic, payload, switch_power) -> bool | None:
         """

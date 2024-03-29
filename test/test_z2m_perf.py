@@ -23,11 +23,12 @@ from .mocks import MockZigbeeSwitch
 class FlipFlopMessage(VirtualDeviceProcessor):
     MAX_LOOP = 1000000
 
-    def __init__(self, loop_in: bool = False) -> None:
+    def __init__(self, client: MQTTClient, loop_in: bool = False) -> None:
         self.loop_count = 0
         self.loop_in = loop_in
+        self.client = client
 
-    def process_value_update(self, v_dev: Switch, bridge: MQTTBridge) -> None:
+    def process_value_update(self, v_dev: Switch) -> None:
         logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                      self,
                      v_dev,
@@ -39,9 +40,9 @@ class FlipFlopMessage(VirtualDeviceProcessor):
             raise RuntimeError('Max loop exceeded')
         self.loop_count += 1
         if v_dev.value:
-            v_dev.trigger_stop(bridge)
+            v_dev.trigger_stop(self.client)
         else:
-            v_dev.trigger_start(bridge)
+            v_dev.trigger_start(self.client)
 
 
 class TestSonoffZbminiL(unittest.TestCase):
@@ -58,7 +59,7 @@ class TestSonoffZbminiL(unittest.TestCase):
                                 v_switch=Switch(),
                                 topic_base=self.TOPIC_BASE)
         v_switch = Switch()
-        v_switch.processor_append(FlipFlopMessage())  # No loop
+        v_switch.processor_append(FlipFlopMessage(mqtt_client))  # No loop
 
         codec = SonoffZbminiL(self.DEVICE_NAME,
                               v_switch=v_switch,
@@ -74,11 +75,11 @@ class TestSonoffZbminiL(unittest.TestCase):
         time.sleep(1)
         self.assertFalse(v_switch.value)    # Default value is False
 
-        v_switch.trigger_start(bridge)
+        v_switch.trigger_start(mqtt_client)
         time.sleep(1)
         self.assertTrue(v_switch.value)
 
-        v_switch.trigger_stop(bridge)
+        v_switch.trigger_stop(mqtt_client)
         time.sleep(1)
         self.assertFalse(v_switch.value)
 
@@ -103,12 +104,12 @@ class TestSonoffZbminiL(unittest.TestCase):
         time.sleep(2)   # Wait MQTT client connection
         self.assertTrue(mqtt_client.connected)
         # Add processing
-        message_handler = FlipFlopMessage(loop_in=True)
+        message_handler = FlipFlopMessage(mqtt_client, loop_in=True)
         v_switch.processor_append(message_handler)
 
         _exc_start = time.perf_counter()
         _process_start = time.process_time_ns()
-        v_switch.trigger_start(bridge)
+        v_switch.trigger_start(mqtt_client)
         time.sleep(TEST_DURATION)
         _process_end = time.process_time_ns()
         _exc_end = time.perf_counter()

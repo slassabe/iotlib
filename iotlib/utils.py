@@ -8,7 +8,7 @@ import logging
 import schedule
 import threading
 
-iotlib_logger = logging.getLogger(__name__)
+iotlib_logger = logging.getLogger('iotlib')
 
 
 class Singleton(type):

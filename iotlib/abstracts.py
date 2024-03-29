@@ -10,7 +10,7 @@ current state of a device.
 Note: This module is part of the iotlib library.
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 import enum
 from typing import Optional
 
@@ -57,19 +57,7 @@ class AbstractEncoder(ABC):
         """
         raise NotImplementedError
 
-
 class AbstractCodec(ABC):
-    """Abstract base class for codecs used in IoT communication."""
-
-    @abstractmethod
-    def get_encoder(self) -> AbstractEncoder | None:
-        """Get the encoder for this codec.
-
-        Returns:
-            The encoder for this codec.
-        """
-        raise NotImplementedError
-
     @abstractmethod
     def decode_avail_pl(self, payload: str) -> bool:
         ''' Decode message received on topic dedicated to availability 
@@ -177,7 +165,6 @@ class AvailabilityProcessor(ABC):
 
         Args:
             availability (bool): The new availability status of the device.
-            bridge (Surrogate): The bridge instance receiving availability.
 
         Returns:
             None
@@ -197,8 +184,7 @@ class VirtualDeviceProcessor(ABC):
 
     @abstractmethod
     def process_value_update(self,
-                             v_dev: any,
-                             bridge: Surrogate) -> None:
+                             v_dev: any) -> None:
         """Handle an update from a virtual device.
 
         This method is called when a value changes on a virtual 
@@ -207,7 +193,6 @@ class VirtualDeviceProcessor(ABC):
 
         Args:
             v_dev (VirtualDevice): The virtual device instance.
-            bridge (Surrogate): The bridge instance receiving value.
 
         """
         raise NotImplementedError
@@ -237,19 +222,15 @@ class AbstractDevice(ABC):
     """
 
     @abstractmethod
-    def handle_value(self, value, bridge: Surrogate) -> ResultType:
+    def handle_value(self, value) -> ResultType:
         """
-        Handles the given value using the specified bridge.
+        Handles the received value and performs necessary actions.
 
         Args:
-            value: The value to be handled.
-            bridge: The bridge to be used for handling the value.
+            value (any): The received value.
 
         Returns:
-            The result of handling the value.
-
-        Raises:
-            NotImplementedError: If the method is not implemented by a subclass.
+            ResultType: The result of handling the value.
         """
         raise NotImplementedError
 

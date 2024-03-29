@@ -22,7 +22,7 @@ def loop_infinite() -> None:
     '''
     while True:
         try:
-            time.sleep(2)
+            time.sleep(1)
             print('.', end='')
         except DecodingException as e:
             print(e)
@@ -32,11 +32,11 @@ def loop_infinite() -> None:
 
 def test_availability_logger():
     DEVICE_NAME = 'TEMP_SALON'
-    BROCKER_NAME = 'groseille.back.internal'
+    BROCKER_HOST = 'groseille.back.internal'
     logging.basicConfig(level=logging.INFO)
 
-    # Create an MQTT client
-    client = MQTTClient('', BROCKER_NAME)
+    # Create MQTT client
+    client = MQTTClient('', BROCKER_HOST)
     # Create a codec for the device model and protocol
     codec = CodecFactory().create_instance(model=Model.ZB_AIRSENSOR,
                                            protocol=Protocol.Z2M,
@@ -50,7 +50,7 @@ def test_availability_logger():
     # listening for messages
     client.start()
     # Start an infinite loop to handle messages
-    loop_infinite()
+    time.sleep(2)
     # Should display ;
     #  - if the device is configured and available : [INFO] [TEMP_SALON] is available
     #  - if the device is configured and unavailable : [INFO] [TEMP_SALON] is unavailable

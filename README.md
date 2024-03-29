@@ -1,7 +1,7 @@
 
 # iotlib
 
-"Powering Your IoT Solutions with Simplicity and Efficiency"
+"Less is More - Powering Your IoT Solutions with Simplicity and Efficiency"
 
 
 ## Description

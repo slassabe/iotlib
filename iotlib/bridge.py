@@ -182,7 +182,7 @@ class MQTTBridge(Surrogate):
                                       topic,
                                       self.codec.fit_payload(payload))
             # Process handle_value with the decoded value
-            _virtual_device.handle_value(_decoded_value, self)
+            _virtual_device.handle_value(_decoded_value)
 
     def _handle_availability(self, payload: str) -> bool:
         """Handle availability message, executing availability processors when status changes.
