@@ -22,20 +22,18 @@ Example usage:
     
     cluster = factory.create_instance(Model.CUSTOM_DEVICE, Protocol.ZIGBEE)
 """
-from iotlib.utils import iotlib_logger
 
 from collections import defaultdict
 from enum import Enum
 from typing import Callable
 
+from iotlib.utils import iotlib_logger, Singleton
 from iotlib.abstracts import AbstractCodec
 from iotlib.codec.z2m import (NeoNasAB02B2, SonoffSnzb01, SonoffSnzb02, SonoffSnzb3,
                               SonoffZbminiL, Ts0601Soil, TuYaTS0002)
 
-from .utils import Singleton
 
-
-class Model(Enum):
+class Model(str, Enum):
     """
     This enum class Model defines constants for the different device models supported.
 

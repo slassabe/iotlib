@@ -6,7 +6,7 @@
 
 ## Description
 
-iotlib is a versatile library built upon Paho™ MQTT, designed to streamline the development of IoT applications. 
+iotlib is a versatile library built upon Paho™ MQTT, designed to streamline the development of IoT applications.
 
 Key features includes:
 
@@ -18,22 +18,34 @@ Key features includes:
 - The provision of 'availability processors', which allow for the execution of actions when a device's availability status changes.
 - The inclusion of 'virtual device processors', offering a solution for handling changes in device values effectively.
 
-## Installation
+## Contents
+
+- [iotlib](#iotlib)
+  - [Description](#description)
+  - [Contents](#contents)
+  - [Getting Started](#getting-started)
+  - [Usage Examples](#usage-examples)
+    - [Usage with Docker](#usage-with-docker)
+  - [Contributing Guidelines](#contributing-guidelines)
+  - [License Information](#license-information)
+  - [Related projects](#related-projects)
+
+## Getting Started
 
 ```bash
-git clone https://github.com/slassabe/Domotic.git
+git clone https://github.com/slassabe/iotlib.git
 
 cd iotlib
 sudo pip3 install -r requirements.txt
 ```
 
-## Usage
+## Usage Examples
 
 ### Usage with Docker
 
-## Contributing
+## Contributing Guidelines
 
-## License
+## License Information
 
 ## Related projects
 

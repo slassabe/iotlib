@@ -3,23 +3,25 @@
 # coding=utf-8
 
 from abc import ABC, abstractmethod
+from typing import Any, Type, TypeVar
 
 import logging
-import schedule
 import threading
+import schedule
 
 iotlib_logger = logging.getLogger('iotlib')
 
+T = TypeVar('T')
 
 class Singleton(type):
     """ ref : Python Cookbook Recipes for Mastering Python 3, (David Beazley, Brian K. Jones)
         Using a Metaclass to Control Instance Creation
     """
-    def __init__(cls, *args, **kwargs):
+    def __init__(cls:Type[T], *args, **kwargs) -> None:
         cls.__instance = None
         super().__init__(*args, **kwargs)
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls: Type[T], *args: Any, **kwargs: Any) -> T:
         if cls.__instance is None:
             cls.__instance = super().__call__(*args, **kwargs)
             return cls.__instance

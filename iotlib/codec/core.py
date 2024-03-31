@@ -2,17 +2,17 @@
 # coding=utf-8
 
 from collections import defaultdict
-from typing import Callable, TypeAlias
+from typing import Callable, TypeAlias, Tuple, Dict, Any
 
 from iotlib.utils import iotlib_logger
 from iotlib.abstracts import AbstractCodec, AbstractEncoder
 from iotlib.virtualdev import VirtualDevice
 
 
-MessageHandlerType: TypeAlias = tuple[
-    Callable,
+MessageHandlerType: TypeAlias = Tuple[
+    Callable[..., Any],
     VirtualDevice]
-HandlersListType: TypeAlias = dict[str, MessageHandlerType]
+HandlersListType: TypeAlias = Dict[str, MessageHandlerType]
 
 
 class Codec(AbstractCodec):
