@@ -2,12 +2,10 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-from abc import ABC, abstractmethod
 from typing import Any, Type, TypeVar
 
 import logging
 import threading
-import schedule
 
 iotlib_logger = logging.getLogger('iotlib')
 
@@ -69,41 +67,3 @@ class InfiniteTimer():
             iotlib_logger.error(
                 "Timer never started or failed to initialize.")
 
-
-class Trigger(ABC):
-
-    def __init__(self, name: str):
-        self._name = name
-        self._registered_list = []
-
-    def registers(self, device):
-        self._registered_list.append(device)
-
-    def __repr__(self):
-        _sep = ''
-        _res = ''
-        for _attr, _val in self.__dict__.items():
-            _res += f'{_sep}{_attr} : {_val}'
-            _sep = ' | '
-        return f'{self.__class__.__name__} ({self._name})'
-
-
-class Timer(Trigger):
-    def __init__(self, name: str, every: int):
-        super().__init__(name)
-        self._timer = InfiniteTimer(every, self._handle_switches)
-        self._timer.start()
-
-    @abstractmethod
-    def _handle_switches(self):
-        raise NotImplementedError
-
-
-class Scheduler(Trigger):
-    def __init__(self, name: str, at: str):
-        super().__init__(name)
-        self._schedule = schedule.every().day.at(at).do(self._handle_switches)
-
-    @abstractmethod
-    def _handle_switches(self):
-        raise NotImplementedError

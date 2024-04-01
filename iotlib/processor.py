@@ -73,7 +73,7 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
             countdown_long (int): The duration of the long press action in seconds.
         """
         super().__init__()
-        self._client = client
+        self._mqtt_client = client
         self._countdown_long = countdown_long
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
@@ -102,17 +102,17 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
             iotlib_logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(client=self._client)
+                _sw.trigger_start(client=self._mqtt_client)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             iotlib_logger.info('%s -> "start_and_stop" with long period',
                                prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(client=self._client,
+                _sw.trigger_start(client=self._mqtt_client,
                                   on_time=self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             iotlib_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_stop(client=self._client)
+                _sw.trigger_stop(client=self._mqtt_client)
         else:
             iotlib_logger.error('%s : action unknown "%s"',
                                 prefix,
@@ -137,7 +137,7 @@ class MotionTrigger(VirtualDeviceProcessorCore):
             None
         """
         super().__init__()
-        self._client = client
+        self._mqtt_client = client
 
     def process_value_update(self,
                              v_dev: VirtualDevice) -> None:
@@ -156,7 +156,8 @@ class MotionTrigger(VirtualDeviceProcessorCore):
                                v_dev.friendly_name,
                                v_dev.value)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(self._client, on_time=_sw.countdown)
+                _sw.trigger_start(self._mqtt_client, 
+                                  on_time=_sw.countdown)
         else:
             iotlib_logger.debug('[%s] occupancy changed to "%s" '
                                 '-> nothing to do (timer will stop switch)',
@@ -180,7 +181,7 @@ class CountdownTrigger(VirtualDeviceProcessorCore):
         if not isinstance(client, MQTTClient):
             raise TypeError(
                 f"client must be MQTTClient, not {type(client)}")
-        self._client = client
+        self._mqtt_client = client
         self._stop_timer = None
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
@@ -195,17 +196,15 @@ class CountdownTrigger(VirtualDeviceProcessorCore):
         """
         _countdown = v_dev.countdown
         if _countdown is None:
-            iotlib_logger.warning('[%s] cannot process - no countdown set', 
+            iotlib_logger.warning('[%s] cannot process - no countdown set',
                                   self)
             return
         self._remember_to_turn_the_light_off(v_dev,
-                                             _countdown,
-                                             self._client)
+                                             _countdown)
 
     def _remember_to_turn_the_light_off(self,
                                         operable: Operable,
-                                        when: int,
-                                        client: MQTTClient) -> None:
+                                        when: int) -> None:
         iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
                             self,  when)
         if not isinstance(when, int) or when <= 0:
@@ -215,7 +214,7 @@ class CountdownTrigger(VirtualDeviceProcessorCore):
             self._stop_timer.cancel()    # a timer is allready set, cancel it
         self._stop_timer = threading.Timer(when,
                                            operable.trigger_stop,
-                                           [client])
+                                           [self._mqtt_client])
         self._stop_timer.start()
 
 
@@ -233,7 +232,7 @@ class PropertyPublisher(VirtualDeviceProcessorCore):
                  client: MQTTClient,
                  publish_topic_base: str | None = None):
         super().__init__()
-        self._client = client
+        self._mqtt_client = client
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
     def process_value_update(self, v_dev) -> None:
@@ -252,9 +251,9 @@ class PropertyPublisher(VirtualDeviceProcessorCore):
         _property_topic += '/' + v_dev.get_property().property_node
         _property_topic += '/' + v_dev.get_property().property_name
 
-        self._client.publish(_property_topic,
-                             v_dev.value,
-                             qos=1, retain=True)
+        self._mqtt_client.publish(_property_topic,
+                                  v_dev.value,
+                                  qos=1, retain=True)
 
 
 class AvailabilityLogger(AvailabilityProcessor):
@@ -297,17 +296,17 @@ class AvailabilityPublisher(AvailabilityProcessor):
                 f"publish_topic_base must be string, not {type(publish_topic_base)}")
 
         super().__init__()
-        self._client = None
+        self._mqtt_client = None
         self._state_topic = None
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
     def attach(self, bridge: Surrogate) -> None:
         _device_name = bridge.codec.device_name
-        self._client = bridge.client
+        self._mqtt_client = bridge.client
         self._state_topic = f"{self._publish_topic_base}/device/{_device_name}/$state"
-        self._client.will_set(self._state_topic,
-                              'lost',
-                              qos=1, retain=True)
+        self._mqtt_client.client.will_set(self._state_topic,
+                                          'lost',
+                                          qos=1, retain=True)
 
     def process_availability_update(self, availability: bool) -> None:
         if availability is None:
@@ -316,6 +315,6 @@ class AvailabilityPublisher(AvailabilityProcessor):
             _state_str = 'ready'
         else:
             _state_str = 'disconnected'
-        self._client.publish(self._state_topic,
-                             _state_str,
-                             qos=1, retain=True)
+        self._mqtt_client.publish(self._state_topic,
+                                  _state_str,
+                                  qos=1, retain=True)

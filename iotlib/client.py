@@ -335,24 +335,3 @@ class MQTTClient():
         self._loop_forever_used = True
         return self.client.loop_forever()
 
-    def will_set(self,
-                 topic: str,
-                 payload: str,
-                 qos: int = 1,
-                 retain: bool = False):
-        """
-        Set the Last Will and Testament (LWT) message for the client.
-
-        Args:
-            topic (str): The topic to publish the LWT message to.
-            payload (str): The payload of the LWT message.
-            qos (int, optional): The quality of service level for the LWT message. Defaults to 1.
-            retain (bool, optional): Whether the LWT message should be retained. Defaults to False.
-
-        Returns:
-            bool: True if the LWT message was successfully set, False otherwise.
-        """
-        return self.client.will_set(topic,
-                                    payload=payload,
-                                    qos=qos,
-                                    retain=retain)

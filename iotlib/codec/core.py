@@ -4,7 +4,6 @@
 from collections import defaultdict
 from typing import Callable, TypeAlias, Tuple, Dict, Any
 
-from iotlib.utils import iotlib_logger
 from iotlib.abstracts import AbstractCodec, AbstractEncoder
 from iotlib.virtualdev import VirtualDevice
 
