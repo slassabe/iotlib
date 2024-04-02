@@ -20,21 +20,14 @@ Typical usage:
 import threading
 
 from iotlib.devconfig import ButtonValues
-from iotlib.client import MQTTClient
-from iotlib.abstracts import AvailabilityProcessor, Surrogate, VirtualDeviceProcessor
+from iotlib.abstracts import AvailabilityProcessor, MQTTService, Surrogate, VirtualDeviceProcessor
 from iotlib.virtualdev import VirtualDevice, Operable
 from iotlib.utils import iotlib_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
 
 
-class VirtualDeviceProcessorCore(VirtualDeviceProcessor):
-
-    def __str__(self):
-        return f'{self.__class__.__name__} object'
-
-
-class VirtualDeviceLogger(VirtualDeviceProcessorCore):
+class VirtualDeviceLogger(VirtualDeviceProcessor):
     """Logs updates from virtual devices.
 
     This processor logs a debug message when a virtual 
@@ -43,6 +36,7 @@ class VirtualDeviceLogger(VirtualDeviceProcessorCore):
     """
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
+        # Implement the abstract method from VirtualDeviceProcessor
         iotlib_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
                             self,
                             v_dev,
@@ -50,7 +44,7 @@ class VirtualDeviceLogger(VirtualDeviceProcessorCore):
                             v_dev.value)
 
 
-class ButtonTrigger(VirtualDeviceProcessorCore):
+class ButtonTrigger(VirtualDeviceProcessor):
     """
     A class that processes button press actions on registered switches.
 
@@ -63,17 +57,17 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
     """
 
     def __init__(self,
-                 client: MQTTClient,
+                 mqtt_service: MQTTService,
                  countdown_long=60*10) -> None:
         """
         Initializes a ButtonTrigger instance.
 
         Parameters:
-            client (MQTTClient): The MQTT client used for communication.
+            mqtt_service (MQTTService): The MQTT service used for communication.
             countdown_long (int): The duration of the long press action in seconds.
         """
         super().__init__()
-        self._mqtt_client = client
+        self._mqtt_service = mqtt_service
         self._countdown_long = countdown_long
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
@@ -102,42 +96,42 @@ class ButtonTrigger(VirtualDeviceProcessorCore):
             iotlib_logger.info(
                 '%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(client=self._mqtt_client)
+                _sw.trigger_start(mqtt_service=self._mqtt_service)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
             iotlib_logger.info('%s -> "start_and_stop" with long period',
                                prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(client=self._mqtt_client,
+                _sw.trigger_start(mqtt_service=self._mqtt_service,
                                   on_time=self._countdown_long)
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             iotlib_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_stop(client=self._mqtt_client)
+                _sw.trigger_stop(mqtt_service=self._mqtt_service)
         else:
             iotlib_logger.error('%s : action unknown "%s"',
                                 prefix,
                                 v_dev.value)
 
 
-class MotionTrigger(VirtualDeviceProcessorCore):
+class MotionTrigger(VirtualDeviceProcessor):
     '''
     A class that handles motion sensor state changes and triggers registered switches 
     when occupancy is detected.
     '''
 
     def __init__(self,
-                 client: MQTTClient) -> None:
+                 mqtt_service: MQTTService) -> None:
         """
         Initializes a MotionTrigger instance.
 
         Parameters:
-            client (MQTTClient): The MQTT client used for communication.
+            mqtt_service (MQTTService): The MQTT service used for communication.
 
         Returns:
             None
         """
         super().__init__()
-        self._mqtt_client = client
+        self._mqtt_service = mqtt_service
 
     def process_value_update(self,
                              v_dev: VirtualDevice) -> None:
@@ -156,7 +150,7 @@ class MotionTrigger(VirtualDeviceProcessorCore):
                                v_dev.friendly_name,
                                v_dev.value)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(self._mqtt_client, 
+                _sw.trigger_start(self._mqtt_service,
                                   on_time=_sw.countdown)
         else:
             iotlib_logger.debug('[%s] occupancy changed to "%s" '
@@ -165,9 +159,9 @@ class MotionTrigger(VirtualDeviceProcessorCore):
                                 v_dev.value)
 
 
-class CountdownTrigger(VirtualDeviceProcessorCore):
+class CountdownTrigger(VirtualDeviceProcessor):
     def __init__(self,
-                 client: MQTTClient) -> None:
+                 mqtt_service: MQTTService) -> None:
         """
         Initializes a CountdownTrigger instance.
 
@@ -178,10 +172,10 @@ class CountdownTrigger(VirtualDeviceProcessorCore):
             None
         """
         super().__init__()
-        if not isinstance(client, MQTTClient):
+        if not isinstance(mqtt_service, MQTTService):
             raise TypeError(
-                f"client must be MQTTClient, not {type(client)}")
-        self._mqtt_client = client
+                f"'mqtt_service' must be MQTTService, not {type(mqtt_service)}")
+        self._mqtt_service = mqtt_service
         self._stop_timer = None
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
@@ -214,25 +208,25 @@ class CountdownTrigger(VirtualDeviceProcessorCore):
             self._stop_timer.cancel()    # a timer is allready set, cancel it
         self._stop_timer = threading.Timer(when,
                                            operable.trigger_stop,
-                                           [self._mqtt_client])
+                                           [self._mqtt_service])
         self._stop_timer.start()
 
 
-class PropertyPublisher(VirtualDeviceProcessorCore):
+class PropertyPublisher(VirtualDeviceProcessor):
     """
     A class that publishes property updates to an MQTT broker.
 
     Args:
-        client (MQTTClient): The MQTT client used for publishing.
+        mqtt_service (MQTTService): The MQTT service used for publishing.
         publish_topic_base (str, optional): The base topic to which the property updates will be published.
 
     """
 
     def __init__(self,
-                 client: MQTTClient,
+                 mqtt_service: MQTTService,
                  publish_topic_base: str | None = None):
         super().__init__()
-        self._mqtt_client = client
+        self._mqtt_service = mqtt_service
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
     def process_value_update(self, v_dev) -> None:
@@ -251,9 +245,10 @@ class PropertyPublisher(VirtualDeviceProcessorCore):
         _property_topic += '/' + v_dev.get_property().property_node
         _property_topic += '/' + v_dev.get_property().property_name
 
-        self._mqtt_client.publish(_property_topic,
-                                  v_dev.value,
-                                  qos=1, retain=True)
+        _client = self._mqtt_service.mqtt_client
+        _client.publish(_property_topic,
+                        v_dev.value,
+                        qos=1, retain=True)
 
 
 class AvailabilityLogger(AvailabilityProcessor):
@@ -270,9 +265,11 @@ class AvailabilityLogger(AvailabilityProcessor):
         self._debug = debug
 
     def attach(self, bridge: Surrogate) -> None:
+        # Implement the abstract method from AvailabilityProcessor
         self._device_name = bridge.codec.device_name
 
     def process_availability_update(self, availability: bool) -> None:
+        # Implement the abstract method from AvailabilityProcessor
         if availability:
             _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
             _log_fn("[%s] is available", self._device_name)
@@ -296,17 +293,18 @@ class AvailabilityPublisher(AvailabilityProcessor):
                 f"publish_topic_base must be string, not {type(publish_topic_base)}")
 
         super().__init__()
-        self._mqtt_client = None
+        self._mqtt_service = None
         self._state_topic = None
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
     def attach(self, bridge: Surrogate) -> None:
         _device_name = bridge.codec.device_name
-        self._mqtt_client = bridge.client
+        self._mqtt_service = bridge.mqtt_service
         self._state_topic = f"{self._publish_topic_base}/device/{_device_name}/$state"
-        self._mqtt_client.client.will_set(self._state_topic,
-                                          'lost',
-                                          qos=1, retain=True)
+        _client = self._mqtt_service.mqtt_client
+        _client.will_set(self._state_topic,
+                         'lost',
+                         qos=1, retain=True)
 
     def process_availability_update(self, availability: bool) -> None:
         if availability is None:
@@ -315,6 +313,7 @@ class AvailabilityPublisher(AvailabilityProcessor):
             _state_str = 'ready'
         else:
             _state_str = 'disconnected'
-        self._mqtt_client.publish(self._state_topic,
-                                  _state_str,
-                                  qos=1, retain=True)
+        _client = self._mqtt_service.mqtt_client
+        _client.publish(self._state_topic,
+                        _state_str,
+                        qos=1, retain=True)

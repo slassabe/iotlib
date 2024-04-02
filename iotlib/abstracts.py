@@ -10,11 +10,10 @@ current state of a device.
 Note: This module is part of the iotlib library.
 """
 
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
+from typing import Callable, Optional
 import enum
-from typing import Optional
-
-from iotlib.client import MQTTClient
+import paho.mqtt.client as mqtt
 
 
 class AbstractEncoder(ABC):
@@ -45,17 +44,19 @@ class AbstractEncoder(ABC):
 
     @abstractmethod
     def change_state_request(self, is_on: bool, device_id: Optional[int]) -> tuple[str, str]:
-        """Get the state change request for a device.
+        """
+        Constructs a change state request for the device.
 
         Args:
-            is_on (bool): True to power on, False to power off.
-            device_id: The device ID to get the state change request for.
+            is_on (bool): Indicates whether the device should be turned on or off.
+            device_id (int | None): The ID of the device. If None, the request is for all devices.
+            on_time (int | None): The duration in seconds for which the device should remain on. If None, the device will stay on indefinitely.
 
         Returns:
-            A tuple containing the state change request topic and payload or None
-            if such a request is not accepted.
+            tuple[str, str]: A tuple containing the MQTT topic and the payload in JSON format.
         """
         raise NotImplementedError
+
 
 class AbstractCodec(ABC):
     @abstractmethod
@@ -73,11 +74,53 @@ class AbstractCodec(ABC):
 
     @abstractmethod
     def get_availability_topic(self) -> str:
-        '''Get the topic dedicated to handle availability messages
+        '''Return the availability topic the client must subscribe
 
         Returns:
             str: The topic dedicated to handle availability messages.
         '''
+        raise NotImplementedError
+
+
+class MQTTService(ABC):
+    """    Abstract class to define the MQTT services used by Surrogate classes
+    """
+    @property
+    @abstractmethod
+    def mqtt_client(self) -> mqtt.Client:
+        """
+        Returns the MQTT client object.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def connect(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
+        ''' Connect to a MQTT remote broker
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def disconnect(self) -> mqtt.MQTTErrorCode:
+        ''' Disconnect from a MQTT remote broker
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def connect_handler_add(self, handler: Callable) -> None:
+        """Adds a connect event handler.
+
+        Args:
+            handler: The callback function to handle the connect event.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def disconnect_handler_add(self, handler: Callable) -> None:
+        """Adds a disconnect event handler.
+
+        Args:
+            handler: The callback function to handle the disconnect event.
+        """
         raise NotImplementedError
 
 
@@ -89,25 +132,15 @@ class Surrogate(ABC):
     encoding/decoding messages to interact with real devices.
 
     Attributes:
-        client (MQTTClient): The MQTT client used for communication.
+        mqtt_client (MQTTClient): The MQTT client used for communication.
         codec (AbstractCodec): The codec used for encoding/decoding messages.
     """
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
+                 mqtt_service: MQTTService,
                  codec: AbstractCodec):
-        self.client = mqtt_client
+        self.mqtt_service = mqtt_service
         self.codec = codec
-
-    @abstractmethod
-    def publish_message(self, topic: str, payload: str) -> None:
-        """Publish a message on the given MQTT topic.
-
-        Args:
-            topic (str): The MQTT topic to publish the message on.
-            payload (str): The message payload to publish.
-        """
-        raise NotImplementedError
 
 
 class DiscoveryProcessor(ABC):
@@ -243,6 +276,6 @@ class AbstractDevice(ABC):
             processor (VirtualDeviceProcessor): The VirtualDeviceProcessor to append.
 
         Raises:
-            NotImplementedError: This method is meant to be overridden by subclasses.
+            TypeError: If the processor is not an instance of VirtualDeviceProcessor.
         """
         raise NotImplementedError

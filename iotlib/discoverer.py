@@ -23,8 +23,7 @@ for getting string representations of the device.
 import json
 
 from iotlib.utils import iotlib_logger
-from iotlib.abstracts import DiscoveryProcessor
-from iotlib.client import MQTTClient
+from iotlib.abstracts import DiscoveryProcessor, MQTTService
 from iotlib.codec.config import BaseTopic
 from iotlib.factory import Model, Protocol
 
@@ -72,8 +71,10 @@ class Device():
 
 class Discoverer():
     """Discovers devices."""
-    def __init__(self, mqtt_client: MQTTClient):
-        self.mqtt_client = mqtt_client
+    def __init__(self, mqtt_service: MQTTService):
+        if not isinstance(mqtt_service, MQTTService):
+            raise TypeError(f"mqtt_service must be an instance of MQTTService, not {type(mqtt_service)}")
+        self.mqtt_service = mqtt_service
         self.devices = []
         self._discovery_processors = []
 
@@ -90,13 +91,13 @@ class Discoverer():
 
 
 class ZigbeeDiscoverer(Discoverer):
-    def __init__(self, mqtt_client: MQTTClient):
+    def __init__(self, mqtt_service: MQTTService):
         """Initializes the ZigbeeDiscoverer with the given MQTT client."""
-        super().__init__(mqtt_client)
+        super().__init__(mqtt_service)
         self._base_topic = BaseTopic.Z2M_BASE_TOPIC.value + '/bridge/devices'
-        self.mqtt_client.message_callback_add(self._base_topic,
+        mqtt_service.mqtt_client.message_callback_add(self._base_topic,
                                               self._on_message_cb)
-        self.mqtt_client.connect_handler_add(self._on_connect_cb)
+        mqtt_service.connect_handler_add(self._on_connect_cb)
 
     def _on_message_cb(self, client, userdata, message) -> None:
         """Handles incoming MQTT messages."""
@@ -108,8 +109,8 @@ class ZigbeeDiscoverer(Discoverer):
     def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Handles the MQTT connection event."""
         iotlib_logger.debug(
-            '[%s] Connection accepted -> subscribe', self.mqtt_client)
-        self.mqtt_client.subscribe(self._base_topic)
+            '[%s] Connection accepted -> subscribe', self.mqtt_service)
+        self.mqtt_service.mqtt_client.subscribe(self._base_topic)
 
     def _parse_devices(self, payload: json) -> list[Device]:
             """
@@ -133,13 +134,13 @@ class ZigbeeDiscoverer(Discoverer):
 
 class TasmotaDiscoverer(Discoverer):
     """Discovers Tasmota devices using MQTT."""
-    def __init__(self, mqtt_client: MQTTClient):
-        super().__init__(mqtt_client)
+    def __init__(self, mqtt_service: MQTTService):
+        super().__init__(mqtt_service)
         self.devices = []
         self._base_topic = BaseTopic.TASMOTA_DISCOVERY_TOPIC.value + '/+/config'
-        self.mqtt_client.message_callback_add(self._base_topic,
+        mqtt_service.mqtt_client.message_callback_add(self._base_topic,
                                               self._on_message_cb)
-        self.mqtt_client.connect_handler_add(self._on_connect_cb)
+        mqtt_service.connect_handler_add(self._on_connect_cb)
 
     def _on_message_cb(self, client, userdata, message) -> None:
         """Handles incoming MQTT messages."""
@@ -151,8 +152,8 @@ class TasmotaDiscoverer(Discoverer):
     def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
         """Handles the MQTT connection event."""
         iotlib_logger.debug(
-            '[%s] Connection accepted -> subscribe', self.mqtt_client)
-        self.mqtt_client.subscribe(self._base_topic)
+            '[%s] Connection accepted -> subscribe', self.mqtt_service)
+        self.mqtt_service.mqtt_client.subscribe(self._base_topic)
 
     def _parse_devices(self, payload: dict) -> list[Device]:
         """Parses the devices from the given payload."""
@@ -169,11 +170,11 @@ class UnifiedDiscoverer():
     """
     A class that unifies the discovery of devices from different protocols.
     """
-    def __init__(self, mqtt_client: MQTTClient):
+    def __init__(self, mqtt_service: MQTTService):
         """
         Initializes the UnifiedDiscoverer with a list of specific protocol discoverers.
         """
-        self._discoverers = [ZigbeeDiscoverer(mqtt_client), TasmotaDiscoverer(mqtt_client)]
+        self._discoverers = [ZigbeeDiscoverer(mqtt_service), TasmotaDiscoverer(mqtt_service)]
 
     def get_devices(self) -> list[Device]:
         """

@@ -36,12 +36,6 @@ def get_root_topic(device_name: str, base_topic: str) -> str:
     return f'{base_topic}/{device_name}'
 
 
-def get_availability_topic(device_name: str, base_topic: str) -> str:
-    ''' Return the Z2M availability topic for a device
-    '''
-    return f'{base_topic}/{device_name}/availability'
-
-
 class DeviceOnZigbee2MQTT(Codec):
     ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
     '''
@@ -63,12 +57,10 @@ class DeviceOnZigbee2MQTT(Codec):
         super().__init__(device_name, base_topic)
 
         self._root_topic = get_root_topic(device_name, base_topic)
-        self._availability_topic = get_availability_topic(
-            device_name, base_topic)
+        self._availability_topic = f'{base_topic}/{device_name}/availability'
 
     def get_availability_topic(self) -> str:
-        """Return the availability topic the client must subscribe
-        """
+        # Implement abstract method
         return self._availability_topic
 
     def decode_avail_pl(self, payload: str) -> bool:
@@ -354,15 +346,18 @@ class NeoNasAB02B2Encoder(AbstractEncoder):
             f'Bad value for alarm_level : {alarm_level}'
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
+        # Implementing this method is not necessary for the sensor devices
         return None
 
     def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        # Implement abstract method
         return True
 
     def change_state_request(self,
                              is_on: bool,
                              device_id: Optional[int] = None,
                              on_time: Optional[int] = None) -> tuple[str, str]:
+        # Implement abstract method
         _set = {self._key_alarm: is_on,
                 self._key_melody: self._melody,
                 self._key_alarm_level: self._alarm_level,
@@ -448,26 +443,18 @@ class SonoffZbminiLEncoder(AbstractEncoder):
         self._root_topic = root_topic
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
+        # Implement abstract method
         return f'{self._root_topic}/get', '{"state":""}'
 
     def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        # Implement abstract method
         return True
 
     def change_state_request(self,
                              is_on: bool,
                              device_id: Optional[int] = None,
                              on_time: Optional[str] = None) -> tuple[str, str]:
-        """
-        Constructs a change state request for the device.
-
-        Args:
-            is_on (bool): Indicates whether the device should be turned on or off.
-            device_id (int | None): The ID of the device. If None, the request is for all devices.
-            on_time (int | None): The duration in seconds for which the device should remain on. If None, the device will stay on indefinitely.
-
-        Returns:
-            tuple[str, str]: A tuple containing the MQTT topic and the payload in JSON format.
-        """
+        # Implement abstract method
         _topic = f'{self._root_topic}/set'
         _payload = {SWITCH_POWER: STATE_ON if is_on else STATE_OFF}
         if on_time is not None:
@@ -594,26 +581,18 @@ class TuYaTS0002Encoder(AbstractEncoder):
         self._root_topic = root_topic
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
+        # Implement abstract method
         return f'{self._root_topic}/get', '{"state_left":"","state_right":""}'
 
     def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+        # Implement abstract method
         return True
 
     def change_state_request(self,
                              is_on: bool,
                              device_id: Optional[int] = None,
                              on_time: Optional[int] = None) -> tuple[str, str]:
-        """
-        Constructs a change state request for the device.
-
-        Args:
-            is_on (bool): Indicates whether the device should be turned on or off.
-            device_id (int | None): The ID of the device. If None, the request is for all devices.
-            on_time (int | None): The duration in seconds for which the device should remain on. If None, the device will stay on indefinitely.
-
-        Returns:
-            tuple[str, str]: A tuple containing the MQTT topic and the payload in JSON format.
-        """
+        # Implement abstract method
         if device_id is None:
             _key_power = SWITCH_POWER
         elif device_id == 0:

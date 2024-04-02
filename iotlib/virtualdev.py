@@ -6,10 +6,9 @@ import threading
 from abc import abstractmethod
 from typing import Optional
 
-from iotlib.abstracts import (AbstractDevice, AbstractEncoder, Surrogate, ResultType,
+from iotlib.abstracts import (AbstractDevice, AbstractEncoder, MQTTService, ResultType,
                               VirtualDeviceProcessor)
 from iotlib.devconfig import PropertyConfig, ButtonValues
-from iotlib.client import MQTTClient
 from iotlib.utils import iotlib_logger
 
 
@@ -92,6 +91,7 @@ class VirtualDevice(AbstractDevice):
 
 
     def handle_value(self, value) -> ResultType:
+        # Implement the abstract method from AbstractDevice class
         if value is None:
             # No relevant value received (can be info on device like battery level), ignore
             return ResultType.IGNORE
@@ -106,15 +106,7 @@ class VirtualDevice(AbstractDevice):
             return ResultType.SUCCESS
 
     def processor_append(self, processor: VirtualDeviceProcessor) -> None:
-        """
-        Appends a processor to the device.
-
-        Args:
-            processor (VirtualDeviceProcessor): The processor to append.
-
-        Raises:
-            TypeError: If the processor is not an instance of VirtualDeviceProcessor.
-        """
+        # Implement the abstract method from AbstractDevice class
         if not isinstance(processor, VirtualDeviceProcessor):
             raise TypeError(
                 f"Processor must be instance of Processor, not {type(processor)}")
@@ -177,7 +169,7 @@ class Operable(VirtualDevice):
         self._countdown = value
 
     def trigger_get_state(self,
-                          mqtt_client: MQTTClient,
+                          mqtt_service: MQTTService,
                           device_id: str = None) -> None:
         
         """Triggers a state request to the device .
@@ -186,26 +178,29 @@ class Operable(VirtualDevice):
         current state of the device. 
 
         Args:
-        client: The client instance used for communication
+        mqtt_service: The client instance used for communication
         device_id: Optional device ID to retrieve state for.
         """
+        if not isinstance(mqtt_service, MQTTService):
+            raise TypeError(
+                f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         _encoder = self._encoder
         _state_request = _encoder.get_state_request(device_id)
         if _state_request is None:
             iotlib_logger.debug('%s : unable to get state')
         else:
             _state_topic, _state_payload = _state_request
-            mqtt_client.client.publish(_state_topic, _state_payload)
+            mqtt_service.mqtt_client.publish(_state_topic, _state_payload)
 
     def trigger_change_state(self,
-                             mqtt_client: MQTTClient,
+                             mqtt_service: MQTTService,
                              is_on: bool,
                              on_time: int | None = None) -> None:
         """
         Triggers a change in the state of a device.
 
         Args:
-            client (MQTTClient): The client object used for communication.
+            mqtt_service (MQTTService): The client object used for communication.
             is_on (bool): The new state of the device (True for ON, False for OFF).
             on_time (int | None): The duration for which the device should remain ON, in seconds.
                 If None, the device will remain ON indefinitely.
@@ -217,6 +212,9 @@ class Operable(VirtualDevice):
             None
 
         """
+        if not isinstance(mqtt_service, MQTTService):
+            raise TypeError(
+                f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         _encoder = self._encoder
         _state_request = _encoder.change_state_request(is_on,
                                                        device_id=self.device_id,
@@ -225,10 +223,10 @@ class Operable(VirtualDevice):
             iotlib_logger.warning('%s : unable to change state')
         else:
             _state_topic, _state_payload = _state_request
-            mqtt_client.client.publish(_state_topic, _state_payload)
+            mqtt_service.mqtt_client.publish(_state_topic, _state_payload)
 
     def trigger_start(self,
-                      client: MQTTClient,
+                      mqtt_service: MQTTService,
                       on_time: int | None = None) -> bool:
         ''' Ask the device to start
 
@@ -238,38 +236,44 @@ class Operable(VirtualDevice):
         parameter set to True.
 
         Args:
-            client (MQTTClient): The client object used to communicate with the device.
+            mqtt_service (MQTTService): The client object used to communicate with the device.
             on_time (int | None, optional): The time duration for which the device should
                 remain on. Defaults to None.
 
         Returns:
             bool: Returns True if the switch state is OFF when the method is called.
         '''
+        if not isinstance(mqtt_service, MQTTService):
+            raise TypeError(
+                f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         if self.value:
             iotlib_logger.debug('[%s] is already "on" -> no action required',
                                 self)
             return False
         iotlib_logger.debug(
             '[%s] is "off" -> request to turn it "on"', self)
-        self.trigger_change_state(mqtt_client=client,
+        self.trigger_change_state(mqtt_service=mqtt_service,
                                   is_on=True,
                                   on_time=on_time)
         return True
 
-    def trigger_stop(self, client: MQTTClient) -> bool:
+    def trigger_stop(self, mqtt_service: MQTTService) -> bool:
         ''' Ask the device to stop
 
         This method is used to send a request to the device to stop its operation.
         If the switch state is currently ON, it will send a request to turn it OFF via MQTT.
 
         Args:
-            client (MQTTClient): The client object used to communicate with the device.
+            mqtt_service (MQTTService): The client object used to communicate with the device.
 
         Returns:
             bool: Returns True if the switch state is ON when the method is called, indicating 
                that a request to turn it OFF has been sent.
 
         '''
+        if not isinstance(mqtt_service, MQTTService):
+            raise TypeError(
+                f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         iotlib_logger.debug(
             '[%s] stop switch and reset stop timer', self)
         self._stop_timer = None
@@ -281,7 +285,7 @@ class Operable(VirtualDevice):
         else:
             iotlib_logger.debug('\t > [%s] is "on" -> request to turn it "off" via MQTT',
                                 self)
-            self.trigger_change_state(mqtt_client=client,
+            self.trigger_change_state(mqtt_service=mqtt_service,
                                       is_on=False,
                                       on_time=None)
             return True
@@ -428,6 +432,7 @@ class TemperatureSensor(Sensor):
         return PropertyConfig.TEMPERATURE_PROPERTY
 
     def handle_value(self, value: float) -> list:
+        # Implement the abstract method from AbstractDevice class
         return super().handle_value(round(float(value), 1))
 
 
@@ -507,4 +512,5 @@ class ADC(Sensor):
         return PropertyConfig.ADC_PROPERTY
 
     def handle_value(self, value: float) -> list:
+        # Implement the abstract method from AbstractDevice class
         return super().handle_value(round(float(value), 1))

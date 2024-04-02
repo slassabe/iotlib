@@ -16,8 +16,7 @@ from typing import Any
 import paho.mqtt.client as mqtt
 
 from iotlib.utils import iotlib_logger
-from iotlib.abstracts import Surrogate, AvailabilityProcessor
-from iotlib.client import MQTTClient
+from iotlib.abstracts import MQTTService, Surrogate, AvailabilityProcessor
 from iotlib.codec.core import AbstractCodec, DecodingException
 
 
@@ -38,22 +37,23 @@ class MQTTBridge(Surrogate):
     """
 
     def __init__(self,
-                 mqtt_client: MQTTClient,
+                 mqtt_service: MQTTService,
                  codec: AbstractCodec):
-        super().__init__(mqtt_client, codec)
+        super().__init__(mqtt_service, codec)
 
         self._availability: bool = None
         self._availability_processors: list[AvailabilityProcessor] = []
 
         # Set MQTT on_message callbacks
-        self.client.message_callback_add(self.codec.get_availability_topic(),
-                                         self._avalability_callback)
+        _client = self.mqtt_service.mqtt_client
+        _client.message_callback_add(self.codec.get_availability_topic(),
+                                     self._avalability_callback)
         for _topic_property in self.codec.get_subscription_topics():
-            self.client.message_callback_add(_topic_property,
-                                             self._value_callback)
+            _client.message_callback_add(_topic_property,
+                                         self._value_callback)
         # Set MQTT connection handlers
-        self.client.connect_handler_add(self._on_connect_callback)
-        self.client.disconnect_handler_add(self._on_disconnect_callback)
+        self.mqtt_service.connect_handler_add(self._on_connect_callback)
+        self.mqtt_service.disconnect_handler_add(self._on_disconnect_callback)
 
     def __repr__(self) -> str:
         _sep = ''
@@ -100,9 +100,9 @@ class MQTTBridge(Surrogate):
             self._handle_availability(payload)
         except DecodingException as exp:
             iotlib_logger.exception('"[%s]" : Exception occurred decoding : %s / %s',
-                                           exp,
-                                           message.topic,
-                                           payload[:100])
+                                    exp,
+                                    message.topic,
+                                    payload[:100])
 
     def _value_callback(self,
                         client: mqtt.Client,   # pylint: disable=unused-argument
@@ -115,9 +115,9 @@ class MQTTBridge(Surrogate):
             self._handle_values(message.topic, payload)
         except DecodingException as exp:
             iotlib_logger.exception('"[%s]" : Exception occured decoding : %s / %s',
-                                           exp,
-                                           message.topic,
-                                           payload[:100])
+                                    exp,
+                                    message.topic,
+                                    payload[:100])
 
     def _on_connect_callback(self,
                              client: mqtt.Client,   # pylint: disable=unused-argument
@@ -130,15 +130,16 @@ class MQTTBridge(Surrogate):
         """
         if reason_code == 0:
             iotlib_logger.debug('[%s] Connection accepted -> subscribe',
-                                       client)
+                                client)
             _topic_avail = self.codec.get_availability_topic()
-            self.client.subscribe(_topic_avail, qos=1)
+            _client = self.mqtt_service.mqtt_client
+            _client.subscribe(_topic_avail, qos=1)
             for _topic_property in self.codec.get_subscription_topics():
-                self.client.subscribe(_topic_property, qos=1)
+                _client.subscribe(_topic_property, qos=1)
         else:
             iotlib_logger.warning('[%s] connection refused - reason : %s',
-                                         self,
-                                         mqtt.connack_string(reason_code))
+                                  self,
+                                  mqtt.connack_string(reason_code))
 
     def _on_disconnect_callback(self,
                                 client: mqtt.Client,
@@ -151,12 +152,12 @@ class MQTTBridge(Surrogate):
         """
         if reason_code == 0:
             iotlib_logger.debug('Disconnection occures - rc : %s -> stop loop',
-                                       reason_code)
+                                reason_code)
             client.loop_stop()
         else:
             iotlib_logger.warning('[%s] disconnection not required with rc "%s"',
-                                         self,
-                                         reason_code)
+                                  self,
+                                  reason_code)
 
     def _handle_values(self, topic: str, payload: bytes) -> None:
         """Handle an incoming sensor value message.
@@ -194,7 +195,7 @@ class MQTTBridge(Surrogate):
             DecodingException: If an error occurs decoding the payload
         """
         iotlib_logger.debug('Handle availability message with payload: %s',
-                                   payload)
+                            payload)
         new_avail = self.codec.decode_avail_pl(payload)
         if self.availability != new_avail:
             self.availability = new_avail
@@ -205,20 +206,5 @@ class MQTTBridge(Surrogate):
                 _processor.process_availability_update(self.availability)
         else:
             iotlib_logger.debug('Availability unchanged: %s',
-                                       self.availability)
+                                self.availability)
         return new_avail
-
-    def publish_message(self, topic: str, payload: str) -> None:
-        if not isinstance(topic, str):
-            raise TypeError(f"topic must be string, not {type(topic)}")
-        if not isinstance(payload, str):
-            raise TypeError(f"payload must be string, not {type(payload)}")
-
-        iotlib_logger.debug('Publish messageon topic : %s - payload : %s',
-                                   topic, payload)
-        _reason_code: mqtt.MQTTMessageInfo = self.client.publish(topic,
-                                                                 payload,
-                                                                 qos=1,
-                                                                 retain=False)
-
-        return
