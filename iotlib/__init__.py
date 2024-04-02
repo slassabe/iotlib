@@ -3,8 +3,12 @@
 """
 This is the initialization module for the iotlib package.
 
-It provides a package-level logger and defines the version of the package.
 """
 
 __version__ = "2.0.0"
 
+import iotlib.bridge
+import iotlib.client
+import iotlib.discoverer
+import iotlib.factory
+import iotlib.processor

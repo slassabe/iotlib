@@ -22,17 +22,15 @@ from iotlib.codec.core import AbstractCodec, DecodingException
 
 class MQTTBridge(Surrogate):
     """
-    MQTTBridge class represents a bridge between MQTTClient and AbstractCodec.
-
-    It handles MQTT connection, message callbacks, availability updates, and value handling.
+    Represents an MQTT bridge that connects to an MQTT service and handles incoming messages.
 
     Args:
-        mqtt_client (MQTTClient): The MQTT client instance.
-        codec (AbstractCodec): The codec instance for encoding and decoding messages.
+        mqtt_service (MQTTService): The MQTT service to connect to.
+        codec (AbstractCodec): The codec used for encoding and decoding messages.
 
     Attributes:
-        availability (bool): The availability status of the device.
-        _avail_proc_list (list[AvailabilityProcessor]): The list of availability processors.
+        _availability (bool): The availability status of the bridge.
+        _availability_processors (list[AvailabilityProcessor]): List of availability processors.
 
     """
 

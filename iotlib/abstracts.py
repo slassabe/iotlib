@@ -15,8 +15,52 @@ from typing import Callable, Optional
 import enum
 import paho.mqtt.client as mqtt
 
+class MQTTService(ABC):
+    """    Abstract class to define the MQTT services used by Surrogate classes
+    """
+    @property
+    @abstractmethod
+    def mqtt_client(self) -> mqtt.Client:
+        """
+        Returns the MQTT client object.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def connect(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
+        ''' Connect to a MQTT remote broker
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def disconnect(self) -> mqtt.MQTTErrorCode:
+        ''' Disconnect from a MQTT remote broker
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def connect_handler_add(self, handler: Callable) -> None:
+        """Adds a connect event handler.
+
+        Args:
+            handler: The callback function to handle the connect event.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def disconnect_handler_add(self, handler: Callable) -> None:
+        """Adds a disconnect event handler.
+
+        Args:
+            handler: The callback function to handle the disconnect event.
+        """
+        raise NotImplementedError
+
 
 class AbstractEncoder(ABC):
+    """Abstract base class for encoding messages to send on MQTT to IoT devices.
+    """
+
     @abstractmethod
     def get_state_request(self, device_id: Optional[int]) -> tuple[str, str]:
         """Get the current state request for a device.
@@ -59,68 +103,27 @@ class AbstractEncoder(ABC):
 
 
 class AbstractCodec(ABC):
+    '''Abstract base class for decoding messages received on MQTT to IoT devices'''
+
     @abstractmethod
     def decode_avail_pl(self, payload: str) -> bool:
-        ''' Decode message received on topic dedicated to availability 
+        '''Decode message received on topic dedicated to availability.
 
         Args:
             payload (str): The payload of the message received on the availability topic.
 
         Returns:
             bool: True if the decoding is successful, False otherwise.
-
         '''
         raise NotImplementedError
 
     @abstractmethod
     def get_availability_topic(self) -> str:
-        '''Return the availability topic the client must subscribe
+        '''Return the availability topic the client must subscribe.
 
         Returns:
             str: The topic dedicated to handle availability messages.
         '''
-        raise NotImplementedError
-
-
-class MQTTService(ABC):
-    """    Abstract class to define the MQTT services used by Surrogate classes
-    """
-    @property
-    @abstractmethod
-    def mqtt_client(self) -> mqtt.Client:
-        """
-        Returns the MQTT client object.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def connect(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
-        ''' Connect to a MQTT remote broker
-        '''
-        raise NotImplementedError
-
-    @abstractmethod
-    def disconnect(self) -> mqtt.MQTTErrorCode:
-        ''' Disconnect from a MQTT remote broker
-        '''
-        raise NotImplementedError
-
-    @abstractmethod
-    def connect_handler_add(self, handler: Callable) -> None:
-        """Adds a connect event handler.
-
-        Args:
-            handler: The callback function to handle the connect event.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def disconnect_handler_add(self, handler: Callable) -> None:
-        """Adds a disconnect event handler.
-
-        Args:
-            handler: The callback function to handle the disconnect event.
-        """
         raise NotImplementedError
 
 
@@ -216,8 +219,7 @@ class VirtualDeviceProcessor(ABC):
     """
 
     @abstractmethod
-    def process_value_update(self,
-                             v_dev: any) -> None:
+    def process_value_update(self, v_dev: any) -> None:
         """Handle an update from a virtual device.
 
         This method is called when a value changes on a virtual 
