@@ -34,12 +34,15 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
     device value is updated.
 
     """
+    def __init__(self, debug: bool = False):
+        super().__init__()
+        self._debug = debug
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
         # Implement the abstract method from VirtualDeviceProcessor
-        iotlib_logger.debug('[%s] logging device "%s" (property : "%s" - value : "%s")',
-                            self,
-                            v_dev,
+        _log_fn = iotlib_logger.warning if self._debug else iotlib_logger.debug
+        _log_fn('-> Logging virtual device (friendly_name : "%s" - property : "%s" - value : "%s")',
+                            v_dev.friendly_name,
                             v_dev.get_property(),
                             v_dev.value)
 

@@ -26,6 +26,7 @@ Author: Serge LASSABE
 Date: Creation Date
 """
 import socket
+import dataclasses
 
 from typing import Callable, Any, Optional, List
 import certifi
@@ -34,53 +35,62 @@ import paho.mqtt.client as mqtt
 from iotlib.abstracts import MQTTService
 from iotlib.utils import iotlib_logger
 
-
+@dataclasses.dataclass
 class MQTTClient(MQTTService):
-    """    A class to handle MQTT connections.
+    """
+    A class to handle MQTT connections.
 
     This class provides methods to establish a connection to an MQTT server,
     handle events such as connect, disconnect, message receipt, and subscribe,
     and add custom handlers for these events.
-    """
 
-    def __init__(self,
-                 client_id: str,
-                 hostname: str = "127.0.0.1",
-                 port: int = 1883,
-                 user_name: Optional[str] = None,
-                 user_pwd: Optional[str] = None,
-                 keepalive: int = 60,
-                 tls: bool = False,
-                 clean_start: bool = False,
-                 ) -> None:
+    Attributes:
+        client_id (str): The unique identifier for the client.
+        hostname (str, optional): The hostname or IP address of the MQTT broker. Defaults to "127.0.0.1".
+        port (int, optional): The port number of the MQTT broker. Defaults to 1883.
+        user_name (str, optional): The username for authentication. Defaults to None.
+        user_pwd (str, optional): The password for authentication. Defaults to None.
+        keepalive (int, optional): The keepalive interval in seconds. Defaults to 60.
+        tls (bool, optional): Specifies whether to use TLS for secure connection. Defaults to False.
+        clean_start (bool, optional): Specifies whether to start with a clean session. Defaults to False.
+    """
+    client_id: str
+    hostname: str = "127.0.0.1"
+    port: int = 1883
+    user_name: Optional[str] = None
+    user_pwd: Optional[str] = None
+    keepalive: int = 60
+    tls: bool = False
+    clean_start: bool = False
+
+
+    def __post_init__(self) -> None:
         """
         Initializes a new instance of the `Client` class.
-
-        Args:
-            client_id (str): The unique identifier for the client.
-            hostname (str, optional): The hostname or IP address of the MQTT broker. Defaults to "127.0.0.1".
-            port (int, optional): The port number of the MQTT broker. Defaults to 1883.
-            user_name (str, optional): The username for authentication. Defaults to None.
-            user_pwd (str, optional): The password for authentication. Defaults to None.
-            keepalive (int, optional): The keepalive interval in seconds. Defaults to 60.
-            tls (bool, optional): Specifies whether to use TLS for secure connection. Defaults to False.
-            clean_start (bool, optional): Specifies whether to start with a clean session. Defaults to False.
         """
-        self.hostname: str = hostname
-        self.port: int = port
-        self.user_name: Optional[str] = user_name
-        self.user_pwd: Optional[str] = user_pwd
-        self.keepalive: int = keepalive
-        self.tls: bool = tls
-        self.clean_start: bool = clean_start
-        #
+        if not isinstance(self.client_id, str):
+            raise TypeError(f"Expected client_id to be a str, got {type(self.client_id).__name__}")
+        if not isinstance(self.hostname, str):
+            raise TypeError(f"Expected hostname to be a str, got {type(self.hostname).__name__}")
+        if not isinstance(self.port, int):
+            raise TypeError(f"Expected port to be an int, got {type(self.port).__name__}")
+        if self.user_name is not None and not isinstance(self.user_name, str):
+            raise TypeError(f"Expected user_name to be a str or None, got {type(self.user_name).__name__}")
+        if self.user_pwd is not None and not isinstance(self.user_pwd, str):
+            raise TypeError(f"Expected user_pwd to be a str or None, got {type(self.user_pwd).__name__}")
+        if not isinstance(self.keepalive, int):
+            raise TypeError(f"Expected keepalive to be an int, got {type(self.keepalive).__name__}")
+        if not isinstance(self.tls, bool):
+            raise TypeError(f"Expected tls to be a bool, got {type(self.tls).__name__}")
+        if not isinstance(self.clean_start, bool):
+            raise TypeError(f"Expected clean_start to be a bool, got {type(self.clean_start).__name__}")
+
         self._connected = False
         self._started = False
-        #
         self._loop_forever_used = False
 
         self._mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
-                                       client_id=client_id,
+                                       client_id=self.client_id,
                                        userdata=None,
                                        protocol=mqtt.MQTTv5,
                                        transport="tcp")
@@ -94,8 +104,8 @@ class MQTTClient(MQTTService):
         self._mqtt_client.on_connect = self._handle_on_connect
         self._mqtt_client.on_disconnect = self._handle_on_disconnect
 
-        self.on_connect_handlers: List[Callable] = []
-        self.on_disconnect_handlers: List[Callable] = []
+        self.on_connect_handlers: List[Callable[..., None]] = []
+        self.on_disconnect_handlers: List[Callable[..., None]] = []
         self._mqtt_client.enable_logger(iotlib_logger)
 
     @property

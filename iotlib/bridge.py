@@ -37,6 +37,10 @@ class MQTTBridge(Surrogate):
     def __init__(self,
                  mqtt_service: MQTTService,
                  codec: AbstractCodec):
+        if not isinstance(mqtt_service, MQTTService):
+            raise TypeError(f"mqtt_service must be an instance of MQTTService, not {type(mqtt_service)}")   
+        if not isinstance(codec, AbstractCodec):
+            raise TypeError(f"codec must be an instance of AbstractCodec, not {type(codec)}")
         super().__init__(mqtt_service, codec)
 
         self._availability: bool = None

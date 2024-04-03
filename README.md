@@ -126,6 +126,7 @@ if __name__ == "__main__":
 ```
 
 This example will output :
+
 ```bash
 Discovered 10 devices
  * device: <Device : SWITCH_CAVE, address : 0x00124b0025e23b21, model: Model.ZB_MINI, protocol: Protocol.Z2M>
@@ -137,6 +138,8 @@ Discovered 1 devices
  * device: <Device : tasmota_D6590C, address : tasmota-D6590C-6412, model: Model.SHELLY_UNI, protocol: Protocol.TASMOTA>
   ...
 ```
+
+Please note that the `process_discovery_update` method is executed sequentially, first for devices supported by Zigbee2MQTT, and then for devices supported by Tasmota. This sequence occurs over a period of time, allowing for a systematic update of all connected devices.
 
 ### Usage with Docker
 

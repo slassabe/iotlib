@@ -33,6 +33,7 @@ STATE_OFF = 'OFF'
 def get_root_topic(device_name: str, base_topic: str) -> str:
     ''' Return the Z2M root topic for a device
     '''
+    base_topic = base_topic or BaseTopic.Z2M_BASE_TOPIC.value
     return f'{base_topic}/{device_name}'
 
 
@@ -50,8 +51,6 @@ class DeviceOnZigbee2MQTT(Codec):
         Args:
             device_name (str): the device name to subscribe
         '''
-        # Topics to subscribe to
-        base_topic = base_topic or BaseTopic.Z2M_BASE_TOPIC.value
         assert isinstance(device_name, str), \
             f'Bad value for device_name : {device_name} of type {type(device_name)}'
         super().__init__(device_name, base_topic)
@@ -349,9 +348,10 @@ class NeoNasAB02B2Encoder(AbstractEncoder):
         # Implementing this method is not necessary for the sensor devices
         return None
 
-    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+    def is_pulse_request_allowed(self, device_id: Optional[int] = None) -> bool:
         # Implement abstract method
-        return True
+        # Don't work with pulse
+        return False
 
     def change_state_request(self,
                              is_on: bool,
@@ -398,7 +398,7 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
         if not isinstance(v_switch, Switch):
             raise ValueError(
                 f'v_switch must be an instance of Switch, not {type(v_switch)}')
-        # self._v_switch = v_switch
+        #self._v_switch = v_switch
         v_switch.set_encoder(encoder)
 
         self._set_message_handler(self._root_topic,
@@ -446,9 +446,10 @@ class SonoffZbminiLEncoder(AbstractEncoder):
         # Implement abstract method
         return f'{self._root_topic}/get', '{"state":""}'
 
-    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+    def is_pulse_request_allowed(self, device_id: Optional[int] = None) -> bool:
         # Implement abstract method
-        return True
+        # Don't work with pulse
+        return False
 
     def change_state_request(self,
                              is_on: bool,
@@ -584,9 +585,10 @@ class TuYaTS0002Encoder(AbstractEncoder):
         # Implement abstract method
         return f'{self._root_topic}/get', '{"state_left":"","state_right":""}'
 
-    def is_pulse_request_allowed(self, device_id: Optional[int]) -> bool:
+    def is_pulse_request_allowed(self, device_id: Optional[int] = None) -> bool:
         # Implement abstract method
-        return True
+        # Don't work with pulse
+        return False
 
     def change_state_request(self,
                              is_on: bool,

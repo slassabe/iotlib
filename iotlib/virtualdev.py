@@ -89,7 +89,6 @@ class VirtualDevice(AbstractDevice):
                 f"Encoder must be instance of AbstractEncoder, not {type(encoder)}")
         self._encoder = encoder
 
-
     def handle_value(self, value) -> ResultType:
         # Implement the abstract method from AbstractDevice class
         if value is None:
@@ -128,9 +127,9 @@ class Operable(VirtualDevice):
     """
 
     def __init__(self,
-                     friendly_name: str = None,
-                     quiet_mode: bool = False,
-                     countdown: Optional[int] = None) -> None:
+                 friendly_name: str = None,
+                 quiet_mode: bool = False,
+                 countdown: Optional[int] = None) -> None:
         """
         Initialize a VirtualDevice object.
 
@@ -147,10 +146,11 @@ class Operable(VirtualDevice):
                 raise ValueError(
                     f"countdown must be positive integer, not {countdown}")
         super().__init__(friendly_name,
-                            quiet_mode=quiet_mode)
+                         quiet_mode=quiet_mode)
         self._device_id = None
         self._stop_timer = None
         self._countdown = countdown
+        self._stop_timer = None
 
     @property
     def device_id(self) -> str:
@@ -171,7 +171,6 @@ class Operable(VirtualDevice):
     def trigger_get_state(self,
                           mqtt_service: MQTTService,
                           device_id: str = None) -> None:
-        
         """Triggers a state request to the device .
 
         Sends a request message to the device bridgeclient to retrieve the 
@@ -216,14 +215,41 @@ class Operable(VirtualDevice):
             raise TypeError(
                 f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         _encoder = self._encoder
-        _state_request = _encoder.change_state_request(is_on,
-                                                       device_id=self.device_id,
-                                                       on_time=on_time)
+
+        if _encoder.is_pulse_request_allowed():
+            iotlib_logger.debug('[%s] Pulse request allowed -> change state with on_time : %s',
+                                self, on_time)
+            _state_request = _encoder.change_state_request(is_on,
+                                                           device_id=self.device_id,
+                                                           on_time=on_time)
+        else:
+            iotlib_logger.debug('[%s] Pulse request not allowed -> change state',
+                                self)
+            _state_request = _encoder.change_state_request(is_on,
+                                                           device_id=self.device_id)
+            if on_time is not None:
+                iotlib_logger.debug('[%s] Stop it later with on_time : %s',
+                                    self, on_time)
+                self._stop_later(on_time, mqtt_service)
+
         if _state_request is None:
             iotlib_logger.warning('%s : unable to change state')
         else:
             _state_topic, _state_payload = _state_request
             mqtt_service.mqtt_client.publish(_state_topic, _state_payload)
+
+    def _stop_later(self, when: int, mqtt_service: MQTTService) -> None:
+        iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
+                            self,  when)
+        if not isinstance(when, int) or when <= 0:
+            raise TypeError(
+                f'Expecting a positive int for period "{when}", not {type(when)}')
+        if self._stop_timer:
+            self._stop_timer.cancel()    # a timer is allready set, cancel it
+        self._stop_timer = threading.Timer(when,
+                                           self.trigger_stop,
+                                           [mqtt_service])
+        self._stop_timer.start()
 
     def trigger_start(self,
                       mqtt_service: MQTTService,
@@ -254,7 +280,7 @@ class Operable(VirtualDevice):
             '[%s] is "off" -> request to turn it "on"', self)
         self.trigger_change_state(mqtt_service=mqtt_service,
                                   is_on=True,
-                                  on_time=on_time)
+                                  on_time=on_time if on_time is not None else self.countdown)
         return True
 
     def trigger_stop(self, mqtt_service: MQTTService) -> bool:
