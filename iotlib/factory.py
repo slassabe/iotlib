@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-"""Module containing factory methods to create device cluster instances.
+"""Module containing factory methods to create codec instances.
 
 This module provides a factory for creating instances of devices and their
 associated clusters. The factory registers device models, protocols, and 

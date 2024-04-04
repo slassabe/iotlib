@@ -14,7 +14,8 @@ from iotlib.utils import iotlib_logger
 
 class VirtualDevice(AbstractDevice):
     """
-    Represents a virtual device.
+    Virtual devices serve as an abstraction layer over physical devices, 
+    facilitating interoperability across different types of devices. 
     """
 
     def __init__(self, friendly_name: str, quiet_mode: bool) -> None:

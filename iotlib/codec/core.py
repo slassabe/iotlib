@@ -1,6 +1,19 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
+"""
+In the context of device models and protocols, each utilizes a unique 
+MQTT-based exchange format for encoding and decoding messages.
+
+- Decoding functionalities play a crucial role in extracting values from 
+  messages received from `sensors` and `operables`.
+- Encoding functionalities, on the other hand, are employed by `operables` 
+  to dispatch commands to the devices.
+
+To handle each protocol effectively and ensure accurate and efficient 
+communication, a distinct codec is indispensable.
+"""
+
 from collections import defaultdict
 from typing import Callable, TypeAlias, Tuple, Dict, Any
 

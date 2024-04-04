@@ -161,60 +161,6 @@ class MotionTrigger(VirtualDeviceProcessor):
                                 v_dev.friendly_name,
                                 v_dev.value)
 
-
-class CountdownTrigger(VirtualDeviceProcessor):
-    def __init__(self,
-                 mqtt_service: MQTTService) -> None:
-        """
-        Initializes a CountdownTrigger instance.
-
-        Parameters:
-            client (MQTTClient): The MQTT client used for communication.
-
-        Returns:
-            None
-        """
-        super().__init__()
-        if not isinstance(mqtt_service, MQTTService):
-            raise TypeError(
-                f"'mqtt_service' must be MQTTService, not {type(mqtt_service)}")
-        self._mqtt_service = mqtt_service
-        self._stop_timer = None
-
-    def process_value_update(self, v_dev: VirtualDevice) -> None:
-        """
-        Process the value update of a virtual device.
-
-        Args:
-            v_dev (VirtualDevice): The virtual device whose value is updated.
-
-        Returns:
-            None
-        """
-        _countdown = v_dev.countdown
-        if _countdown is None:
-            iotlib_logger.warning('[%s] cannot process - no countdown set',
-                                  self)
-            return
-        self._remember_to_turn_the_light_off(v_dev,
-                                             _countdown)
-
-    def _remember_to_turn_the_light_off(self,
-                                        operable: Operable,
-                                        when: int) -> None:
-        iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
-                            self,  when)
-        if not isinstance(when, int) or when <= 0:
-            raise TypeError(
-                f'Expecting a positive int for period "{when}", not {type(when)}')
-        if self._stop_timer:
-            self._stop_timer.cancel()    # a timer is allready set, cancel it
-        self._stop_timer = threading.Timer(when,
-                                           operable.trigger_stop,
-                                           [self._mqtt_service])
-        self._stop_timer.start()
-
-
 class PropertyPublisher(VirtualDeviceProcessor):
     """
     A class that publishes property updates to an MQTT broker.

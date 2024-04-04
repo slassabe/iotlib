@@ -40,19 +40,10 @@ class MQTTClient(MQTTService):
     """
     A class to handle MQTT connections.
 
-    This class provides methods to establish a connection to an MQTT server,
-    handle events such as connect, disconnect, message receipt, and subscribe,
-    and add custom handlers for these events.
-
-    Attributes:
-        client_id (str): The unique identifier for the client.
-        hostname (str, optional): The hostname or IP address of the MQTT broker. Defaults to "127.0.0.1".
-        port (int, optional): The port number of the MQTT broker. Defaults to 1883.
-        user_name (str, optional): The username for authentication. Defaults to None.
-        user_pwd (str, optional): The password for authentication. Defaults to None.
-        keepalive (int, optional): The keepalive interval in seconds. Defaults to 60.
-        tls (bool, optional): Specifies whether to use TLS for secure connection. Defaults to False.
-        clean_start (bool, optional): Specifies whether to start with a clean session. Defaults to False.
+    The MQTT service is essential for establishing a connection to an MQTT 
+    broker and handling events such as connect and disconnect. It also allows 
+    for the addition of custom handlers for these events. Furthermore, main 
+    loop facilities are necessary for the continuous processing of these events.
     """
     client_id: str
     hostname: str = "127.0.0.1"
