@@ -3,7 +3,6 @@
 
 "Less is More - Powering Your IoT Solutions with MQTT integration"
 
-
 ## Description
 
 iotlib is a versatile library built upon Paho™ MQTT, designed to streamline the development of IoT applications.
