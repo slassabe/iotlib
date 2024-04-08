@@ -21,7 +21,7 @@ import threading
 
 from iotlib.devconfig import ButtonValues
 from iotlib.abstracts import AvailabilityProcessor, MQTTService, Surrogate, VirtualDeviceProcessor
-from iotlib.virtualdev import VirtualDevice, Operable
+from iotlib.virtualdev import VirtualDevice, Button, Motion
 from iotlib.utils import iotlib_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
@@ -40,11 +40,23 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
         # Implement the abstract method from VirtualDeviceProcessor
-        _log_fn = iotlib_logger.warning if self._debug else iotlib_logger.debug
+        _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
         _log_fn('-> Logging virtual device (friendly_name : "%s" - property : "%s" - value : "%s")',
                             v_dev.friendly_name,
                             v_dev.get_property(),
                             v_dev.value)
+
+    def compatible_with_device(self, v_dev: VirtualDevice) -> None:
+        """
+        Checks if the given virtual device is compatible with this processor.
+
+        Args:
+            v_dev (VirtualDevice): The virtual device to check compatibility with.
+
+        Returns:
+            bool: True if the virtual device is compatible, False otherwise.
+        """
+        return False
 
 
 class ButtonTrigger(VirtualDeviceProcessor):
@@ -72,6 +84,12 @@ class ButtonTrigger(VirtualDeviceProcessor):
         super().__init__()
         self._mqtt_service = mqtt_service
         self._countdown_long = countdown_long
+
+    def compatible_with_device(self, v_dev: VirtualDevice) -> None:
+        # Define device compatibility for this processor
+        if not isinstance(v_dev, Button):
+            return False
+        return True
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
         """
@@ -135,6 +153,12 @@ class MotionTrigger(VirtualDeviceProcessor):
         """
         super().__init__()
         self._mqtt_service = mqtt_service
+
+    def compatible_with_device(self, v_dev: VirtualDevice) -> None:
+        # Define device compatibility for this processor
+        if not isinstance(v_dev, Motion):
+            return False
+        return True
 
     def process_value_update(self,
                              v_dev: VirtualDevice) -> None:

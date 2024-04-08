@@ -110,6 +110,10 @@ class VirtualDevice(AbstractDevice):
         if not isinstance(processor, VirtualDeviceProcessor):
             raise TypeError(
                 f"Processor must be instance of Processor, not {type(processor)}")
+        if not processor.compatible_with_device(self):
+            raise TypeError(
+                f"Processor {processor} is not compatible with {self.__class__.__name__}")
+
         self._processor_list.append(processor)
 
     @abstractmethod
@@ -237,7 +241,10 @@ class Operable(VirtualDevice):
             iotlib_logger.warning('%s : unable to change state')
         else:
             _state_topic, _state_payload = _state_request
-            mqtt_service.mqtt_client.publish(_state_topic, _state_payload)
+            _info = mqtt_service.mqtt_client.publish(_state_topic, _state_payload,
+                                             qos=2, retain = False)
+            iotlib_logger.debug('Publishing to topic %s : %s - rc : %s - mid : %s', 
+                                _state_topic, _state_payload, _info.rc, _info.mid)
 
     def _stop_later(self, when: int, mqtt_service: MQTTService) -> None:
         iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
@@ -521,7 +528,6 @@ class Button(Sensor):
                 f"Value {value} is not of type string")
         else:
             self._value = value
-
 
 class Motion(Sensor):
     """ Virtual button manager

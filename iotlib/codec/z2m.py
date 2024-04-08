@@ -55,8 +55,9 @@ class DeviceOnZigbee2MQTT(Codec):
             f'Bad value for device_name : {device_name} of type {type(device_name)}'
         super().__init__(device_name, base_topic)
 
-        self._root_topic = get_root_topic(device_name, base_topic)
-        self._availability_topic = f'{base_topic}/{device_name}/availability'
+        _root_topic = get_root_topic(device_name, base_topic)
+        self._root_topic = _root_topic
+        self._availability_topic = f'{_root_topic}/availability'
 
     def get_availability_topic(self) -> str:
         # Implement abstract method

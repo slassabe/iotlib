@@ -34,7 +34,7 @@ Key features includes:
   - [Usage Examples](#usage-examples)
     - [MQTT connection](#mqtt-connection)
     - [Device discovery](#device-discovery)
-    - [Managing Switches](#managing-switches)
+    - [Switch Management](#switch-management)
   - [Related projects](#related-projects)
 
 ## Getting Started
@@ -155,13 +155,10 @@ In this example, we establish a connection to the local MQTT broker, initiate th
 import time
 import iotlib
 
-if __name__ == "__main__":
-    BROKER = 'localhost'
-    # Create MQTT client
-    client = iotlib.client.MQTTClient('', BROKER)
-    client.start()
-    time.sleep(2)
-    client.stop()
+client = iotlib.client.MQTTClient('', 'localhost')
+client.start()
+time.sleep(2)
+client.stop()
 ```
 
 ### Device discovery
@@ -182,14 +179,11 @@ def basic_discovery(mqtt_client: iotlib.client.MQTTClient):
     for device in devices:
         print(f" - device: {repr(device)}")
 
-if __name__ == "__main__":
-    # Create MQTT client
-    client = iotlib.client.MQTTClient('', 'localhost')
-    client.start()
-
-    basic_discovery(client)
-    
-    time.sleep(2)
+# Create MQTT client
+client = iotlib.client.MQTTClient('', 'localhost')
+client.start()
+basic_discovery(client)
+time.sleep(2)
 ```
 
 This example will output :
@@ -219,14 +213,9 @@ def discover_it(mqtt_client: iotlib.client.MQTTClient):
     _discoverer = iotlib.discoverer.UnifiedDiscoverer(mqtt_client)
     _discoverer.add_discovery_processor(BasicDiscoveryProc())
 
-if __name__ == "__main__":
-    # Create MQTT client
-    client = iotlib.client.MQTTClient('', 'localhost')
-    client.start()
-
-    discover_it(client)
-    
-    client.loop_forever()
+client = iotlib.client.MQTTClient('', 'localhost')
+client.start()
+time.sleep(1)
 ```
 
 This example will output :
@@ -245,7 +234,7 @@ Discovered 1 devices
 
 Please note that the `process_discovery_update` method is executed sequentially, first for devices supported by Zigbee2MQTT, and then for devices supported by Tasmota. This sequence occurs over a period of time, allowing for a systematic update of all connected devices.
 
-### Managing Switches
+### Switch Management
 
 This example demonstrates how to interact with a Sonoff ZBMINI switch via the Zigbee2MQTT gateway. The steps include creating a virtual switch, a codec instance, a bridge instance, and a logger instance, setting the virtual switch to ON, and starting the main loop.
 
@@ -256,15 +245,18 @@ This example demonstrates how to interact with a Sonoff ZBMINI switch via the Zi
 5) **Set the Virtual Switch to ON**: The virtual switch is manually triggered to start in the ON state.
 6) **Start the Main Loop**: The main loop is started, which keeps the program running indefinitely.
 
-
 ```python
 import time
+import logging
 import iotlib
+logging.basicConfig(level=logging.INFO)
 
 client = iotlib.client.MQTTClient('', 'localhost')
 client.start()
 # 1) Create a virtual switch 
-v_switch = iotlib.virtualdev.Switch(friendly_name='switch', countdown=2) 
+v_switch = iotlib.virtualdev.Switch(friendly_name='switch',
+                                    quiet_mode=True,    # debouncing mode
+                                    countdown=2) 
 # 2) Create a codec instance 
 factory = iotlib.factory.CodecFactory()
 codec = factory.create_instance(model=iotlib.factory.Model.ZB_MINI,
@@ -286,7 +278,6 @@ while True:
 Once the Zigbee switch is set to ON, it will automatically turn OFF after 2 seconds. The log output will show the power state changes of the virtual switch:
 
 ```bash
-- Logging virtual device (friendly_name : "switch" - property : "power" - value : "False")
 - Logging virtual device (friendly_name : "switch" - property : "power" - value : "True")
 - Logging virtual device (friendly_name : "switch" - property : "power" - value : "False")
 ```
