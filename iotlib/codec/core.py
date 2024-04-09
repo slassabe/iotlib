@@ -17,7 +17,7 @@ communication, a distinct codec is indispensable.
 from collections import defaultdict
 from typing import Callable, TypeAlias, Tuple, Dict, Any
 
-from iotlib.abstracts import AbstractCodec, AbstractEncoder
+from iotlib.abstracts import ICodec, IEncoder
 from iotlib.virtualdev import VirtualDevice
 
 
@@ -27,7 +27,7 @@ MessageHandlerType: TypeAlias = Tuple[
 HandlersListType: TypeAlias = Dict[str, MessageHandlerType]
 
 
-class Codec(AbstractCodec):
+class Codec(ICodec):
 
     def __init__(self,
                  device_name: str,
@@ -41,7 +41,7 @@ class Codec(AbstractCodec):
         """
         self.device_name = device_name
         self.base_topic = base_topic
-        self.encoder: AbstractEncoder = None
+        self.encoder: IEncoder = None
         self._managed_virtual_devices: list[VirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
@@ -57,7 +57,7 @@ class Codec(AbstractCodec):
         _dev = self.device_name if hasattr(self, 'device_name') else 'UNSET'
         return f'{self.__class__.__name__} ("{_dev}")'
 
-    def get_encoder(self) -> AbstractEncoder | None:
+    def get_encoder(self) -> IEncoder | None:
         """Get the encoder for this codec.
         """
         return self.encoder

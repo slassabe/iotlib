@@ -1,40 +1,64 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-"""Processor classes for handling device events.
-
-This module defines the VirtualDeviceProcessor abstract base class 
-for processing updates from virtual devices and sensors. 
-
-Concrete subclasses should implement the process_value_update() method
-to provide custom logic when a device value changes.
-
-Typical usage:
-
-1. Define a custom processor subclass
-2. Override process_value_update() 
-3. Register it to a virtual device using device.processor_append()
-4. The processor will receive value change events via process_value_update()
-
 """
-import threading
+Module containing processor classes for handling virtual devices.
+
+This module provides classes for processing virtual devices. These classes 
+implement the IVirtualDeviceProcessor interface and provide specific functionality 
+for handling virtual devices.
+
+The primary class in this module is the VirtualDeviceLogger. This class logs 
+the actions performed on virtual devices and can be used for debugging and tracking purposes.
+
+:Example: 
+
+.. code-block:: python
+
+    v_switch = Switch()
+    factory = CodecFactory()
+    codec = factory.create_instance(model=Model.ZB_MINI,
+                                    protocol=Protocol.Z2M,
+                                    device_name='SWITCH_PLUG',
+                                    v_switch=v_switch)
+    bridge = iotlib.bridge.MQTTBridge(client, codec)
+    # Create a logger instance for the virtual switch
+    logger = VirtualDeviceLogger()
+    v_switch.processor_append(logger)
+
+The example above shows how to use the VirtualDeviceLogger .
+"""
 
 from iotlib.devconfig import ButtonValues
-from iotlib.abstracts import AvailabilityProcessor, MQTTService, Surrogate, VirtualDeviceProcessor
+from iotlib.abstracts import (IAvailabilityProcessor, IMQTTService, 
+                              Surrogate, IVirtualDeviceProcessor)
 from iotlib.virtualdev import VirtualDevice, Button, Motion
 from iotlib.utils import iotlib_logger
 
 PUBLISH_TOPIC_BASE = 'canonical'
 
 
-class VirtualDeviceLogger(VirtualDeviceProcessor):
-    """Logs updates from virtual devices.
-
-    This processor logs a debug message when a virtual 
-    device value is updated.
-
+class VirtualDeviceLogger(IVirtualDeviceProcessor):
     """
+    Logs updates from virtual devices.
+
+    This processor logs a debug message when a virtual device value is updated. It implements the 
+    IVirtualDeviceProcessor interface.
+
+    :ivar logger: The logger instance used to log debug messages.
+    :vartype logger: logging.Logger
+    """
+
     def __init__(self, debug: bool = False):
+        """
+        Initializes a new instance of the VirtualDeviceLogger class.
+
+        This method initializes a new instance of the VirtualDeviceLogger class. If the debug parameter is set to True, 
+        the logger will log debug messages.
+
+        :param debug: A flag indicating whether to log debug messages, defaults to False.
+        :type debug: bool, optional
+        """
         super().__init__()
         self._debug = debug
 
@@ -42,44 +66,30 @@ class VirtualDeviceLogger(VirtualDeviceProcessor):
         # Implement the abstract method from VirtualDeviceProcessor
         _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
         _log_fn('-> Logging virtual device (friendly_name : "%s" - property : "%s" - value : "%s")',
-                            v_dev.friendly_name,
-                            v_dev.get_property(),
-                            v_dev.value)
+                v_dev.friendly_name,
+                v_dev.get_property(),
+                v_dev.value)
 
     def compatible_with_device(self, v_dev: VirtualDevice) -> None:
-        """
-        Checks if the given virtual device is compatible with this processor.
-
-        Args:
-            v_dev (VirtualDevice): The virtual device to check compatibility with.
-
-        Returns:
-            bool: True if the virtual device is compatible, False otherwise.
-        """
-        return False
+        # Define device compatibility for this processor
+        return True
 
 
-class ButtonTrigger(VirtualDeviceProcessor):
-    """
-    A class that processes button press actions on registered switches.
-
-    This class inherits from the VirtualDeviceProcessor class and provides
-    functionality to handle button press events and trigger actions on
-    registered virtual switches.
-
-    Attributes:
-        _countdown_long (int): The duration of the long press action in seconds.
+class ButtonTrigger(IVirtualDeviceProcessor):
+    """This processor triggers button actions on virtual devices when their state changes. 
     """
 
     def __init__(self,
-                 mqtt_service: MQTTService,
+                 mqtt_service: IMQTTService,
                  countdown_long=60*10) -> None:
         """
-        Initializes a ButtonTrigger instance.
+        Initializes a new instance of the ButtonTrigger class.
 
-        Parameters:
-            mqtt_service (MQTTService): The MQTT service used for communication.
-            countdown_long (int): The duration of the long press action in seconds.
+        This method initializes a new instance of the ButtonTrigger class with a given button map. The button map is a 
+        dictionary mapping button states to actions.
+
+        :param button_map: A dictionary mapping button states to actions.
+        :type button_map: Dict[str, Callable]
         """
         super().__init__()
         self._mqtt_service = mqtt_service
@@ -93,20 +103,17 @@ class ButtonTrigger(VirtualDeviceProcessor):
 
     def process_value_update(self, v_dev: VirtualDevice) -> None:
         """
-        Process button press actions on registered switches.
+        Processes a value update from a virtual device.
 
-        This method is called on each button value change to trigger 
-        actions on the registered virtual switches.
+        This method takes a virtual device as input and triggers the appropriate action based on the device's state.
 
-        Parameters:
-            v_dev (VirtualDevice): The button device that triggered the action.
+        :param v_dev: The virtual device whose value has been updated.
+        :type v_dev: VirtualDevice
 
         Actions:
             - single press: Start registered switches with default countdown.
             - double press: Start and stop registered switches for countdown_long.
             - long press: Stop registered switches.
-
-        No return value.
         """
         prefix = f'[{v_dev}] : event "{v_dev.value}" occured'
         if v_dev.value is None:
@@ -134,22 +141,18 @@ class ButtonTrigger(VirtualDeviceProcessor):
                                 v_dev.value)
 
 
-class MotionTrigger(VirtualDeviceProcessor):
+class MotionTrigger(IVirtualDeviceProcessor):
     '''
     A class that handles motion sensor state changes and triggers registered switches 
     when occupancy is detected.
     '''
 
-    def __init__(self,
-                 mqtt_service: MQTTService) -> None:
+    def __init__(self, mqtt_service: IMQTTService) -> None:
         """
         Initializes a MotionTrigger instance.
 
-        Parameters:
-            mqtt_service (MQTTService): The MQTT service used for communication.
-
-        Returns:
-            None
+        :param mqtt_service: The MQTT service to be used for communication.
+        :type mqtt_service: IMQTTService
         """
         super().__init__()
         self._mqtt_service = mqtt_service
@@ -160,16 +163,12 @@ class MotionTrigger(VirtualDeviceProcessor):
             return False
         return True
 
-    def process_value_update(self,
-                             v_dev: VirtualDevice) -> None:
+    def process_value_update(self, v_dev: VirtualDevice) -> None:
         """
         Process the value update of a virtual device.
 
-        Args:
-            v_dev (VirtualDevice): The virtual device whose value is updated.
-
-        Returns:
-            None
+        :param v_dev: The virtual device whose value has been updated.
+        :type v_dev: VirtualDevice
         """
         if v_dev.value:
             iotlib_logger.info('[%s] occupancy changed to "%s" '
@@ -185,19 +184,27 @@ class MotionTrigger(VirtualDeviceProcessor):
                                 v_dev.friendly_name,
                                 v_dev.value)
 
-class PropertyPublisher(VirtualDeviceProcessor):
-    """
-    A class that publishes property updates to an MQTT broker.
 
-    Args:
-        mqtt_service (MQTTService): The MQTT service used for publishing.
-        publish_topic_base (str, optional): The base topic to which the property updates will be published.
-
+class PropertyPublisher(IVirtualDeviceProcessor):
+    """A class that publishes property updates to an MQTT broker.
     """
 
     def __init__(self,
-                 mqtt_service: MQTTService,
+                 mqtt_service: IMQTTService,
                  publish_topic_base: str | None = None):
+        """
+        Initializes a new instance of the class.
+
+        This method initializes a new instance of the class with a given MQTT service 
+        and an optional publish topic base.
+
+        :param mqtt_service: The MQTT service to be used for communication.
+        :type mqtt_service: IMQTTService
+        :param publish_topic_base: The base topic for publishing messages. Default base topic is 
+            used if set to None.
+        :type publish_topic_base: str | None, optional
+        """
+
         super().__init__()
         self._mqtt_service = mqtt_service
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
@@ -206,12 +213,8 @@ class PropertyPublisher(VirtualDeviceProcessor):
         """
         Publishes the updated value of a virtual device's property to the MQTT broker.
 
-        Args:
-            v_dev (VirtualDevice): The virtual device whose property value has been updated.
-
-        Returns:
-            None
-
+        :param v_dev: The virtual device whose value has been updated.
+        :type v_dev: VirtualDevice
         """
         _property_topic = self._publish_topic_base
         _property_topic += '/device/' + v_dev.friendly_name
@@ -223,8 +226,12 @@ class PropertyPublisher(VirtualDeviceProcessor):
                         v_dev.value,
                         qos=1, retain=True)
 
+    def compatible_with_device(self, v_dev: VirtualDevice) -> None:
+        # Define device compatibility for this processor
+        return True
 
-class AvailabilityLogger(AvailabilityProcessor):
+
+class AvailabilityLogger(IAvailabilityProcessor):
     """Logs availability updates of devices.
 
     This processor logs a message when a device's 
@@ -242,7 +249,7 @@ class AvailabilityLogger(AvailabilityProcessor):
         self._device_name = bridge.codec.device_name
 
     def process_availability_update(self, availability: bool) -> None:
-        # Implement the abstract method from AvailabilityProcessor
+        # Implement the abstract method from IAvailabilityProcessor
         if availability:
             _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
             _log_fn("[%s] is available", self._device_name)
@@ -251,7 +258,7 @@ class AvailabilityLogger(AvailabilityProcessor):
                 "[%s] is unavailable", self._device_name)
 
 
-class AvailabilityPublisher(AvailabilityProcessor):
+class AvailabilityPublisher(IAvailabilityProcessor):
     """Processes availability updates from MQTTBridge.
 
     This processor handles availability updates from a MQTTBridge 
@@ -271,6 +278,7 @@ class AvailabilityPublisher(AvailabilityProcessor):
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
     def attach(self, bridge: Surrogate) -> None:
+        # Implement the abstract method from IAvailabilityProcessor
         _device_name = bridge.codec.device_name
         self._mqtt_service = bridge.mqtt_service
         self._state_topic = f"{self._publish_topic_base}/device/{_device_name}/$state"
@@ -280,6 +288,7 @@ class AvailabilityPublisher(AvailabilityProcessor):
                          qos=1, retain=True)
 
     def process_availability_update(self, availability: bool) -> None:
+        # Implement the abstract method from IAvailabilityProcessor
         if availability is None:
             _state_str = 'init'
         elif availability:

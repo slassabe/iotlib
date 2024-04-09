@@ -9,7 +9,7 @@ from typing import Optional
 
 # Non standard lib
 from iotlib.utils import iotlib_logger
-from iotlib.abstracts import AbstractEncoder
+from iotlib.abstracts import IEncoder
 from iotlib.codec.core import Codec, DecodingException
 from iotlib.codec.config import BaseTopic
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
@@ -263,7 +263,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 encoder: AbstractEncoder,
+                 encoder: IEncoder,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: Optional[str] = None,
@@ -280,7 +280,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
 
         friendly_name = friendly_name or device_name
         v_alarm = v_alarm or Alarm(friendly_name)
-        if not isinstance(encoder, AbstractEncoder):
+        if not isinstance(encoder, IEncoder):
             raise ValueError(f'Bad value : {encoder} of type {type(encoder)}')
         if not isinstance(v_alarm, Alarm):
             raise ValueError(f'Bad value : {v_alarm} of type {type(v_alarm)}')
@@ -319,7 +319,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
         return _pl
 
 
-class NeoNasAB02B2Encoder(AbstractEncoder):
+class NeoNasAB02B2Encoder(IEncoder):
     _key_alarm = 'alarm'
     _key_melody = 'melody'
     _key_alarm_level = 'volume'
@@ -383,7 +383,7 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
     '''
 
     def __init__(self,
-                 encoder: AbstractEncoder,
+                 encoder: IEncoder,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: Optional[str] = None,
@@ -393,7 +393,7 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
 
         friendly_name = friendly_name or device_name
         v_switch = v_switch or Switch(friendly_name)
-        if not isinstance(encoder, AbstractEncoder):
+        if not isinstance(encoder, IEncoder):
             raise ValueError(
                 f'Encoder must be an instance of AbstractEncoder, not {type(encoder)}')
         if not isinstance(v_switch, Switch):
@@ -439,7 +439,7 @@ class SonoffZbminiL(SwitchOnZigbee):
                 f'Received erroneous State value : "{_pl}"')
 
 
-class SonoffZbminiLEncoder(AbstractEncoder):
+class SonoffZbminiLEncoder(IEncoder):
     def __init__(self, root_topic: str) -> None:
         self._root_topic = root_topic
 
@@ -479,7 +479,7 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
     '''
 
     def __init__(self,
-                 encoder: AbstractEncoder,
+                 encoder: IEncoder,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: str = None,
@@ -491,7 +491,7 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
         friendly_name = friendly_name or device_name
         v_switch0 = v_switch0 or Switch(friendly_name)
         v_switch1 = v_switch1 or Switch(friendly_name)
-        if not isinstance(encoder, AbstractEncoder):
+        if not isinstance(encoder, IEncoder):
             raise ValueError(f'Bad value : {encoder} of type {type(encoder)}')
         if not isinstance(v_switch0, Switch0):
             raise ValueError(
@@ -578,7 +578,7 @@ class TuYaTS0002(MultiSwitchOnZigbee):
         return self._decode_switch_value_pl(topic, payload, SWITCH1_POWER)
 
 
-class TuYaTS0002Encoder(AbstractEncoder):
+class TuYaTS0002Encoder(IEncoder):
     def __init__(self, root_topic: str) -> None:
         self._root_topic = root_topic
 

@@ -1,30 +1,54 @@
 #!/usr/local/bin/python3
 # coding=utf-8
+"""
+
+Virtual devices serve as an abstraction layer over physical devices, facilitating interoperability across different 
+types of devices. These virtual devices are organized into a hierarchical structure as follows:
+
+    - Sensors: These virtual devices are responsible for measuring and reporting various environmental conditions. They include:
+        - Temperature Sensor
+        - Humidity Sensor
+        - Light Sensor
+        - Conductivity Sensor
+        - Button Sensor
+        - Motion Sensor
+        - Analog-to-Digital Converter
+
+    - Operables: These virtual devices are capable of performing certain actions. They include:
+        - Alarm
+        - Switch
+
+Each physical device is associated with one or more virtual devices, which handle the processing and management of data. 
+For instance, an air sensor might be associated with a Temperature Sensor and a Humidity Sensor virtual device, which 
+handle temperature and humidity data respectively. This support is provided by the VirtualDevice class.
+"""
 
 import enum
 import threading
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from typing import Optional
 
-from iotlib.abstracts import (AbstractDevice, AbstractEncoder, MQTTService, ResultType,
-                              VirtualDeviceProcessor)
+from iotlib.abstracts import (IVirtualDevice, IEncoder, IMQTTService, ResultType,
+                              IVirtualDeviceProcessor)
 from iotlib.devconfig import PropertyConfig, ButtonValues
 from iotlib.utils import iotlib_logger
 
 
-class VirtualDevice(AbstractDevice):
-    """
-    Virtual devices serve as an abstraction layer over physical devices, 
+class VirtualDevice(IVirtualDevice, metaclass=ABCMeta):
+    """ Virtual devices serve as an abstraction layer over physical devices, 
     facilitating interoperability across different types of devices. 
     """
 
     def __init__(self, friendly_name: str, quiet_mode: bool) -> None:
         """
-        Initializes a new instance of the VirtualDevice class.
+        Initializes a new instance of the class.
 
-        Args:
-            friendly_name (str): The friendly name of the device.
-            quiet_mode (bool): A flag indicating whether the device is in quiet mode.
+        This method initializes a new instance of the class with a given friendly name and a quiet mode flag.
+
+        :param friendly_name: The friendly name to be used for the virtual device.
+        :type friendly_name: str
+        :param quiet_mode: A flag indicating whether the virtual device should operate in quiet mode.
+        :type quiet_mode: bool
         """
         if friendly_name is not None:
             assert isinstance(friendly_name, str), \
@@ -34,7 +58,7 @@ class VirtualDevice(AbstractDevice):
         self._quiet_mode = quiet_mode
         self._encoder = None
         # List of processors associated with this device
-        self._processor_list: list[VirtualDeviceProcessor] = []
+        self._processor_list: list[IVirtualDeviceProcessor] = []
 
     def __repr__(self):
         _sep = ''
@@ -50,10 +74,12 @@ class VirtualDevice(AbstractDevice):
     @property
     def value(self):
         """
-        Gets the value of the device.
+        Gets the current value of the virtual device.
 
-        Returns:
-            any: The value of the device.
+        This method returns the current value of the virtual device.
+
+        :return: The current value of the virtual device.
+        :rtype: Any
         """
         return self._value
 
@@ -69,23 +95,26 @@ class VirtualDevice(AbstractDevice):
         """
         Sets the value of the device.
 
-        Args:
-            value (any): The value to set.
+        This method sets the value of the device. It validates the type of the value before setting it.
 
-        Raises:
-            TypeError: If the value is not of the expected type.
+        :param value: The value to set.
+        :type value: Any
+        :raises TypeError: If the value is not of the expected type.
         """
         self._validate_value_type(value)
         self._value = value
 
-    def set_encoder(self, encoder: AbstractEncoder) -> None:
+    def set_encoder(self, encoder: IEncoder) -> None:
         """
         Sets the encoder for the device.
 
-        Args:
-            encoder (AbstractEncoder): The encoder to set.
+        This method sets the encoder for the device. It validates the type of the encoder before setting it.
+
+        :param encoder: The encoder to set.
+        :type encoder: IEncoder
+        :raises TypeError: If the encoder is not of the expected type.
         """
-        if not isinstance(encoder, AbstractEncoder):
+        if not isinstance(encoder, IEncoder):
             raise TypeError(
                 f"Encoder must be instance of AbstractEncoder, not {type(encoder)}")
         self._encoder = encoder
@@ -105,9 +134,9 @@ class VirtualDevice(AbstractDevice):
                 _processor.process_value_update(self)
             return ResultType.SUCCESS
 
-    def processor_append(self, processor: VirtualDeviceProcessor) -> None:
+    def processor_append(self, processor: IVirtualDeviceProcessor) -> None:
         # Implement the abstract method from AbstractDevice class
-        if not isinstance(processor, VirtualDeviceProcessor):
+        if not isinstance(processor, IVirtualDeviceProcessor):
             raise TypeError(
                 f"Processor must be instance of Processor, not {type(processor)}")
         if not processor.compatible_with_device(self):
@@ -121,11 +150,12 @@ class VirtualDevice(AbstractDevice):
         """
         Gets the property of the device.
 
-        Returns:
-            str: The property of the device.
-        """
-        raise NotImplementedError
+        This method returns the property of the device.
 
+        :return: The property of the device.
+        :rtype: str
+        """
+    
 
 class Operable(VirtualDevice):
     """ Root implementation of a virtual Operable device (Switch or Alarm)
@@ -136,12 +166,16 @@ class Operable(VirtualDevice):
                  quiet_mode: bool = False,
                  countdown: Optional[int] = None) -> None:
         """
-        Initialize a VirtualDevice object.
+        Initializes a new instance of the class.
 
-        Args:
-            friendly_name (str, optional): The friendly name of the device. Defaults to None.
-            quiet_mode (bool, optional): Whether to run the device in quiet mode. Defaults to False.
-            countdown (int, optional): The countdown value. Defaults to None.
+        This method initializes a new instance of the class with a given friendly name, a quiet mode flag, and an optional countdown.
+
+        :param friendly_name: The friendly name to be used for the virtual device, defaults to None.
+        :type friendly_name: str, optional
+        :param quiet_mode: A flag indicating whether the virtual device should operate in quiet mode, defaults to False.
+        :type quiet_mode: bool, optional
+        :param countdown: The countdown value for the virtual device, defaults to None.
+        :type countdown: Optional[int], optional
         """
         if countdown is not None:
             if not isinstance(countdown, int):
@@ -158,34 +192,53 @@ class Operable(VirtualDevice):
         self._stop_timer = None
 
     @property
-    def device_id(self) -> str:
+    def device_id(self) -> Optional[int]:
+        """Gets the device ID.
+
+        :return: The device ID of the virtual device.
+        :rtype: int | None
+        """
         return self._device_id
 
     @device_id.setter
-    def device_id(self, value: str) -> None:
+    def device_id(self, value: int) -> None:
+        """Sets the device ID.
+
+        :param value: The device ID to set.
+        :type value: int
+        """
         self._device_id = value
 
     @property
     def countdown(self) -> Optional[int]:
+        """Gets the countdown value.
+
+        :return: The countdown value of the virtual device.
+        :rtype: Optional[int]
+        """
         return self._countdown
 
     @countdown.setter
     def countdown(self, value: Optional[int]) -> None:
+        """Sets the countdown value.
+
+        :param value: The countdown value to set.
+        :type value: Optional[int]
+        """
         self._countdown = value
 
     def trigger_get_state(self,
-                          mqtt_service: MQTTService,
+                          mqtt_service: IMQTTService,
                           device_id: str = None) -> None:
-        """Triggers a state request to the device .
+        """Triggers a state request to the device.
 
-        Sends a request message to the device bridgeclient to retrieve the 
-        current state of the device. 
-
-        Args:
-        mqtt_service: The client instance used for communication
-        device_id: Optional device ID to retrieve state for.
+        :param mqtt_service: The client instance used for communication.
+        :type mqtt_service: IMQTTService
+        :param device_id: Optional device ID to retrieve state for, defaults to None.
+        :type device_id: str, optional
+        :raises TypeError: If mqtt_service is not an instance of MQTTService.
         """
-        if not isinstance(mqtt_service, MQTTService):
+        if not isinstance(mqtt_service, IMQTTService):
             raise TypeError(
                 f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         _encoder = self._encoder
@@ -197,26 +250,24 @@ class Operable(VirtualDevice):
             mqtt_service.mqtt_client.publish(_state_topic, _state_payload)
 
     def trigger_change_state(self,
-                             mqtt_service: MQTTService,
+                             mqtt_service: IMQTTService,
                              is_on: bool,
                              on_time: int | None = None) -> None:
         """
         Triggers a change in the state of a device.
 
-        Args:
-            mqtt_service (MQTTService): The client object used for communication.
-            is_on (bool): The new state of the device (True for ON, False for OFF).
-            on_time (int | None): The duration for which the device should remain ON, in seconds.
-                If None, the device will remain ON indefinitely.
+        This method sends a request message to the device to change the current state of the device.
 
-        Returns:
-            None
-
-        Raises:
-            None
-
+        :param mqtt_service: The client instance used for communication.
+        :type mqtt_service: IMQTTService
+        :param is_on: The new state of the device (True for ON, False for OFF).
+        :type is_on: bool
+        :param on_time: The duration for which the device should remain ON, in seconds. 
+            If None, the device will remain ON indefinitely, defaults to None.
+        :type on_time: int | None, optional
+        :raises TypeError: If mqtt_service is not an instance of MQTTService.
         """
-        if not isinstance(mqtt_service, MQTTService):
+        if not isinstance(mqtt_service, IMQTTService):
             raise TypeError(
                 f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         _encoder = self._encoder
@@ -242,11 +293,11 @@ class Operable(VirtualDevice):
         else:
             _state_topic, _state_payload = _state_request
             _info = mqtt_service.mqtt_client.publish(_state_topic, _state_payload,
-                                             qos=2, retain = False)
-            iotlib_logger.debug('Publishing to topic %s : %s - rc : %s - mid : %s', 
+                                                     qos=2, retain=False)
+            iotlib_logger.debug('Publishing to topic %s : %s - rc : %s - mid : %s',
                                 _state_topic, _state_payload, _info.rc, _info.mid)
 
-    def _stop_later(self, when: int, mqtt_service: MQTTService) -> None:
+    def _stop_later(self, when: int, mqtt_service: IMQTTService) -> None:
         iotlib_logger.debug('[%s] Automatially stop after "%s" sec.',
                             self,  when)
         if not isinstance(when, int) or when <= 0:
@@ -260,24 +311,25 @@ class Operable(VirtualDevice):
         self._stop_timer.start()
 
     def trigger_start(self,
-                      mqtt_service: MQTTService,
-                      on_time: int | None = None) -> bool:
-        ''' Ask the device to start
+                      mqtt_service: IMQTTService,
+                      on_time: Optional[int]= None) -> bool:
+        """
+        Ask the device to start.
 
         This method triggers the device to start. If the device is already in the "on" state,
         no action is required and the method returns False. Otherwise, the method requests
         the device to turn on by calling the `trigger_change_state` method with the `is_on`
         parameter set to True.
 
-        Args:
-            mqtt_service (MQTTService): The client object used to communicate with the device.
-            on_time (int | None, optional): The time duration for which the device should
-                remain on. Defaults to None.
-
-        Returns:
-            bool: Returns True if the switch state is OFF when the method is called.
-        '''
-        if not isinstance(mqtt_service, MQTTService):
+        :param mqtt_service: The client object used to communicate with the device.
+        :type mqtt_service: IMQTTService
+        :param on_time: The time duration for which the device should remain on. If None, the device will remain ON indefinitely, defaults to None.
+        :type on_time: int | None, optional
+        :return: Returns True if the switch state is OFF when the method is called.
+        :rtype: bool
+        :raises TypeError: If mqtt_service is not an instance of MQTTService.
+        """
+        if not isinstance(mqtt_service, IMQTTService):
             raise TypeError(
                 f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         if self.value:
@@ -291,21 +343,20 @@ class Operable(VirtualDevice):
                                   on_time=on_time if on_time is not None else self.countdown)
         return True
 
-    def trigger_stop(self, mqtt_service: MQTTService) -> bool:
-        ''' Ask the device to stop
+    def trigger_stop(self, mqtt_service: IMQTTService) -> bool:
+        """
+        Ask the device to stop.
 
         This method is used to send a request to the device to stop its operation.
         If the switch state is currently ON, it will send a request to turn it OFF via MQTT.
 
-        Args:
-            mqtt_service (MQTTService): The client object used to communicate with the device.
-
-        Returns:
-            bool: Returns True if the switch state is ON when the method is called, indicating 
-               that a request to turn it OFF has been sent.
-
-        '''
-        if not isinstance(mqtt_service, MQTTService):
+        :param mqtt_service: The client object used to communicate with the device.
+        :type mqtt_service: IMQTTService
+        :return: Returns True if the switch state is ON when the method is called, indicating that a request to turn it OFF has been sent.
+        :rtype: bool
+        :raises TypeError: If mqtt_service is not an instance of MQTTService.
+        """
+        if not isinstance(mqtt_service, IMQTTService):
             raise TypeError(
                 f"mqtt_service must be instance of MQTTService, not {type(mqtt_service)}")
         iotlib_logger.debug(
@@ -356,6 +407,10 @@ class Level(enum.Enum):
 
     The `Level` class is an enumeration that defines three levels: LOW, MEDIUM, and HIGH.
     Each level is associated with a string value.
+
+    :cvar LOW: Represents a low level of alarm.
+    :cvar MEDIUM: Represents a medium level of alarm.
+    :cvar HIGH: Represents a high level of alarm.
     """
     LOW = 'low'
     MEDIUM = 'medium'
@@ -363,35 +418,34 @@ class Level(enum.Enum):
 
 
 class Alarm(Operable):
-    """ Basic implementation of a virtual Alarm.
+    """ Implementation of a virtual Alarm.
     """
 
     def get_property(self) -> str:
-        """Returns the property of the alarm.
-
-        Returns:
-            str: The property of the alarm.
-
-        """
+        # Returns the property of the virtual device.
         return PropertyConfig.ALARM_PROPERTY
 
 
 class Switch(Operable):
-    """ Basic implementation of a virtual Switch 
+    """ Implementation of a virtual Switch 
     """
 
     def __init__(self, *argc, **kwargs) -> None:
-        """Initializes a new instance of the Switch class.
+        """
+        Initializes a new instance of the Switch class.
 
-        Args:
-            friendly_name (str): The friendly name of the switch. Defaults to "".
-            quiet_mode (bool): A flag indicating whether the switch is in quiet mode. 
-                Defaults to False.
+        This method initializes a new instance of the Switch class with a given friendly name and a quiet mode flag.
+
+        :param argc: Variable length argument list.
+        :param kwargs: Arbitrary keyword arguments. Expected keys are:
+            - friendly_name (str): The friendly name of the switch. Defaults to "".
+            - quiet_mode (bool): A flag indicating whether the switch is in quiet mode. Defaults to False.
         """
         super().__init__(*argc, **kwargs)
         self._device_id = None  # Relay numbers of multi-channel devices
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.SWITCH_PROPERTY
 
 
@@ -404,6 +458,7 @@ class Switch0(Switch):
         self._device_id = 0
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.SWITCH0_PROPERTY
 
 
@@ -416,6 +471,7 @@ class Switch1(Switch):
         self._device_id = 1
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.SWITCH1_PROPERTY
 
 
@@ -433,24 +489,23 @@ class Sensor(VirtualDevice):
         self._sensor_observers: list[Operable] = []
 
     def get_sensor_observers(self) -> list[VirtualDevice]:
-        """Get the list of observer devices.
+        """
+        Get the list of observer devices.
 
-        Returns:
-            list: The list of Operable device objects that are observing 
-                the sensor values.
+        This method returns the list of Operable device objects that are observing the sensor values.
+
+        :return: The list of Operable device objects that are observing the sensor values.
+        :rtype: list[VirtualDevice]
         """
         return self._sensor_observers
 
     def add_observer(self, device: Operable) -> None:
         """Add an observer device to be notified of sensor value changes.
 
-        Args:
-            device (Operable): The device to add as an observer. 
-                Must be an instance of Operable.
+        This method adds an Operable device to the list of observer devices.
 
-        Raises:
-            TypeError: If device is not an instance of Operable.
-
+        :param device: The Operable device to be added as an observer.
+        :type device: Operable
         """
         if not isinstance(device, Operable):
             raise TypeError(
@@ -463,6 +518,7 @@ class TemperatureSensor(Sensor):
     """
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.TEMPERATURE_PROPERTY
 
     def handle_value(self, value: float) -> list:
@@ -475,6 +531,7 @@ class HumiditySensor(Sensor):
     """
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.HUMIDITY_PROPERTY
 
 
@@ -483,6 +540,7 @@ class LightSensor(Sensor):
     """
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.LIGHT_PROPERTY
 
 
@@ -491,6 +549,7 @@ class ConductivitySensor(Sensor):
     """
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.CONDUCTIVITY_PROPERTY
 
 
@@ -503,6 +562,7 @@ class Button(Sensor):
                          quiet_mode=False)
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.BUTTON_PROPERTY
 
     @property
@@ -529,11 +589,13 @@ class Button(Sensor):
         else:
             self._value = value
 
+
 class Motion(Sensor):
     """ Virtual button manager
     """
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.MOTION_PROPERTY
 
 
@@ -542,6 +604,7 @@ class ADC(Sensor):
     """
 
     def get_property(self) -> str:
+        # Returns the property of the virtual device.
         return PropertyConfig.ADC_PROPERTY
 
     def handle_value(self, value: float) -> list:

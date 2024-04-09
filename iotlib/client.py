@@ -2,29 +2,14 @@
 # coding=utf-8
 
 """
-This module provides the MQTTClient class for establishing MQTT connections.
+This module contains the MQTTClient class which implements the IMQTTService interface.
 
-Key features:
-- Secure connections via TLS.
-- Username/password authentication.
-- Event handling for connect, disconnect, message receipt, and subscribe.
-- Custom handler support for these events.
+The MQTTClient class is responsible for handling MQTT-specific operations. It uses the 
+paho.mqtt.client library for MQTT operations and provides methods for connecting, disconnecting, 
+and handling MQTT events.
 
-Example usage:
-
-    def _on_message_cb(client, userdata, message):
-        print(f"Received message: {message.payload.decode('utf-8')}")
-    def _on_connect_cb(client, userdata, flags, rc, properties):
-        print(f"Connected with result code {rc}")
-        client.subscribe("my_topic")
-    client = MQTTClient(client_id="my_client", hostname="localhost")
-    client.message_callback_add("my_topic", _on_message_cb)
-    client.connect_handler_add(self._on_connect_cb)
-    client.start()
-
-Author: Serge LASSABE
-Date: Creation Date
 """
+
 import socket
 import dataclasses
 
@@ -32,18 +17,27 @@ from typing import Callable, Any, Optional, List
 import certifi
 import paho.mqtt.client as mqtt
 
-from iotlib.abstracts import MQTTService
+from iotlib.abstracts import IMQTTService
 from iotlib.utils import iotlib_logger
 
-@dataclasses.dataclass
-class MQTTClient(MQTTService):
-    """
-    A class to handle MQTT connections.
 
-    The MQTT service is essential for establishing a connection to an MQTT 
-    broker and handling events such as connect and disconnect. It also allows 
-    for the addition of custom handlers for these events. Furthermore, main 
-    loop facilities are necessary for the continuous processing of these events.
+@dataclasses.dataclass
+class MQTTClient(IMQTTService):
+    """
+    MQTTClient is a class that implements the IMQTTService interface.
+
+    This class is responsible for handling MQTT-specific operations. It uses the paho.mqtt.client 
+    library for MQTT operations and provides methods for connecting, disconnecting, and handling 
+    MQTT events.
+
+    :ivar client: The MQTT client instance.
+    :vartype client: mqtt.Client
+    :ivar host: The MQTT broker host.
+    :vartype host: str
+    :ivar port: The MQTT broker port.
+    :vartype port: int
+    :ivar keepalive: The keepalive timeout value for the client.
+    :vartype keepalive: int
     """
     client_id: str
     hostname: str = "127.0.0.1"
@@ -54,43 +48,50 @@ class MQTTClient(MQTTService):
     tls: bool = False
     clean_start: bool = False
 
-
     def __post_init__(self) -> None:
         """
         Initializes a new instance of the `Client` class.
         """
         if not isinstance(self.client_id, str):
-            raise TypeError(f"Expected client_id to be a str, got {type(self.client_id).__name__}")
+            raise TypeError(
+                f"Expected client_id to be a str, got {type(self.client_id).__name__}")
         if not isinstance(self.hostname, str):
-            raise TypeError(f"Expected hostname to be a str, got {type(self.hostname).__name__}")
+            raise TypeError(
+                f"Expected hostname to be a str, got {type(self.hostname).__name__}")
         if not isinstance(self.port, int):
-            raise TypeError(f"Expected port to be an int, got {type(self.port).__name__}")
+            raise TypeError(
+                f"Expected port to be an int, got {type(self.port).__name__}")
         if self.user_name is not None and not isinstance(self.user_name, str):
-            raise TypeError(f"Expected user_name to be a str or None, got {type(self.user_name).__name__}")
+            raise TypeError(
+                f"Expected user_name to be a str or None, got {type(self.user_name).__name__}")
         if self.user_pwd is not None and not isinstance(self.user_pwd, str):
-            raise TypeError(f"Expected user_pwd to be a str or None, got {type(self.user_pwd).__name__}")
+            raise TypeError(
+                f"Expected user_pwd to be a str or None, got {type(self.user_pwd).__name__}")
         if not isinstance(self.keepalive, int):
-            raise TypeError(f"Expected keepalive to be an int, got {type(self.keepalive).__name__}")
+            raise TypeError(
+                f"Expected keepalive to be an int, got {type(self.keepalive).__name__}")
         if not isinstance(self.tls, bool):
-            raise TypeError(f"Expected tls to be a bool, got {type(self.tls).__name__}")
+            raise TypeError(
+                f"Expected tls to be a bool, got {type(self.tls).__name__}")
         if not isinstance(self.clean_start, bool):
-            raise TypeError(f"Expected clean_start to be a bool, got {type(self.clean_start).__name__}")
+            raise TypeError(
+                f"Expected clean_start to be a bool, got {type(self.clean_start).__name__}")
 
         self._connected = False
         self._started = False
         self._loop_forever_used = False
 
         self._mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
-                                       client_id=self.client_id,
-                                       userdata=None,
-                                       protocol=mqtt.MQTTv5,
-                                       transport="tcp")
+                                        client_id=self.client_id,
+                                        userdata=None,
+                                        protocol=mqtt.MQTTv5,
+                                        transport="tcp")
 
         if self.tls:
             # enable TLS for secure connection
             self._mqtt_client.tls_set(certifi.where())
         self._mqtt_client.username_pw_set(self.user_name,
-                                         self.user_pwd)
+                                          self.user_pwd)
 
         self._mqtt_client.on_connect = self._handle_on_connect
         self._mqtt_client.on_disconnect = self._handle_on_disconnect
@@ -101,16 +102,16 @@ class MQTTClient(MQTTService):
 
     @property
     def mqtt_client(self) -> mqtt.Client:
-        # Implement MQTTService interface
+        # Implement IMQTTService interface
         return self._mqtt_client
-    
+
     @property
     def connected(self) -> bool:
         """
         Returns the connection status of the client.
 
-        Returns:
-            bool: True if the client is connected, False otherwise.
+        :return: True if the client is connected, False otherwise.
+        :rtype: bool
         """
         return self._connected
 
@@ -119,8 +120,8 @@ class MQTTClient(MQTTService):
         """
         Returns the current status of the client.
 
-        Returns:
-            bool: True if the client has started, False otherwise.
+        :return: True if the client has started, False otherwise.
+        :rtype: bool
         """
         return self._started
 
@@ -136,15 +137,16 @@ class MQTTClient(MQTTService):
         return self._mqtt_client.loop_forever()
 
     def start(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
-        """Starts the client MQTT network loop.
+        """
+        Starts the client MQTT network loop.
 
         Connects the client if not already connected, starts the network loop
 
-        Returns:
-            mqtt.MQTTErrorCode: The result of calling client.loop_start().
-
-        Raises:
-            RuntimeError: If loop_stop fails.
+        :param properties: The properties to be used for the CONNECT message.
+        :type properties: Optional[mqtt.Properties]
+        :return: The result of calling client.loop_start().
+        :rtype: mqtt.MQTTErrorCode
+        :raises RuntimeError: If loop_start fails or connection is refused.
         """
         try:
             _rc = self.connect(properties=properties)
@@ -161,13 +163,15 @@ class MQTTClient(MQTTService):
             raise RuntimeError('[%s] connection refused') from exp
 
     def stop(self) -> mqtt.MQTTErrorCode:
-        """Stops the client MQTT connection. 
+        """
+        Stops the client MQTT connection.
 
         Stops the async loop if it was not already running. Calls disconnect() 
         to close the client connection.
 
-        Raises:
-            RuntimeError: If loop_stop fails.
+        :return: The result of calling disconnect().
+        :rtype: mqtt.MQTTErrorCode
+        :raises RuntimeError: If loop_stop fails.
         """
         if not self._connected:
             iotlib_logger.error(
@@ -184,14 +188,14 @@ class MQTTClient(MQTTService):
         return _rc
 
     def connect(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
-        # Implement MQTTService interface
+        # Implement IMQTTService interface
         try:
             _rc = self._mqtt_client.connect(self.hostname,
-                                           port=self.port,
-                                           keepalive=self.keepalive,
-                                           clean_start=self.clean_start,
-                                           properties=properties,
-                                           )
+                                            port=self.port,
+                                            keepalive=self.keepalive,
+                                            clean_start=self.clean_start,
+                                            properties=properties,
+                                            )
             iotlib_logger.debug('[%s] Connection request returns : %s',
                                 self, _rc)
             return _rc
@@ -206,6 +210,8 @@ class MQTTClient(MQTTService):
                            flags: mqtt.ConnectFlags,
                            reason_code: mqtt.ReasonCode,
                            properties: mqtt.Properties) -> None:
+        ''' Define the default connect callback implementation. 
+        '''
         if reason_code == 0:
             self._connected = True
         for on_connect_handler in self.on_connect_handlers:
@@ -217,11 +223,11 @@ class MQTTClient(MQTTService):
                     "Failed handling connect %s", error)
 
     def connect_handler_add(self, handler: Callable) -> None:
-        # Implement MQTTService interface
+        # Implement IMQTTService interface
         self.on_connect_handlers.append(handler)
 
     def disconnect(self) -> mqtt.MQTTErrorCode:
-        # Implement MQTTService interface
+        # Implement IMQTTService interface
         _rc = self._mqtt_client.disconnect()
         iotlib_logger.debug('[%s] Disconnection request returns : %s',
                             self, _rc)
@@ -248,10 +254,17 @@ class MQTTClient(MQTTService):
                     "Failed handling disconnect %s", error)
 
     def disconnect_handler_add(self, handler: Callable) -> None:
-        # Implement MQTTService interface
+        # Implement IMQTTService interface
         self.on_disconnect_handlers.append(handler)
 
+
 class MQTTClientHelper(MQTTClient):
+    """
+    This class provides additional helper methods for MQTT operations, not directly related to the 
+    IMQTTService interface.
+    Could evolve to a more generic class in the future.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._mqtt_client.on_subscribe = self._handle_on_subscribe
@@ -259,7 +272,6 @@ class MQTTClientHelper(MQTTClient):
 
         self._default_message_callbacks: List[Callable] = []
         self.on_subscribe_handlers: List[Callable] = []
-
 
     def _handle_on_message(self, client: mqtt.Client,
                            userdata: Any,
@@ -292,7 +304,6 @@ class MQTTClientHelper(MQTTClient):
         ''' Subscribes to the specified topic. '''
         return self._mqtt_client.subscribe(topic, **kwargs)
 
-
     def _handle_on_subscribe(self,
                              client: mqtt.Client,
                              userdata: Any,
@@ -318,10 +329,3 @@ class MQTTClientHelper(MQTTClient):
             None
         """
         self.on_subscribe_handlers.append(handler)
-
-
-    def publish(self, topic, payload, **kwargs):
-        ''' Publish a message on a topic. '''
-        iotlib_logger.debug(
-            'Publish on topic : %s - payload : %s', topic, payload)
-        return self._mqtt_client.publish(topic, payload, **kwargs)

@@ -1,26 +1,31 @@
 #!/usr/local/bin/python3
 # coding=utf-8
 
-"""Module containing factory methods to create codec instances.
+"""
+Module containing factory methods and enums for device models and protocols.
 
-This module provides a factory for creating instances of devices and their
-associated clusters. The factory registers device models, protocols, and 
-the corresponding cluster classes. 
+This module provides a factory for creating instances of codecs for different device 
+models and protocols. It also defines enums for representing different device models and c
+ommunication protocols.
 
-The primary class is ClusterFactory. It maintains a registry mapping models
-and protocols to the cluster classes. The create_instance() method is used
-to lookup and instantiate the appropriate cluster for a given model and 
-protocol.
+The primary classes are Model and Protocol enums, and the CodecFactory. The Model enum 
+represents different device models, and the Protocol enum represents different communication 
+protocols. The CodecFactory uses these enums to create appropriate codec instances.
 
-Custom device types can be registered using the registers() method before
-calling create_instance().
+:Example: 
 
-Example usage:
+.. code-block:: python
 
-    factory = ClusterFactory()
-    factory.registers(Model.CUSTOM_DEVICE, Protocol.ZIGBEE, CustomCluster) 
-    
-    cluster = factory.create_instance(Model.CUSTOM_DEVICE, Protocol.ZIGBEE)
+    # factory.py code
+    factory = CodecFactory()
+    factory.registers(Model.NEO_ALARM, Protocol.ZIGBEE, NeoNasAB02B2) 
+
+    # User code to discover device model and protocol
+    import iotlib.factory as factory
+    codec = factory.create_instance(Model.NEO_ALARM, Protocol.ZIGBEE)
+
+The example above shows how to use the CodecFactory to register a codec for a specific device model and 
+protocol, and create an instance of it.
 """
 
 from collections import defaultdict
@@ -28,25 +33,25 @@ from enum import Enum
 from typing import Callable
 
 from iotlib.utils import iotlib_logger, Singleton
-from iotlib.abstracts import AbstractCodec
+from iotlib.abstracts import ICodec
 from iotlib.codec.z2m import (NeoNasAB02B2, SonoffSnzb01, SonoffSnzb02, SonoffSnzb3,
                               SonoffZbminiL, Ts0601Soil, TuYaTS0002)
 
 
 class Model(str, Enum):
     """
-    This enum class Model defines constants for the different device models supported.
+    This enum is used to represent the different models of devices that can be discovered. 
 
-    - MIFLORA: Xiaomi Mi Flora plant sensor  
-    - NEO_ALARM: Neo NAS-AB02B2 Zigbee Siren
-    - SHELLY_PLUGS: Shelly Plug S WiFi smart plug
-    - SHELLY_UNI: Shelly Uni WiFi relay/dimmer
-    - TUYA_SOIL: Tuya TS0601_soil Zigbee soil moisture sensor
-    - ZB_AIRSENSOR: Sonoff Zigbee air temperature/humidity sensor
-    - ZB_BUTTON: Sonoff SNZB-01 Zigbee wireless button
-    - ZB_MOTION: Sonoff SNZB-03 Zigbee motion sensor  
-    - ZB_MINI: Sonoff ZBMINI-L Zigbee wireless switch module
-    - EL_ZBSW02: eWeLink ZB-SW02 Zigbee wireless switch module
+    :ivar  MIFLORA: Xiaomi Mi Flora plant sensor  
+    :ivar  NEO_ALARM: Neo NAS-AB02B2 Zigbee Siren
+    :ivar  SHELLY_PLUGS: Shelly Plug S WiFi smart plug
+    :ivar  SHELLY_UNI: Shelly Uni WiFi relay/dimmer
+    :ivar  TUYA_SOIL: Tuya TS0601_soil Zigbee soil moisture sensor
+    :ivar  ZB_AIRSENSOR: Sonoff Zigbee air temperature/humidity sensor
+    :ivar  ZB_BUTTON: Sonoff SNZB-01 Zigbee wireless button
+    :ivar  ZB_MOTION: Sonoff SNZB-03 Zigbee motion sensor  
+    :ivar  ZB_MINI: Sonoff ZBMINI-L Zigbee wireless switch module
+    :ivar  EL_ZBSW02: eWeLink ZB-SW02 Zigbee wireless switch module
 
     """
     TUYA_TS0002 = 'TS0002' # TuYa TS0002 Zigbee wireless switch module
@@ -65,7 +70,17 @@ class Model(str, Enum):
 
     @staticmethod
     def from_str(label: str):
-        """Return the Model enum value corresponding to the given label."""
+        """
+        Returns the Model enum value corresponding to the given label.
+
+        This method takes a label as input and returns the corresponding Model enum value. If the label does not 
+        correspond to any Model enum value, it returns None.
+
+        :param label: The label to get the Model enum value for.
+        :type label: str
+        :return: The Model enum value corresponding to the label, or None if the label does not correspond to any Model enum value.
+        :rtype: Model
+        """
         if label is None:
             return Model.NONE
         for model in Model:
@@ -75,14 +90,14 @@ class Model(str, Enum):
 
 
 class Protocol(Enum):
-    """ An enumeration defining constants for different device communication protocols.
+    """
+    This enum is used to represent the different communication protocols that can be used by devices. 
 
-    - HOMIE: The Homie IoT protocol.
-    - SHELLY: The Shelly smart home devices protocol.
-    - TASMOTA: The Tasmota protocol used by ESP8266/ESP32 boards.
-    - Z2M: The Zigbee2MQTT protocol.
-    - Z2T: The Zigbee2Tasmota protocol.
-
+    :ivar HOMIE: The Homie IoT protocol.
+    :ivar SHELLY: The Shelly smart home devices protocol.
+    :ivar TASMOTA: The Tasmota protocol used by ESP8266/ESP32 boards.
+    :ivar Z2M: The Zigbee2MQTT protocol.
+    :ivar Z2T: The Zigbee2Tasmota protocol.
     """
     DEFAULT = 'default'
     HOMIE = 'Homie'
@@ -94,15 +109,14 @@ class Protocol(Enum):
 
 
 class CodecFactory(metaclass=Singleton):
-    """Factory class to create device instances.
+    """
+    A factory class for creating codec instances.
 
-    This class implements the Factory design pattern to instantiate 
-    devices and components. It registers constructors and creates 
-    instances on demand.
+    This class uses the Singleton design pattern to ensure that only one instance of the factory exists. 
+    The factory can be used to create instances of different types of codecs.
 
-    Attributes:
-        _constructors (dict): Registered constructors mapped to model name.
-
+    :ivar codecs: A dictionary mapping codec names to codec instances.
+    :vartype codecs: dict[str, Codec]
     """
     def __init__(self):
         """Initialize the factory by creating an empty constructors dict."""
@@ -111,19 +125,19 @@ class CodecFactory(metaclass=Singleton):
     def registers(self,
                   model: Model,
                   protocol: Protocol,
-                  constructor: Callable[[list], AbstractCodec]) -> None:
-        """Register a constructor for the given model.
+                  constructor: Callable[[list], ICodec]) -> None:
+        """
+        Registers a new codec constructor.
 
-        Args:
-            model (Model): The model object representing the device model.
-            protocol (Protocol): The protocol object for the communication protocol.
-            constructor (Callable): The constructor function to register.
+        This method takes a model, a protocol, and a constructor function, and registers the constructor for creating 
+        codecs for the given model and protocol.
 
-        Raises:
-            TypeError: If model is not a Model object.
-            TypeError: If protocol is not a Protocol object. 
-            TypeError: If constructor is not callable.
-
+        :param model: The model for which the constructor should be registered.
+        :type model: Model
+        :param protocol: The protocol for which the constructor should be registered.
+        :type protocol: Protocol
+        :param constructor: The constructor function to be registered.
+        :type constructor: Callable[[list], ICodec]
         """
         iotlib_logger.debug('Registering constructor for model %s and protocol %s',
                            model, protocol)
@@ -136,19 +150,20 @@ class CodecFactory(metaclass=Singleton):
                 f'Constructor {constructor} is not of type "Callable"')
         self._constructors[model][protocol] = constructor
 
-    def _get_constructor(self, model: str, protocol=None) -> Callable[[list], AbstractCodec]:
-        """Get the constructor callable for the given model and protocol.
+    def _get_constructor(self, model: str, protocol=None) -> Callable[[list], ICodec]:
+        """
+        Retrieves the constructor for a given model and protocol.
 
-        Args:
-            model (str): The device model name
-            protocol (Protocol, optional): The protocol enum value. Defaults to Protocol.DEFAULT.
+        This method takes a model and an optional protocol, and returns the constructor function for creating codecs 
+        for the given model and protocol. If no protocol is provided, it returns the constructor for the given model 
+        regardless of the protocol.
 
-        Returns:
-            Callable: The constructor if found, raises ValueError otherwise.
-
-        Raises:
-            ValueError: If model is unknown or a constructor cannot be found 
-
+        :param model: The model for which the constructor should be retrieved.
+        :type model: str
+        :param protocol: The protocol for which the constructor should be retrieved, defaults to None.
+        :type protocol: Protocol, optional
+        :return: The constructor function for the given model and protocol.
+        :rtype: Callable[[list], ICodec]
         """
         _constructor_dict = self._constructors.get(model)
         if not _constructor_dict:
@@ -168,25 +183,21 @@ class CodecFactory(metaclass=Singleton):
                         model: Model,
                         protocol: Protocol,
                         *args,
-                        **kwargs) -> AbstractCodec:
-        """Create an instance of a Codec for the given model and protocol.
+                        **kwargs) -> ICodec:
+        """
+        Creates a new codec instance for the given model and protocol.
 
-        Args:
-            model (Model): The model enum for the device type.
-            protocol (Protocol): The protocol enum for the communication protocol.
-            *args: Positional arguments to pass to the constructor.
-            **kwargs: Keyword arguments to pass to the constructor.
+        This method takes a model, a protocol, and optional arguments, and creates a new codec instance for the given 
+        model and protocol using the registered constructor.
 
-        Returns:
-            AbstractCodec: An instance of an AbstractCodec subclass corresponding to 
-            the given  model and protocol.
-
-        Raises:
-            TypeError: If model or protocol are not of the correct enum type.
-
-        This looks up the appropriate AbstractCodec subclass based on the model and 
-        protocol, instantiates it using the provided arguments, and returns the 
-        instance.
+        :param model: The model for which the codec should be created.
+        :type model: Model
+        :param protocol: The protocol for which the codec should be created.
+        :type protocol: Protocol
+        :param args: Additional positional arguments to be passed to the constructor.
+        :param kwargs: Additional keyword arguments to be passed to the constructor.
+        :return: A new codec instance for the given model and protocol.
+        :rtype: ICodec
         """
         if not isinstance(model, Model):
             raise TypeError(f"Model {model} is not of type Model")
