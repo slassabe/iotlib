@@ -329,3 +329,9 @@ class MQTTClientHelper(MQTTClient):
             None
         """
         self.on_subscribe_handlers.append(handler)
+
+    def publish(self, topic, payload, **kwargs):
+        ''' Publish a message on a topic. '''
+        iotlib_logger.debug(
+            'Publish on topic : %s - payload : %s', topic, payload)
+        return self._mqtt_client.publish(topic, payload, **kwargs)

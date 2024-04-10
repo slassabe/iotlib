@@ -2,19 +2,17 @@
 # coding=utf-8
 ''' Zigbee2mqtt bridge and implementation devices
 '''
+from abc import ABCMeta, abstractmethod
 import json
 from json.decoder import JSONDecodeError
-from abc import abstractmethod, ABCMeta
 from typing import Optional
 
-# Non standard lib
-from iotlib.utils import iotlib_logger
 from iotlib.abstracts import IEncoder
-from iotlib.codec.core import Codec, DecodingException
 from iotlib.codec.config import BaseTopic
+from iotlib.codec.core import Codec, DecodingException
+from iotlib.utils import iotlib_logger
 from iotlib.virtualdev import (Alarm, Button, HumiditySensor, Motion, Switch,
                                Switch0, Switch1, TemperatureSensor)
-
 
 # Zigbee devices
 # Buttons
@@ -31,26 +29,49 @@ STATE_OFF = 'OFF'
 
 
 def get_root_topic(device_name: str, base_topic: str) -> str:
-    ''' Return the Z2M root topic for a device
-    '''
+    """
+    Returns the Zigbee2MQTT root topic for a device.
+
+    This function constructs and returns the root topic for a device in the Zigbee2MQTT protocol. 
+    If no base topic is provided, it defaults to the value of `BaseTopic.Z2M_BASE_TOPIC`.
+
+    :param device_name: The name of the device.
+    :type device_name: str
+    :param base_topic: The base topic for MQTT communication. Defaults to `BaseTopic.Z2M_BASE_TOPIC` if not provided.
+    :type base_topic: str
+    :return: The root topic for the device.
+    :rtype: str
+    """
+
     base_topic = base_topic or BaseTopic.Z2M_BASE_TOPIC.value
     return f'{base_topic}/{device_name}'
 
 
 class DeviceOnZigbee2MQTT(Codec):
-    ''' Root bridge between Zigbee devices (connected via Zigbee2MQTT) and MQTT Clients
-    '''
+    """
+    Represents a device on the Zigbee2MQTT protocol.
+
+    This class is a subclass of the `Codec` class and represents a device that communicates using the Zigbee2MQTT protocol. 
+    It provides methods for encoding and decoding MQTT messages specific to this protocol.
+
+    :inherits: `Codec`
+    """
 
     def __init__(self,
                  device_name: str,
                  base_topic: Optional[str] = None):
-        '''Subscribes on Zigbee2mqtt topics to receive information from devices :
-        * zigbee2mqtt/<name>/             : to get device attributs
-        * zigbee2mqtt/<name>/availability : to get device availability, not a Zigbee attribut
+        """
+        Initializes a new instance of the class.
 
-        Args:
-            device_name (str): the device name to subscribe
-        '''
+        This method initializes a new instance of the class with a given device name and an optional 
+        base topic for MQTT communication.
+
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param base_topic: The base topic for MQTT communication. If not provided, it defaults to None.
+        :type base_topic: Optional[str]
+        :raises AssertionError: If device_name is not a string.
+        """
         assert isinstance(device_name, str), \
             f'Bad value for device_name : {device_name} of type {type(device_name)}'
         super().__init__(device_name, base_topic)
@@ -97,13 +118,22 @@ class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                  v_temp: Optional[TemperatureSensor] = None,
                  v_humi: Optional[HumiditySensor] = None) -> None:
         """
-        Initialize the object.
+        Initializes a new instance of the class.
 
-        Args:
-            device_name (str): The name of the device.
-            v_temp (TemperatureSensor, optional): The temperature sensor.
-            v_humi (HumiditySensor, optional): The humidity sensor.
-            topic_base (str, optional): The base topic.
+        This method initializes a new instance of the class with a given device name, an optional friendly name, 
+        an optional topic base, and optional instances of `TemperatureSensor` and `HumiditySensor`.
+
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param friendly_name: The friendly name of the device. If not provided, it defaults to the device name.
+        :type friendly_name: Optional[str]
+        :param topic_base: The base topic for MQTT communication. If not provided, it defaults to BaseTopic.Z2M_BASE_TOPIC.
+        :type topic_base: Optional[str]
+        :param v_temp: An instance of `TemperatureSensor`. If not provided, a new instance is created.
+        :type v_temp: Optional[TemperatureSensor]
+        :param v_humi: An instance of `HumiditySensor`. If not provided, a new instance is created.
+        :type v_humi: Optional[HumiditySensor]
+        :raises AssertionError: If v_temp is not an instance of `TemperatureSensor` or v_humi is not an instance of `HumiditySensor`.
         """
         super().__init__(device_name, topic_base)
 
@@ -160,20 +190,29 @@ class Ts0601Soil(SensorOnZigbee):
 
 
 class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
-    ''' Bridge between Wireless button devices and MQTT Clients '''
-
+    """
+    Represents a button device on the Zigbee2MQTT protocol.
+    """
     def __init__(self,
                  device_name: str,
                  friendly_name: Optional[str] = None,
                  topic_base: Optional[str] = None,
                  v_button: Optional[Button] = None) -> None:
         """
-        Initialize the object.
+        Initializes a new instance of the class.
 
-        Args:
-            device_name (str): The name of the device.
-            v_button (Button, optional): The button. Defaults to None.
-            topic_base (str, optional): The base topic. Defaults to None.
+        This method initializes a new instance of the class with a given device name, an optional friendly name, 
+        an optional topic base, and an optional instance of `Button`.
+
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param friendly_name: The friendly name of the device. If not provided, it defaults to the device name.
+        :type friendly_name: Optional[str]
+        :param topic_base: The base topic for MQTT communication. If not provided, it defaults to None.
+        :type topic_base: Optional[str]
+        :param v_button: An instance of `Button`. If not provided, a new instance is created.
+        :type v_button: Optional[Button]
+        :raises AssertionError: If v_button is not an instance of `Button`.
         """
         super().__init__(device_name, topic_base)
 
@@ -215,12 +254,20 @@ class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                  topic_base: Optional[str] = None,
                  v_motion: Optional[Motion] = None) -> None:
         """
-        Initialize the object.
+        Initializes a new instance of the class.
 
-        Args:
-            device_name (str): The name of the device.
-            v_motion (Motion, optional): The motion sensor. Defaults to None.
-            topic_base (str, optional): The base topic. Defaults to None.
+        This method initializes a new instance of the class with a given device name, an optional friendly name, 
+        an optional topic base, and an optional instance of `Motion`.
+
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param friendly_name: The friendly name of the device. If not provided, it defaults to the device name.
+        :type friendly_name: Optional[str]
+        :param topic_base: The base topic for MQTT communication. If not provided, it defaults to None.
+        :type topic_base: Optional[str]
+        :param v_motion: An instance of `Motion`. If not provided, a new instance is created.
+        :type v_motion: Optional[Motion]
+        :raises AssertionError: If v_motion is not an instance of `Motion`.
         """
         super().__init__(device_name, topic_base)
 
@@ -250,18 +297,9 @@ class SonoffSnzb3(MotionOnZigbee):
 
 
 class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
-    """Zigbee alarm device representation.
-
-    Represents a Zigbee alarm device connected via zigbee2mqtt. 
-    Extends DeviceOnZigbee2MQTT to handle alarm specific 
-    functionality like changing the alarm state and parameters.
-
-    Args:
-        device_name (str): The name of the Zigbee alarm device.
-        v_alarm (Alarm): The virtual alarm device to link to.
-
     """
-
+    Represents an alarm device on the Zigbee2MQTT protocol.
+    """
     def __init__(self,
                  encoder: IEncoder,
                  device_name: str,
@@ -269,12 +307,22 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
                  topic_base: Optional[str] = None,
                  v_alarm: Optional[Alarm] = None) -> None:
         """
-        Initialize the object.
+        Initializes a new instance of the class.
 
-        Args:
-            device_name (str): The name of the device.
-            v_alarm (Alarm, optional): The alarm. Defaults to None.
-            topic_base (str, optional): The base topic. Defaults to None.
+        This method initializes a new instance of the class with a given encoder, device name, an optional friendly name, 
+        an optional topic base, and an optional instance of `Alarm`.
+
+        :param encoder: The encoder to be used for encoding.
+        :type encoder: IEncoder
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param friendly_name: The friendly name of the device. If not provided, it defaults to the device name.
+        :type friendly_name: Optional[str]
+        :param topic_base: The base topic for MQTT communication. If not provided, it defaults to None.
+        :type topic_base: Optional[str]
+        :param v_alarm: An instance of `Alarm`. If not provided, a new instance is created.
+        :type v_alarm: Optional[Alarm]
+        :raises ValueError: If encoder is not an instance of `IEncoder` or v_alarm is not an instance of `Alarm`.
         """
         super().__init__(device_name, topic_base)
 
@@ -333,12 +381,17 @@ class NeoNasAB02B2Encoder(IEncoder):
     def set_sound(self,
                   melody: int,
                   alarm_level: str) -> None:
-        """Change the alarm parameters.
+        """
+        Sets the sound of the alarm.
 
-        Args:
-            melody (int): The alarm melody number.
-            alarm_level (str): The alarm volume level.
+        This method sets the melody and alarm level of the alarm. The melody must be an integer between 1 and 18, 
+        and the alarm level must be either 'low', 'medium', or 'high'.
 
+        :param melody: The melody to be set. Must be an integer between 1 and 18.
+        :type melody: int
+        :param alarm_level: The alarm level to be set. Must be either 'low', 'medium', or 'high'.
+        :type alarm_level: str
+        :raises AssertionError: If melody is not an integer between 1 and 18, or if alarm_level is not 'low', 'medium', or 'high'.
         """
         assert isinstance(melody, int) and melody in range(1, 19), \
             f'Bad value for melody : {melody}'
@@ -369,19 +422,9 @@ class NeoNasAB02B2Encoder(IEncoder):
 
 
 class SwitchOnZigbee(DeviceOnZigbee2MQTT):
-    ''' Bridge between SWITCH devices connected via Zigbee2MQTT and MQTT Clients
-
-    Features
-        * get and set "state" SWITCH standard attribut
-        * manage a countdown to automatically close a SWITCH turned on
-        * check periodically its state
-
-    Bridge publishes on these topics to send messages to Switch devices
-        zigbee2mqtt/<name>/get      : to refresh state attribut
-        zigbee2mqtt/<name>/set      : to change state attribute
-
-    '''
-
+    """
+    Represents a switch device on the Zigbee2MQTT protocol.
+    """
     def __init__(self,
                  encoder: IEncoder,
                  device_name: str,
@@ -389,6 +432,24 @@ class SwitchOnZigbee(DeviceOnZigbee2MQTT):
                  topic_base: Optional[str] = None,
                  v_switch: Optional[Switch] = None,
                  ) -> None:
+        """
+        Initializes a new instance of the class.
+
+        This method initializes a new instance of the class with a given encoder, device name, an optional friendly name, 
+        an optional topic base, and an optional instance of `Switch`.
+
+        :param encoder: The encoder to be used for encoding.
+        :type encoder: IEncoder
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param friendly_name: The friendly name of the device. If not provided, it defaults to the device name.
+        :type friendly_name: Optional[str]
+        :param topic_base: The base topic for MQTT communication. If not provided, it defaults to None.
+        :type topic_base: Optional[str]
+        :param v_switch: An instance of `Switch`. If not provided, a new instance is created.
+        :type v_switch: Optional[Switch]
+        :raises ValueError: If encoder is not an instance of `IEncoder` or v_switch is not an instance of `Switch`.
+        """
         super().__init__(device_name, topic_base)
 
         friendly_name = friendly_name or device_name
@@ -465,19 +526,9 @@ class SonoffZbminiLEncoder(IEncoder):
 
 
 class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
-    ''' Bridge between SWITCH devices connected via Zigbee2MQTT and MQTT Clients
-
-    Features
-        * get and set "state" SWITCH standard attribut
-        * manage a countdown to automatically close a SWITCH turned on
-        * check periodically its state
-
-    Bridge publishes on these topics to send messages to Switch devices
-        zigbee2mqtt/<name>/get      : to refresh state attribut
-        zigbee2mqtt/<name>/set      : to change state attribute
-
-    '''
-
+    """
+    Represents a multi-switch device on the Zigbee2MQTT protocol.
+    """
     def __init__(self,
                  encoder: IEncoder,
                  device_name: str,
@@ -486,6 +537,26 @@ class MultiSwitchOnZigbee(DeviceOnZigbee2MQTT):
                  v_switch0: Optional[Switch0] = None,
                  v_switch1: Optional[Switch1] = None,
                  ) -> None:
+        """
+        Initializes a new instance of the class.
+
+        This method initializes a new instance of the class with a given encoder, device name, an optional friendly name, 
+        an optional topic base, and optional instances of `Switch0` and `Switch1`.
+
+        :param encoder: The encoder to be used for encoding.
+        :type encoder: IEncoder
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param friendly_name: The friendly name of the device. If not provided, it defaults to the device name.
+        :type friendly_name: Optional[str]
+        :param topic_base: The base topic for MQTT communication. If not provided, it defaults to None.
+        :type topic_base: Optional[str]
+        :param v_switch0: An instance of `Switch0`. If not provided, a new instance is created.
+        :type v_switch0: Optional[Switch0]
+        :param v_switch1: An instance of `Switch1`. If not provided, a new instance is created.
+        :type v_switch1: Optional[Switch1]
+        :raises ValueError: If encoder is not an instance of `IEncoder`, v_switch0 is not an instance of `Switch0`, or v_switch1 is not an instance of `Switch1`.
+        """
         super().__init__(device_name, topic_base)
 
         friendly_name = friendly_name or device_name

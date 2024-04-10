@@ -1,11 +1,13 @@
-
-# iotlib
+# Introduction
 
 "Less is More - Powering Your IoT Solutions with MQTT integration"
 
 ## Description
 
-iotlib is a versatile library built upon Paho™ MQTT, designed to streamline the development of IoT applications.
+**iotlib** is a versatile library built upon Paho™ MQTT, designed to streamline the development of IoT applications.
+
+![Alt text](_images/landscape.png)
+
 
 Key features includes:
 
@@ -15,19 +17,6 @@ Key features includes:
 - Comprehensive support for the creation and management of **virtual devices**, simplifying the integration between devices models, providers et protocols.
 - Implementation of the **Observer design pattern**, enabling automatic triggering of actions on switches based on sensor value changes.
 
-
-## Documentation
-
-You can access the full documentation at [slassabe.github.io/iotlib](https://slassabe.github.io/iotlib)
-
-## Getting Started
-
-```bash
-git clone https://github.com/slassabe/iotlib.git
-
-cd iotlib
-sudo pip3 install -r requirements.txt
-```
 
 ## Related projects
 

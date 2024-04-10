@@ -2,47 +2,57 @@
 # coding=utf-8
 
 """
-In the context of device models and protocols, each utilizes a unique 
-MQTT-based exchange format for encoding and decoding messages.
+This module provides the `Codec` class, which is responsible for encoding 
+and decoding MQTT messages ccording to the specific formats used by 
+different device models and protocols.
 
-- Decoding functionalities play a crucial role in extracting values from 
-  messages received from `sensors` and `operables`.
-- Encoding functionalities, on the other hand, are employed by `operables` 
-  to dispatch commands to the devices.
+Decoding functionalities are crucial for extracting values from messages 
+received from sensors and operables.
+Encoding functionalities are used by operables to send commands to the devices.
 
-To handle each protocol effectively and ensure accurate and efficient 
-communication, a distinct codec is indispensable.
+To handle each protocol effectively and ensure accurate and efficient communication,
+ a distinct codec is essential.
 """
 
 from collections import defaultdict
 from typing import Callable, TypeAlias, Tuple, Dict, Any
 
-from iotlib.abstracts import ICodec, IEncoder
-from iotlib.virtualdev import VirtualDevice
+from iotlib.abstracts import ICodec, IEncoder, IVirtualDevice
 
 
 MessageHandlerType: TypeAlias = Tuple[
     Callable[..., Any],
-    VirtualDevice]
+    IVirtualDevice]
 HandlersListType: TypeAlias = Dict[str, MessageHandlerType]
 
 
 class Codec(ICodec):
+    """
+    The Codec class is responsible for encoding and decoding MQTT messages for a s
+    pecific device.
+
+    It manages a list of virtual devices and a dictionary of message handlers, 
+    which are functions that handle messages received on specific MQTT topics.
+    """
 
     def __init__(self,
                  device_name: str,
                  base_topic: str) -> None:
         """
-        Initialize a Codec object.
+        Initializes a new instance of the Codec class.
 
-        Args:
-            device_name (str): The name of the device.
-            base_topic (str): The base topic for MQTT communication.
+        This method initializes a new instance of the Codec class with a given device 
+        name and a base topic for MQTT communication.
+
+        :param device_name: The name of the device.
+        :type device_name: str
+        :param base_topic: The base topic for MQTT communication.
+        :type base_topic: str
         """
         self.device_name = device_name
         self.base_topic = base_topic
         self.encoder: IEncoder = None
-        self._managed_virtual_devices: list[VirtualDevice] = []
+        self._managed_virtual_devices: list[IVirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
     def __repr__(self) -> str:
@@ -62,12 +72,12 @@ class Codec(ICodec):
         """
         return self.encoder
 
-    def get_managed_virtual_devices(self) -> list[VirtualDevice]:
+    def get_managed_virtual_devices(self) -> list[IVirtualDevice]:
         """Return the list of virtual devices managed by the codec.
         """
         return self._managed_virtual_devices
 
-    def _add_virtual_device(self, vdev: VirtualDevice) -> None:
+    def _add_virtual_device(self, vdev: IVirtualDevice) -> None:
         """Add a virtual device to the list of managed virtual devices.
         """
         self._managed_virtual_devices.append(vdev)
@@ -80,14 +90,14 @@ class Codec(ICodec):
     def _set_message_handler(self,
                              topic: str,
                              decoder: Callable,
-                             vdev: VirtualDevice) -> None:
+                             vdev: IVirtualDevice) -> None:
         """
         Sets the message handler for a given topic.
 
         Args:
             topic (str): The topic to set the message handler for.
             decoder (Callable): The decoder function to be used for decoding messages.
-            vdev (VirtualDevice): The virtual device associated with the message handler.
+            vdev (IVirtualDevice): The virtual device associated with the message handler.
 
         This method associates a topic with a decoding function, virtual device, 
         and node name. It stores this association in a dictionary self._handler_list
