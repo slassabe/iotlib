@@ -18,7 +18,7 @@ Key features includes:
 
 ## Documentation
 
-You can access the full documentation at [slassabe.github.io/iotlib](https://slassabe.github.io/iotlib)
+You can access the full documentation at [slassabe.github.io/iotlib](https://slassabe.github.io/iotlib/)
 
 ## Getting Started
 
