@@ -296,7 +296,7 @@ list of devices and perform any necessary processing.</p>
 <dd class="field-odd"><p><strong>device_id</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – The device ID to get the state request for.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A tuple containing the state request topic and payload or None if such a request 
+<dd class="field-even"><p>A tuple containing the state request topic and payload or None if such a request
 is not accepted.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -476,8 +476,8 @@ specific processing logic for the device type.</p>
 <dt class="sig sig-object py" id="iotlib.abstracts.IVirtualDeviceProcessor.process_value_update">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process_value_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_dev</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/iotlib/abstracts.html#IVirtualDeviceProcessor.process_value_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.abstracts.IVirtualDeviceProcessor.process_value_update" title="Link to this definition"></a></dt>
 <dd><p>Handle an update from a virtual device.</p>
-<p>This method is called when a value changes on a virtual 
-device. It should be implemented in child classes to 
+<p>This method is called when a value changes on a virtual
+device. It should be implemented in child classes to
 handle specific processing logic for the device type.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -536,8 +536,8 @@ encoding/decoding messages to interact with real devices.</p>
 <section id="module-iotlib.bridge">
 <span id="iotlib-bridge-module"></span><h2>iotlib.bridge module<a class="headerlink" href="#module-iotlib.bridge" title="Link to this heading"></a></h2>
 <p>This module contains the MQTTBridge class which extends the Surrogate class.</p>
-<p>The MQTTBridge class is responsible for handling MQTT-specific operations. 
-It uses an MQTT service instance for MQTT operations and a codec instance for 
+<p>The MQTTBridge class is responsible for handling MQTT-specific operations.
+It uses an MQTT service instance for MQTT operations and a codec instance for
 encoding and decoding messages.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="iotlib.bridge.MQTTBridge">
@@ -590,16 +590,16 @@ encoding and decoding messages.</p>
 <section id="module-iotlib.client">
 <span id="iotlib-client-module"></span><h2>iotlib.client module<a class="headerlink" href="#module-iotlib.client" title="Link to this heading"></a></h2>
 <p>This module contains the MQTTClient class which implements the IMQTTService interface.</p>
-<p>The MQTTClient class is responsible for handling MQTT-specific operations. It uses the 
-paho.mqtt.client library for MQTT operations and provides methods for connecting, disconnecting, 
+<p>The MQTTClient class is responsible for handling MQTT-specific operations. It uses the
+paho.mqtt.client library for MQTT operations and provides methods for connecting, disconnecting,
 and handling MQTT events.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="iotlib.client.MQTTClient">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.client.</span></span><span class="sig-name descname"><span class="pre">MQTTClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'127.0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1883</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_pwd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepalive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/client.html#MQTTClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.client.MQTTClient" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.abstracts.IMQTTService" title="iotlib.abstracts.IMQTTService"><code class="xref py py-class docutils literal notranslate"><span class="pre">IMQTTService</span></code></a></p>
 <p>MQTTClient is a class that implements the IMQTTService interface.</p>
-<p>This class is responsible for handling MQTT-specific operations. It uses the paho.mqtt.client 
-library for MQTT operations and provides methods for connecting, disconnecting, and handling 
+<p>This class is responsible for handling MQTT-specific operations. It uses the paho.mqtt.client
+library for MQTT operations and provides methods for connecting, disconnecting, and handling
 MQTT events.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -768,7 +768,7 @@ MQTT events.</p>
 <dt class="sig sig-object py" id="iotlib.client.MQTTClient.stop">
 <span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MQTTErrorCode</span></span></span><a class="reference internal" href="_modules/iotlib/client.html#MQTTClient.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.client.MQTTClient.stop" title="Link to this definition"></a></dt>
 <dd><p>Stops the client MQTT connection.</p>
-<p>Stops the async loop if it was not already running. Calls disconnect() 
+<p>Stops the async loop if it was not already running. Calls disconnect()
 to close the client connection.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -804,7 +804,7 @@ to close the client connection.</p>
 <dt class="sig sig-object py" id="iotlib.client.MQTTClientHelper">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.client.</span></span><span class="sig-name descname"><span class="pre">MQTTClientHelper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/client.html#MQTTClientHelper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.client.MQTTClientHelper" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.client.MQTTClient" title="iotlib.client.MQTTClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">MQTTClient</span></code></a></p>
-<p>This class provides additional helper methods for MQTT operations, not directly related to the 
+<p>This class provides additional helper methods for MQTT operations, not directly related to the
 IMQTTService interface.
 Could evolve to a more generic class in the future.</p>
 <dl class="py method">
@@ -833,10 +833,12 @@ Could evolve to a more generic class in the future.</p>
 <dt class="sig sig-object py" id="iotlib.client.MQTTClientHelper.subscribe_handler_add">
 <span class="sig-name descname"><span class="pre">subscribe_handler_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/client.html#MQTTClientHelper.subscribe_handler_add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.client.MQTTClientHelper.subscribe_handler_add" title="Link to this definition"></a></dt>
 <dd><p>Adds a handler function to the list of subscribe event handlers.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>handler (Callable): The handler function to be added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>handler</strong> (<em>Callable</em>) – The handler function to be added.</p>
 </dd>
-<dt>Returns:</dt><dd><p>None</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -847,11 +849,11 @@ Could evolve to a more generic class in the future.</p>
 <section id="module-iotlib.devconfig">
 <span id="iotlib-devconfig-module"></span><h2>iotlib.devconfig module<a class="headerlink" href="#module-iotlib.devconfig" title="Link to this heading"></a></h2>
 <p>This module defines the <cite>PropertyConfig</cite> and <cite>ButtonValues</cite> enums.</p>
-<p>The <cite>PropertyConfig</cite> enum defines property names, types, and owning nodes for different 
-virtual device types. 
+<p>The <cite>PropertyConfig</cite> enum defines property names, types, and owning nodes for different
+virtual device types.
 It allows generic access to property configuration details.</p>
-<p>The <cite>ButtonValues</cite> enum defines string constants for possible button actions like single 
-press, double press, long press etc. Using this enum allows code to refer to button actions 
+<p>The <cite>ButtonValues</cite> enum defines string constants for possible button actions like single
+press, double press, long press etc. Using this enum allows code to refer to button actions
 through constant values rather than string literals.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="iotlib.devconfig.ButtonValues">
@@ -899,8 +901,8 @@ through constant values rather than string literals.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.devconfig.</span></span><span class="sig-name descname"><span class="pre">PropertyConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/devconfig.html#PropertyConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.devconfig.PropertyConfig" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>Defines property name enums for virtual devices.</p>
-<p>This enum defines property names, types, and owning node 
-for different virtual device types. Allows generic access 
+<p>This enum defines property names, types, and owning node
+for different virtual device types. Allows generic access
 to property configuration details.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -980,21 +982,21 @@ to property configuration details.</p>
 <section id="module-iotlib.discoverer">
 <span id="iotlib-discoverer-module"></span><h2>iotlib.discoverer module<a class="headerlink" href="#module-iotlib.discoverer" title="Link to this heading"></a></h2>
 <p>This module defines classes for discovering IoT devices using MQTT.</p>
-<p>Discoverer is the base class for device discovery. It uses an MQTT client 
-to discover devices and maintains a list of discovered devices. It also 
+<p>Discoverer is the base class for device discovery. It uses an MQTT client
+to discover devices and maintains a list of discovered devices. It also
 allows adding discovery processors for processing the discovered devices.</p>
-<p>ZigbeeDiscoverer and TasmotaDiscoverer are subclasses of Discoverer. They 
-override the base class methods to provide specific implementations for 
+<p>ZigbeeDiscoverer and TasmotaDiscoverer are subclasses of Discoverer. They
+override the base class methods to provide specific implementations for
 discovering Zigbee and Tasmota devices, respectively.</p>
-<p>Device class provides properties for accessing these attributes and methods 
+<p>Device class provides properties for accessing these attributes and methods
 for getting string representations of the device.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="iotlib.discoverer.Device">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.discoverer.</span></span><span class="sig-name descname"><span class="pre">Device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">friendly_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.factory.Model" title="iotlib.factory.Model"><span class="pre">Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.factory.Protocol" title="iotlib.factory.Protocol"><span class="pre">Protocol</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/discoverer.html#Device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.discoverer.Device" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Represents a generic device in the system.</p>
-<p>This class provides a base for all types of devices. It defines common properties and methods 
-that all devices should have. Specific device types should inherit from this class and add 
+<p>This class provides a base for all types of devices. It defines common properties and methods
+that all devices should have. Specific device types should inherit from this class and add
 their own unique properties and methods.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -1037,7 +1039,7 @@ their own unique properties and methods.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.discoverer.</span></span><span class="sig-name descname"><span class="pre">Discoverer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mqtt_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.abstracts.IMQTTService" title="iotlib.abstracts.IMQTTService"><span class="pre">IMQTTService</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/discoverer.html#Discoverer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.discoverer.Discoverer" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Discovers devices on the network.</p>
-<p>This class provides methods to discover devices on the network using different protocols. 
+<p>This class provides methods to discover devices on the network using different protocols.
 It can be used to find devices, get their information, and add them to the system.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -1053,7 +1055,7 @@ It can be used to find devices, get their information, and add them to the syste
 <dt class="sig sig-object py" id="iotlib.discoverer.Discoverer.add_discovery_processor">
 <span class="sig-name descname"><span class="pre">add_discovery_processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">processor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.abstracts.IDiscoveryProcessor" title="iotlib.abstracts.IDiscoveryProcessor"><span class="pre">IDiscoveryProcessor</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/iotlib/discoverer.html#Discoverer.add_discovery_processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.discoverer.Discoverer.add_discovery_processor" title="Link to this definition"></a></dt>
 <dd><p>Adds a discovery processor to the Discoverer.</p>
-<p>Discovery processors are used to process the results of a device discovery operation. 
+<p>Discovery processors are used to process the results of a device discovery operation.
 This method allows adding custom processors to the Discoverer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1084,7 +1086,7 @@ This method allows adding custom processors to the Discoverer.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.discoverer.</span></span><span class="sig-name descname"><span class="pre">TasmotaDiscoverer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mqtt_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.abstracts.IMQTTService" title="iotlib.abstracts.IMQTTService"><span class="pre">IMQTTService</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/discoverer.html#TasmotaDiscoverer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.discoverer.TasmotaDiscoverer" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.discoverer.Discoverer" title="iotlib.discoverer.Discoverer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Discoverer</span></code></a></p>
 <p>Discovers Tasmota devices on the network.</p>
-<p>This class extends the Discoverer class and provides methods to discover Tasmota 
+<p>This class extends the Discoverer class and provides methods to discover Tasmota
 devices on the network. It uses the Tasmota protocol for device discovery.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -1122,8 +1124,8 @@ devices on the network. It uses the Tasmota protocol for device discovery.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.discoverer.</span></span><span class="sig-name descname"><span class="pre">ZigbeeDiscoverer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mqtt_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.abstracts.IMQTTService" title="iotlib.abstracts.IMQTTService"><span class="pre">IMQTTService</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/discoverer.html#ZigbeeDiscoverer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.discoverer.ZigbeeDiscoverer" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.discoverer.Discoverer" title="iotlib.discoverer.Discoverer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Discoverer</span></code></a></p>
 <p>Discovers Zigbee devices on the network.</p>
-<p>This class extends the Discoverer class and provides methods to discover Zigbee 
-devices on the network. 
+<p>This class extends the Discoverer class and provides methods to discover Zigbee
+devices on the network.
 It uses the Zigbee protocol for device discovery.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -1141,11 +1143,11 @@ It uses the Zigbee protocol for device discovery.</p>
 <section id="module-iotlib.factory">
 <span id="iotlib-factory-module"></span><h2>iotlib.factory module<a class="headerlink" href="#module-iotlib.factory" title="Link to this heading"></a></h2>
 <p>Module containing factory methods and enums for device models and protocols.</p>
-<p>This module provides a factory for creating instances of codecs for different device 
+<p>This module provides a factory for creating instances of codecs for different device
 models and protocols. It also defines enums for representing different device models and c
 ommunication protocols.</p>
-<p>The primary classes are Model and Protocol enums, and the CodecFactory. The Model enum 
-represents different device models, and the Protocol enum represents different communication 
+<p>The primary classes are Model and Protocol enums, and the CodecFactory. The Model enum
+represents different device models, and the Protocol enum represents different communication
 protocols. The CodecFactory uses these enums to create appropriate codec instances.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Example<span class="colon">:</span></dt>
@@ -1153,21 +1155,21 @@ protocols. The CodecFactory uses these enums to create appropriate codec instanc
 </dl>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># factory.py code</span>
 <span class="n">factory</span> <span class="o">=</span> <span class="n">CodecFactory</span><span class="p">()</span>
-<span class="n">factory</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">NEO_ALARM</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">ZIGBEE</span><span class="p">,</span> <span class="n">NeoNasAB02B2</span><span class="p">)</span> 
+<span class="n">factory</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">NEO_ALARM</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">ZIGBEE</span><span class="p">,</span> <span class="n">NeoNasAB02B2</span><span class="p">)</span>
 
 <span class="c1"># User code to discover device model and protocol</span>
 <span class="kn">import</span> <span class="nn">iotlib.factory</span> <span class="k">as</span> <span class="nn">factory</span>
 <span class="n">codec</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">NEO_ALARM</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">ZIGBEE</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The example above shows how to use the CodecFactory to register a codec for a specific device model and 
+<p>The example above shows how to use the CodecFactory to register a codec for a specific device model and
 protocol, and create an instance of it.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="iotlib.factory.CodecFactory">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.factory.</span></span><span class="sig-name descname"><span class="pre">CodecFactory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/factory.html#CodecFactory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.factory.CodecFactory" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A factory class for creating codec instances.</p>
-<p>This class uses the Singleton design pattern to ensure that only one instance of the factory exists. 
+<p>This class uses the Singleton design pattern to ensure that only one instance of the factory exists.
 The factory can be used to create instances of different types of codecs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -1178,7 +1180,7 @@ The factory can be used to create instances of different types of codecs.</p>
 <dt class="sig sig-object py" id="iotlib.factory.CodecFactory.create_instance">
 <span class="sig-name descname"><span class="pre">create_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.factory.Model" title="iotlib.factory.Model"><span class="pre">Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.factory.Protocol" title="iotlib.factory.Protocol"><span class="pre">Protocol</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#iotlib.abstracts.ICodec" title="iotlib.abstracts.ICodec"><span class="pre">ICodec</span></a></span></span><a class="reference internal" href="_modules/iotlib/factory.html#CodecFactory.create_instance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.factory.CodecFactory.create_instance" title="Link to this definition"></a></dt>
 <dd><p>Creates a new codec instance for the given model and protocol.</p>
-<p>This method takes a model, a protocol, and optional arguments, and creates a new codec instance for the given 
+<p>This method takes a model, a protocol, and optional arguments, and creates a new codec instance for the given
 model and protocol using the registered constructor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1202,7 +1204,7 @@ model and protocol using the registered constructor.</p>
 <dt class="sig sig-object py" id="iotlib.factory.CodecFactory.registers">
 <span class="sig-name descname"><span class="pre">registers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.factory.Model" title="iotlib.factory.Model"><span class="pre">Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">protocol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.factory.Protocol" title="iotlib.factory.Protocol"><span class="pre">Protocol</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#iotlib.abstracts.ICodec" title="iotlib.abstracts.ICodec"><span class="pre">ICodec</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/iotlib/factory.html#CodecFactory.registers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.factory.CodecFactory.registers" title="Link to this definition"></a></dt>
 <dd><p>Registers a new codec constructor.</p>
-<p>This method takes a model, a protocol, and a constructor function, and registers the constructor for creating 
+<p>This method takes a model, a protocol, and a constructor function, and registers the constructor for creating
 codecs for the given model and protocol.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1307,7 +1309,7 @@ codecs for the given model and protocol.</p>
 <dt class="sig sig-object py" id="iotlib.factory.Model.from_str">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/factory.html#Model.from_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.factory.Model.from_str" title="Link to this definition"></a></dt>
 <dd><p>Returns the Model enum value corresponding to the given label.</p>
-<p>This method takes a label as input and returns the corresponding Model enum value. If the label does not 
+<p>This method takes a label as input and returns the corresponding Model enum value. If the label does not
 correspond to any Model enum value, it returns None.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1381,10 +1383,10 @@ correspond to any Model enum value, it returns None.</p>
 <section id="module-iotlib.processor">
 <span id="iotlib-processor-module"></span><h2>iotlib.processor module<a class="headerlink" href="#module-iotlib.processor" title="Link to this heading"></a></h2>
 <p>Module containing processor classes for handling virtual devices.</p>
-<p>This module provides classes for processing virtual devices. These classes 
-implement the IVirtualDeviceProcessor interface and provide specific functionality 
+<p>This module provides classes for processing virtual devices. These classes
+implement the IVirtualDeviceProcessor interface and provide specific functionality
 for handling virtual devices.</p>
-<p>The primary class in this module is the VirtualDeviceLogger. This class logs 
+<p>The primary class in this module is the VirtualDeviceLogger. This class logs
 the actions performed on virtual devices and can be used for debugging and tracking purposes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Example<span class="colon">:</span></dt>
@@ -1408,7 +1410,7 @@ the actions performed on virtual devices and can be used for debugging and track
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.processor.</span></span><span class="sig-name descname"><span class="pre">AvailabilityLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/processor.html#AvailabilityLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.processor.AvailabilityLogger" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.abstracts.IAvailabilityProcessor" title="iotlib.abstracts.IAvailabilityProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAvailabilityProcessor</span></code></a></p>
 <p>Logs availability updates of devices.</p>
-<p>This processor logs a message when a device’s 
+<p>This processor logs a message when a device’s
 availability changes.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="iotlib.processor.AvailabilityLogger.attach">
@@ -1445,7 +1447,7 @@ availability changes.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.processor.</span></span><span class="sig-name descname"><span class="pre">AvailabilityPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">publish_topic_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/processor.html#AvailabilityPublisher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.processor.AvailabilityPublisher" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.abstracts.IAvailabilityProcessor" title="iotlib.abstracts.IAvailabilityProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAvailabilityProcessor</span></code></a></p>
 <p>Processes availability updates from MQTTBridge.</p>
-<p>This processor handles availability updates from a MQTTBridge 
+<p>This processor handles availability updates from a MQTTBridge
 instance. It publishes the availability status to a MQTT topic.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="iotlib.processor.AvailabilityPublisher.attach">
@@ -1525,7 +1527,7 @@ instance. It publishes the availability status to a MQTT topic.</p>
 <dt class="sig sig-object py" id="iotlib.processor.MotionTrigger">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.processor.</span></span><span class="sig-name descname"><span class="pre">MotionTrigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mqtt_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.abstracts.IMQTTService" title="iotlib.abstracts.IMQTTService"><span class="pre">IMQTTService</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/processor.html#MotionTrigger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.processor.MotionTrigger" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.abstracts.IVirtualDeviceProcessor" title="iotlib.abstracts.IVirtualDeviceProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">IVirtualDeviceProcessor</span></code></a></p>
-<p>A class that handles motion sensor state changes and triggers registered switches 
+<p>A class that handles motion sensor state changes and triggers registered switches
 when occupancy is detected.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="iotlib.processor.MotionTrigger.compatible_with_device">
@@ -1597,7 +1599,7 @@ when occupancy is detected.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.processor.</span></span><span class="sig-name descname"><span class="pre">VirtualDeviceLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/processor.html#VirtualDeviceLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.processor.VirtualDeviceLogger" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.abstracts.IVirtualDeviceProcessor" title="iotlib.abstracts.IVirtualDeviceProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">IVirtualDeviceProcessor</span></code></a></p>
 <p>Logs updates from virtual devices.</p>
-<p>This processor logs a debug message when a virtual device value is updated. It implements the 
+<p>This processor logs a debug message when a virtual device value is updated. It implements the
 IVirtualDeviceProcessor interface.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
@@ -1625,8 +1627,8 @@ IVirtualDeviceProcessor interface.</p>
 <dt class="sig sig-object py" id="iotlib.processor.VirtualDeviceLogger.process_value_update">
 <span class="sig-name descname"><span class="pre">process_value_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_dev</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#iotlib.virtualdev.VirtualDevice" title="iotlib.virtualdev.VirtualDevice"><span class="pre">VirtualDevice</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/iotlib/processor.html#VirtualDeviceLogger.process_value_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.processor.VirtualDeviceLogger.process_value_update" title="Link to this definition"></a></dt>
 <dd><p>Handle an update from a virtual device.</p>
-<p>This method is called when a value changes on a virtual 
-device. It should be implemented in child classes to 
+<p>This method is called when a value changes on a virtual
+device. It should be implemented in child classes to
 handle specific processing logic for the device type.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1672,7 +1674,7 @@ Using a Metaclass to Control Instance Creation</p>
 </section>
 <section id="module-iotlib.virtualdev">
 <span id="iotlib-virtualdev-module"></span><h2>iotlib.virtualdev module<a class="headerlink" href="#module-iotlib.virtualdev" title="Link to this heading"></a></h2>
-<p>Virtual devices serve as an abstraction layer over physical devices, facilitating interoperability across different 
+<p>Virtual devices serve as an abstraction layer over physical devices, facilitating interoperability across different
 types of devices. These virtual devices are organized into a hierarchical structure as follows:</p>
 <blockquote>
 <div><ul class="simple">
@@ -1699,8 +1701,8 @@ types of devices. These virtual devices are organized into a hierarchical struct
 </li>
 </ul>
 </div></blockquote>
-<p>Each physical device is associated with one or more virtual devices, which handle the processing and management of data. 
-For instance, an air sensor might be associated with a Temperature Sensor and a Humidity Sensor virtual device, which 
+<p>Each physical device is associated with one or more virtual devices, which handle the processing and management of data.
+For instance, an air sensor might be associated with a Temperature Sensor and a Humidity Sensor virtual device, which
 handle temperature and humidity data respectively. This support is provided by the VirtualDevice class.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="iotlib.virtualdev.ADC">
@@ -2061,7 +2063,7 @@ Each level is associated with a string value.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>mqtt_service</strong> (<a class="reference internal" href="#iotlib.abstracts.IMQTTService" title="iotlib.abstracts.IMQTTService"><em>IMQTTService</em></a>) – The client instance used for communication.</p></li>
 <li><p><strong>is_on</strong> (<em>bool</em>) – The new state of the device (True for ON, False for OFF).</p></li>
-<li><p><strong>on_time</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – The duration for which the device should remain ON, in seconds. 
+<li><p><strong>on_time</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – The duration for which the device should remain ON, in seconds.
 If None, the device will remain ON indefinitely, defaults to None.</p></li>
 </ul>
 </dd>
@@ -2144,7 +2146,7 @@ If the switch state is currently ON, it will send a request to turn it OFF via M
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.virtualdev.</span></span><span class="sig-name descname"><span class="pre">Sensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">friendly_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/virtualdev.html#Sensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.virtualdev.Sensor" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.virtualdev.VirtualDevice" title="iotlib.virtualdev.VirtualDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">VirtualDevice</span></code></a></p>
 <p>Sensor virtual devices</p>
-<p>This virtual sensor device manages sensor values that can be 
+<p>This virtual sensor device manages sensor values that can be
 read by observer devices.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="iotlib.virtualdev.Sensor.add_observer">
@@ -2284,7 +2286,7 @@ read by observer devices.</p>
 <dt class="sig sig-object py" id="iotlib.virtualdev.VirtualDevice">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iotlib.virtualdev.</span></span><span class="sig-name descname"><span class="pre">VirtualDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">friendly_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iotlib/virtualdev.html#VirtualDevice"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iotlib.virtualdev.VirtualDevice" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#iotlib.abstracts.IVirtualDevice" title="iotlib.abstracts.IVirtualDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">IVirtualDevice</span></code></a></p>
-<p>Virtual devices serve as an abstraction layer over physical devices, 
+<p>Virtual devices serve as an abstraction layer over physical devices,
 facilitating interoperability across different types of devices.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="iotlib.virtualdev.VirtualDevice.get_property">
