@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.factory &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.factory</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.factory</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module containing factory methods and enums for device models and protocols.</span>
+
+<span class="sd">This module provides a factory for creating instances of codecs for different device </span>
+<span class="sd">models and protocols. It also defines enums for representing different device models and c</span>
+<span class="sd">ommunication protocols.</span>
+
+<span class="sd">The primary classes are Model and Protocol enums, and the CodecFactory. The Model enum </span>
+<span class="sd">represents different device models, and the Protocol enum represents different communication </span>
+<span class="sd">protocols. The CodecFactory uses these enums to create appropriate codec instances.</span>
+
+<span class="sd">:Example: </span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    # factory.py code</span>
+<span class="sd">    factory = CodecFactory()</span>
+<span class="sd">    factory.registers(Model.NEO_ALARM, Protocol.ZIGBEE, NeoNasAB02B2) </span>
+
+<span class="sd">    # User code to discover device model and protocol</span>
+<span class="sd">    import iotlib.factory as factory</span>
+<span class="sd">    codec = factory.create_instance(Model.NEO_ALARM, Protocol.ZIGBEE)</span>
+
+<span class="sd">The example above shows how to use the CodecFactory to register a codec for a specific device model and </span>
+<span class="sd">protocol, and create an instance of it.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">from</span> <span class="nn">iotlib.utils</span> <span class="kn">import</span> <span class="n">iotlib_logger</span><span class="p">,</span> <span class="n">Singleton</span>
+<span class="kn">from</span> <span class="nn">iotlib.abstracts</span> <span class="kn">import</span> <span class="n">ICodec</span>
+<span class="kn">from</span> <span class="nn">iotlib.codec.z2m</span> <span class="kn">import</span> <span class="p">(</span><span class="n">NeoNasAB02B2</span><span class="p">,</span> <span class="n">SonoffSnzb01</span><span class="p">,</span> <span class="n">SonoffSnzb02</span><span class="p">,</span> <span class="n">SonoffSnzb3</span><span class="p">,</span>
+                              <span class="n">SonoffZbminiL</span><span class="p">,</span> <span class="n">Ts0601Soil</span><span class="p">,</span> <span class="n">TuYaTS0002</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Model">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.factory.Model">[docs]</a>
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This enum is used to represent the different models of devices that can be discovered. </span>
+
+<span class="sd">    :ivar  MIFLORA: Xiaomi Mi Flora plant sensor  </span>
+<span class="sd">    :ivar  NEO_ALARM: Neo NAS-AB02B2 Zigbee Siren</span>
+<span class="sd">    :ivar  SHELLY_PLUGS: Shelly Plug S WiFi smart plug</span>
+<span class="sd">    :ivar  SHELLY_UNI: Shelly Uni WiFi relay/dimmer</span>
+<span class="sd">    :ivar  TUYA_SOIL: Tuya TS0601_soil Zigbee soil moisture sensor</span>
+<span class="sd">    :ivar  ZB_AIRSENSOR: Sonoff Zigbee air temperature/humidity sensor</span>
+<span class="sd">    :ivar  ZB_BUTTON: Sonoff SNZB-01 Zigbee wireless button</span>
+<span class="sd">    :ivar  ZB_MOTION: Sonoff SNZB-03 Zigbee motion sensor  </span>
+<span class="sd">    :ivar  ZB_MINI: Sonoff ZBMINI-L Zigbee wireless switch module</span>
+<span class="sd">    :ivar  EL_ZBSW02: eWeLink ZB-SW02 Zigbee wireless switch module</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">TUYA_TS0002</span> <span class="o">=</span> <span class="s1">&#39;TS0002&#39;</span> <span class="c1"># TuYa TS0002 Zigbee wireless switch module</span>
+    <span class="n">MIFLORA</span> <span class="o">=</span> <span class="s1">&#39;Miflora&#39;</span>
+    <span class="n">NEO_ALARM</span> <span class="o">=</span> <span class="s1">&#39;NAS-AB02B2&#39;</span>  <span class="c1"># Neo NAS-AB02B2 Zigbee Siren</span>
+    <span class="n">RING_CAMERA</span> <span class="o">=</span> <span class="s1">&#39;RingCamera&#39;</span>
+    <span class="n">SHELLY_PLUGS</span> <span class="o">=</span> <span class="s1">&#39;Shelly Plug S&#39;</span>  <span class="c1"># Shelly Plug S WiFi smart plug</span>
+    <span class="n">SHELLY_UNI</span> <span class="o">=</span> <span class="s1">&#39;Shelly Uni&#39;</span>  <span class="c1"># Shelly Uni WiFi relay/dimmer</span>
+    <span class="n">TUYA_SOIL</span> <span class="o">=</span> <span class="s1">&#39;TS0601_soil&#39;</span>  <span class="c1"># TuYa TS0601_soil Zigbee soil moisture sensor</span>
+    <span class="n">ZB_AIRSENSOR</span> <span class="o">=</span> <span class="s2">&quot;SNZB-02&quot;</span>  <span class="c1"># SONOFF Zigbee air temperature/humidity sensor</span>
+    <span class="n">ZB_BUTTON</span> <span class="o">=</span> <span class="s2">&quot;SNZB-01&quot;</span>   <span class="c1"># SONOFF SNZB-01 Zigbee wireless button</span>
+    <span class="n">ZB_MOTION</span> <span class="o">=</span> <span class="s1">&#39;SNZB-03&#39;</span>   <span class="c1"># SONOFF SNZB-03 Zigbee motion sensor</span>
+    <span class="n">ZB_MINI</span> <span class="o">=</span> <span class="s1">&#39;ZBMINI-L&#39;</span>    <span class="c1"># SONOFF ZBMINI-L Zigbee wireless switch module</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s1">&#39;None&#39;</span>          <span class="c1"># No model</span>
+    <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="s1">&#39;Unknown&#39;</span>    <span class="c1"># Unknown model</span>
+
+<div class="viewcode-block" id="Model.from_str">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.factory.Model.from_str">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_str</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the Model enum value corresponding to the given label.</span>
+
+<span class="sd">        This method takes a label as input and returns the corresponding Model enum value. If the label does not </span>
+<span class="sd">        correspond to any Model enum value, it returns None.</span>
+
+<span class="sd">        :param label: The label to get the Model enum value for.</span>
+<span class="sd">        :type label: str</span>
+<span class="sd">        :return: The Model enum value corresponding to the label, or None if the label does not correspond to any Model enum value.</span>
+<span class="sd">        :rtype: Model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Model</span><span class="o">.</span><span class="n">NONE</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">Model</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">model</span>
+        <span class="k">return</span> <span class="n">Model</span><span class="o">.</span><span class="n">UNKNOWN</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Protocol">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.factory.Protocol">[docs]</a>
+<span class="k">class</span> <span class="nc">Protocol</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This enum is used to represent the different communication protocols that can be used by devices. </span>
+
+<span class="sd">    :ivar HOMIE: The Homie IoT protocol.</span>
+<span class="sd">    :ivar SHELLY: The Shelly smart home devices protocol.</span>
+<span class="sd">    :ivar TASMOTA: The Tasmota protocol used by ESP8266/ESP32 boards.</span>
+<span class="sd">    :ivar Z2M: The Zigbee2MQTT protocol.</span>
+<span class="sd">    :ivar Z2T: The Zigbee2Tasmota protocol.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s1">&#39;default&#39;</span>
+    <span class="n">HOMIE</span> <span class="o">=</span> <span class="s1">&#39;Homie&#39;</span>
+    <span class="n">RING</span> <span class="o">=</span> <span class="s1">&#39;Ring&#39;</span>
+    <span class="n">SHELLY</span> <span class="o">=</span> <span class="s1">&#39;Shelly&#39;</span>
+    <span class="n">TASMOTA</span> <span class="o">=</span> <span class="s1">&#39;Tasmota&#39;</span>
+    <span class="n">Z2M</span> <span class="o">=</span> <span class="s1">&#39;Zigbee2MQTT&#39;</span>
+    <span class="n">Z2T</span> <span class="o">=</span> <span class="s1">&#39;Zigbee2Tasmota&#39;</span></div>
+
+
+
+<div class="viewcode-block" id="CodecFactory">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.factory.CodecFactory">[docs]</a>
+<span class="k">class</span> <span class="nc">CodecFactory</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A factory class for creating codec instances.</span>
+
+<span class="sd">    This class uses the Singleton design pattern to ensure that only one instance of the factory exists. </span>
+<span class="sd">    The factory can be used to create instances of different types of codecs.</span>
+
+<span class="sd">    :ivar codecs: A dictionary mapping codec names to codec instances.</span>
+<span class="sd">    :vartype codecs: dict[str, Codec]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the factory by creating an empty constructors dict.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constructors</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CodecFactory.registers">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.factory.CodecFactory.registers">[docs]</a>
+    <span class="k">def</span> <span class="nf">registers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                  <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+                  <span class="n">protocol</span><span class="p">:</span> <span class="n">Protocol</span><span class="p">,</span>
+                  <span class="n">constructor</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">],</span> <span class="n">ICodec</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Registers a new codec constructor.</span>
+
+<span class="sd">        This method takes a model, a protocol, and a constructor function, and registers the constructor for creating </span>
+<span class="sd">        codecs for the given model and protocol.</span>
+
+<span class="sd">        :param model: The model for which the constructor should be registered.</span>
+<span class="sd">        :type model: Model</span>
+<span class="sd">        :param protocol: The protocol for which the constructor should be registered.</span>
+<span class="sd">        :type protocol: Protocol</span>
+<span class="sd">        :param constructor: The constructor function to be registered.</span>
+<span class="sd">        :type constructor: Callable[[list], ICodec]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Registering constructor for model </span><span class="si">%s</span><span class="s1"> and protocol </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                           <span class="n">model</span><span class="p">,</span> <span class="n">protocol</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Model </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1"> is not of type &quot;Model&quot;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Protocole </span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s1"> is not of type &quot;Protocole&quot;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">constructor</span><span class="p">,</span> <span class="n">Callable</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Constructor </span><span class="si">{</span><span class="n">constructor</span><span class="si">}</span><span class="s1"> is not of type &quot;Callable&quot;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constructors</span><span class="p">[</span><span class="n">model</span><span class="p">][</span><span class="n">protocol</span><span class="p">]</span> <span class="o">=</span> <span class="n">constructor</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_constructor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">],</span> <span class="n">ICodec</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves the constructor for a given model and protocol.</span>
+
+<span class="sd">        This method takes a model and an optional protocol, and returns the constructor function for creating codecs </span>
+<span class="sd">        for the given model and protocol. If no protocol is provided, it returns the constructor for the given model </span>
+<span class="sd">        regardless of the protocol.</span>
+
+<span class="sd">        :param model: The model for which the constructor should be retrieved.</span>
+<span class="sd">        :type model: str</span>
+<span class="sd">        :param protocol: The protocol for which the constructor should be retrieved, defaults to None.</span>
+<span class="sd">        :type protocol: Protocol, optional</span>
+<span class="sd">        :return: The constructor function for the given model and protocol.</span>
+<span class="sd">        :rtype: Callable[[list], ICodec]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_constructor_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_constructor_dict</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cannot create instance for model: </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_constructor_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cannot create instance for model: </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_constructor_dict</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">protocol</span> <span class="ow">is</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">:</span>
+            <span class="n">protocol</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_constructor_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">_constructor</span> <span class="o">=</span> <span class="n">_constructor_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">protocol</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_constructor</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Unable to create instance for model </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1"> and protocol </span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_constructor</span>
+
+<div class="viewcode-block" id="CodecFactory.create_instance">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.factory.CodecFactory.create_instance">[docs]</a>
+    <span class="k">def</span> <span class="nf">create_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+                        <span class="n">protocol</span><span class="p">:</span> <span class="n">Protocol</span><span class="p">,</span>
+                        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ICodec</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new codec instance for the given model and protocol.</span>
+
+<span class="sd">        This method takes a model, a protocol, and optional arguments, and creates a new codec instance for the given </span>
+<span class="sd">        model and protocol using the registered constructor.</span>
+
+<span class="sd">        :param model: The model for which the codec should be created.</span>
+<span class="sd">        :type model: Model</span>
+<span class="sd">        :param protocol: The protocol for which the codec should be created.</span>
+<span class="sd">        :type protocol: Protocol</span>
+<span class="sd">        :param args: Additional positional arguments to be passed to the constructor.</span>
+<span class="sd">        :param kwargs: Additional keyword arguments to be passed to the constructor.</span>
+<span class="sd">        :return: A new codec instance for the given model and protocol.</span>
+<span class="sd">        :rtype: ICodec</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2"> is not of type Model&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Protocole </span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2"> is not of type Protocol&quot;</span><span class="p">)</span>
+
+        <span class="n">_constructor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_constructor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">protocol</span><span class="p">)</span>
+        <span class="n">_codec</span> <span class="o">=</span> <span class="n">_constructor</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_codec</span></div>
+</div>
+
+
+
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">TUYA_TS0002</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">TuYaTS0002</span><span class="p">)</span>
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">NEO_ALARM</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">NeoNasAB02B2</span><span class="p">)</span>
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">TUYA_SOIL</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">Ts0601Soil</span><span class="p">)</span>
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">ZB_AIRSENSOR</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">SonoffSnzb02</span><span class="p">)</span>
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">ZB_BUTTON</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">SonoffSnzb01</span><span class="p">)</span>
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">ZB_MOTION</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">SonoffSnzb3</span><span class="p">)</span>
+<span class="n">CodecFactory</span><span class="p">()</span><span class="o">.</span><span class="n">registers</span><span class="p">(</span><span class="n">Model</span><span class="o">.</span><span class="n">ZB_MINI</span><span class="p">,</span> <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span> <span class="n">SonoffZbminiL</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

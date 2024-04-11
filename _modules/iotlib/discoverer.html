@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.discoverer &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.discoverer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.discoverer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module defines classes for discovering IoT devices using MQTT.</span>
+
+<span class="sd">Discoverer is the base class for device discovery. It uses an MQTT client </span>
+<span class="sd">to discover devices and maintains a list of discovered devices. It also </span>
+<span class="sd">allows adding discovery processors for processing the discovered devices.</span>
+
+<span class="sd">ZigbeeDiscoverer and TasmotaDiscoverer are subclasses of Discoverer. They </span>
+<span class="sd">override the base class methods to provide specific implementations for </span>
+<span class="sd">discovering Zigbee and Tasmota devices, respectively.</span>
+
+<span class="sd">Device class provides properties for accessing these attributes and methods </span>
+<span class="sd">for getting string representations of the device.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">iotlib.utils</span> <span class="kn">import</span> <span class="n">iotlib_logger</span>
+<span class="kn">from</span> <span class="nn">iotlib.abstracts</span> <span class="kn">import</span> <span class="n">IDiscoveryProcessor</span><span class="p">,</span> <span class="n">IMQTTService</span>
+<span class="kn">from</span> <span class="nn">iotlib.codec.config</span> <span class="kn">import</span> <span class="n">BaseTopic</span>
+<span class="kn">from</span> <span class="nn">iotlib.factory</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">Protocol</span>
+
+
+<div class="viewcode-block" id="Device">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.Device">[docs]</a>
+<span class="k">class</span> <span class="nc">Device</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a generic device in the system.</span>
+
+<span class="sd">    This class provides a base for all types of devices. It defines common properties and methods </span>
+<span class="sd">    that all devices should have. Specific device types should inherit from this class and add </span>
+<span class="sd">    their own unique properties and methods.</span>
+
+<span class="sd">    :ivar id: The unique identifier for the device.</span>
+<span class="sd">    :vartype id: str</span>
+<span class="sd">    :ivar name: The human-readable name of the device.</span>
+<span class="sd">    :vartype name: str</span>
+<span class="sd">    :ivar type: The type of the device (e.g., &#39;sensor&#39;, &#39;actuator&#39;).</span>
+<span class="sd">    :vartype type: str</span>
+<span class="sd">    :ivar status: The current status of the device (e.g., &#39;online&#39;, &#39;offline&#39;).</span>
+<span class="sd">    :vartype status: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">friendly_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+                 <span class="n">protocol</span><span class="p">:</span> <span class="n">Protocol</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the Discoverer class.</span>
+
+<span class="sd">        :param address: The IP address or hostname of the device.</span>
+<span class="sd">        :type address: str</span>
+<span class="sd">        :param friendly_name: The friendly name of the device.</span>
+<span class="sd">        :type friendly_name: str</span>
+<span class="sd">        :param model: The model of the device.</span>
+<span class="sd">        :type model: Model</span>
+<span class="sd">        :param protocol: The protocol used by the device.</span>
+<span class="sd">        :type protocol: Protocol</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_address</span> <span class="o">=</span> <span class="n">address</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_friendly_name</span> <span class="o">=</span> <span class="n">friendly_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_protocol</span> <span class="o">=</span> <span class="n">protocol</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">address</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the address of the device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_address</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">friendly_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the friendly name of the device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_friendly_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the model of the device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Protocol</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the protocol of the device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_protocol</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">friendly_name</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">friendly_name</span><span class="si">}</span><span class="s2">, address : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="si">}</span><span class="s2">, model: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2">, protocol: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">protocol</span><span class="si">}</span><span class="s2">&gt;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Discoverer">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.Discoverer">[docs]</a>
+<span class="k">class</span> <span class="nc">Discoverer</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Discovers devices on the network.</span>
+
+<span class="sd">    This class provides methods to discover devices on the network using different protocols. </span>
+<span class="sd">    It can be used to find devices, get their information, and add them to the system.</span>
+
+<span class="sd">    :ivar address: The IP address or hostname of the device.</span>
+<span class="sd">    :vartype address: str</span>
+<span class="sd">    :ivar friendly_name: The friendly name of the device.</span>
+<span class="sd">    :vartype friendly_name: str</span>
+<span class="sd">    :ivar model: The model of the device.</span>
+<span class="sd">    :vartype model: Model</span>
+<span class="sd">    :ivar protocol: The protocol used by the device.</span>
+<span class="sd">    :vartype protocol: Protocol</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the Discoverer class.</span>
+
+<span class="sd">        :param mqtt_service: The MQTT service to be used for device discovery.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mqtt_service must be an instance of MQTTService, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_service</span> <span class="o">=</span> <span class="n">mqtt_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">devices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discovery_processors</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Discoverer.get_devices">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.Discoverer.get_devices">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_devices</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Device</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the list of discovered devices.</span>
+
+<span class="sd">        This method returns the list of Device objects that have been discovered by the Discoverer.</span>
+
+<span class="sd">        :return: A list of Device objects.</span>
+<span class="sd">        :rtype: list[Device]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">devices</span></div>
+
+
+<div class="viewcode-block" id="Discoverer.add_discovery_processor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.Discoverer.add_discovery_processor">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_discovery_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processor</span><span class="p">:</span> <span class="n">IDiscoveryProcessor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a discovery processor to the Discoverer.</span>
+
+<span class="sd">        Discovery processors are used to process the results of a device discovery operation. </span>
+<span class="sd">        This method allows adding custom processors to the Discoverer.</span>
+
+<span class="sd">        :param processor: The discovery processor to be added.</span>
+<span class="sd">        :type processor: IDiscoveryProcessor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">IDiscoveryProcessor</span><span class="p">):</span>
+            <span class="n">_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Processor must be instance of DiscoveryProcessor, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">processor</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">_msg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discovery_processors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">processor</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ZigbeeDiscoverer">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.ZigbeeDiscoverer">[docs]</a>
+<span class="k">class</span> <span class="nc">ZigbeeDiscoverer</span><span class="p">(</span><span class="n">Discoverer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Discovers Zigbee devices on the network.</span>
+
+<span class="sd">    This class extends the Discoverer class and provides methods to discover Zigbee </span>
+<span class="sd">    devices on the network. </span>
+<span class="sd">    It uses the Zigbee protocol for device discovery.</span>
+
+<span class="sd">    :ivar address: The IP address or hostname of the Zigbee device.</span>
+<span class="sd">    :vartype address: str</span>
+<span class="sd">    :ivar friendly_name: The friendly name of the Zigbee device.</span>
+<span class="sd">    :vartype friendly_name: str</span>
+<span class="sd">    :ivar model: The model of the Zigbee device.</span>
+<span class="sd">    :vartype model: Model</span>
+<span class="sd">    :ivar protocol: The protocol used by the Zigbee device, should be Zigbee.</span>
+<span class="sd">    :vartype protocol: Protocol</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the ZigbeeDiscoverer with the given MQTT client.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_topic</span> <span class="o">=</span> <span class="n">BaseTopic</span><span class="o">.</span><span class="n">Z2M_BASE_TOPIC</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="s1">&#39;/bridge/devices&#39;</span>
+        <span class="n">mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span><span class="o">.</span><span class="n">message_callback_add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_topic</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_on_message_cb</span><span class="p">)</span>
+        <span class="n">mqtt_service</span><span class="o">.</span><span class="n">connect_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_connect_cb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_message_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles incoming MQTT messages.&quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">payload</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+        <span class="n">_new_devices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_devices</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">_processor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discovery_processors</span><span class="p">:</span>
+            <span class="n">_processor</span><span class="o">.</span><span class="n">process_discovery_update</span><span class="p">(</span><span class="n">_new_devices</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_connect_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">rc</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles the MQTT connection event.&quot;&quot;&quot;</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Connection accepted -&gt; subscribe&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_service</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_topic</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_devices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">json</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Device</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parses the payload to extract device information.</span>
+
+<span class="sd">        This method takes a JSON payload, typically received from a device discovery operation, </span>
+<span class="sd">        and extracts device information from it. It returns a list of Device objects.</span>
+
+<span class="sd">        :param payload: The JSON payload to parse.</span>
+<span class="sd">        :type payload: json</span>
+<span class="sd">        :return: A list of Device objects extracted from the payload.</span>
+<span class="sd">        :rtype: list[Device]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">devices</span> <span class="o">=</span> <span class="p">[</span><span class="n">Device</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ieee_address&quot;</span><span class="p">),</span>
+                          <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;friendly_name&quot;</span><span class="p">),</span>
+                          <span class="n">Model</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span>
+                              <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;definition&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">)),</span>
+                          <span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">)</span>
+                   <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">payload</span> <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;EndDevice&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">devices</span> <span class="o">=</span> <span class="n">devices</span>
+
+        <span class="k">return</span> <span class="n">devices</span></div>
+
+
+
+<div class="viewcode-block" id="TasmotaDiscoverer">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.TasmotaDiscoverer">[docs]</a>
+<span class="k">class</span> <span class="nc">TasmotaDiscoverer</span><span class="p">(</span><span class="n">Discoverer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Discovers Tasmota devices on the network.</span>
+
+<span class="sd">    This class extends the Discoverer class and provides methods to discover Tasmota </span>
+<span class="sd">    devices on the network. It uses the Tasmota protocol for device discovery.</span>
+
+<span class="sd">    :ivar address: The IP address or hostname of the Tasmota device.</span>
+<span class="sd">    :vartype address: str</span>
+<span class="sd">    :ivar friendly_name: The friendly name of the Tasmota device.</span>
+<span class="sd">    :vartype friendly_name: str</span>
+<span class="sd">    :ivar model: The model of the Tasmota device.</span>
+<span class="sd">    :vartype model: Model</span>
+<span class="sd">    :ivar protocol: The protocol used by the Tasmota device, should be Tasmota.</span>
+<span class="sd">    :vartype protocol: Protocol</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">devices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_topic</span> <span class="o">=</span> <span class="n">BaseTopic</span><span class="o">.</span><span class="n">TASMOTA_DISCOVERY_TOPIC</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="s1">&#39;/+/config&#39;</span>
+        <span class="n">mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span><span class="o">.</span><span class="n">message_callback_add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_topic</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_on_message_cb</span><span class="p">)</span>
+        <span class="n">mqtt_service</span><span class="o">.</span><span class="n">connect_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_connect_cb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_message_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles incoming MQTT messages.&quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">payload</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+        <span class="n">new_devices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_devices</span><span class="p">(</span><span class="n">payload</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">_processor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discovery_processors</span><span class="p">:</span>
+            <span class="n">_processor</span><span class="o">.</span><span class="n">process_discovery_update</span><span class="p">(</span><span class="n">new_devices</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_connect_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">rc</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles the MQTT connection event.&quot;&quot;&quot;</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Connection accepted -&gt; subscribe&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_service</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_topic</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_devices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Device</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses the devices from the given payload.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">payload</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;hn&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;md&quot;</span><span class="p">)):</span>
+            <span class="n">device</span> <span class="o">=</span> <span class="n">Device</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hn&quot;</span><span class="p">),</span>
+                            <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">),</span>
+                            <span class="n">Model</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;md&#39;</span><span class="p">)),</span>
+                            <span class="n">Protocol</span><span class="o">.</span><span class="n">TASMOTA</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">device</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="UnifiedDiscoverer">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.UnifiedDiscoverer">[docs]</a>
+<span class="k">class</span> <span class="nc">UnifiedDiscoverer</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class that unifies the discovery of devices from different protocols.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Initializes the UnifiedDiscoverer with a list of specific protocol discoverers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discoverers</span> <span class="o">=</span> <span class="p">[</span><span class="n">ZigbeeDiscoverer</span><span class="p">(</span>
+            <span class="n">mqtt_service</span><span class="p">),</span> <span class="n">TasmotaDiscoverer</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="UnifiedDiscoverer.get_devices">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.UnifiedDiscoverer.get_devices">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_devices</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Device</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Returns a list of all devices discovered by all protocol discoverers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">device</span> <span class="k">for</span> <span class="n">_discoverer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discoverers</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">_discoverer</span><span class="o">.</span><span class="n">get_devices</span><span class="p">()]</span></div>
+
+
+<div class="viewcode-block" id="UnifiedDiscoverer.add_discovery_processor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.discoverer.UnifiedDiscoverer.add_discovery_processor">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_discovery_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processor</span><span class="p">:</span> <span class="n">IDiscoveryProcessor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Appends an Discovery Processor instance to the processor list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">_discoverer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discoverers</span><span class="p">:</span>
+            <span class="n">_discoverer</span><span class="o">.</span><span class="n">add_discovery_processor</span><span class="p">(</span><span class="n">processor</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

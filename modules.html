@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=51b770b3"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iotlib package" href="iotlib.html" />
+    <link rel="prev" title="User Guide" href="userguide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userguide.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">iotlib</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html">iotlib package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">iotlib</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="iotlib">
+<h1>iotlib<a class="headerlink" href="#iotlib" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="iotlib.html">iotlib package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.abstracts">iotlib.abstracts module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IAvailabilityProcessor"><code class="docutils literal notranslate"><span class="pre">IAvailabilityProcessor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IAvailabilityProcessor.attach"><code class="docutils literal notranslate"><span class="pre">IAvailabilityProcessor.attach()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IAvailabilityProcessor.process_availability_update"><code class="docutils literal notranslate"><span class="pre">IAvailabilityProcessor.process_availability_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ICodec"><code class="docutils literal notranslate"><span class="pre">ICodec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ICodec.decode_avail_pl"><code class="docutils literal notranslate"><span class="pre">ICodec.decode_avail_pl()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ICodec.get_availability_topic"><code class="docutils literal notranslate"><span class="pre">ICodec.get_availability_topic()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IDiscoveryProcessor"><code class="docutils literal notranslate"><span class="pre">IDiscoveryProcessor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IDiscoveryProcessor.process_discovery_update"><code class="docutils literal notranslate"><span class="pre">IDiscoveryProcessor.process_discovery_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IEncoder"><code class="docutils literal notranslate"><span class="pre">IEncoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IEncoder.change_state_request"><code class="docutils literal notranslate"><span class="pre">IEncoder.change_state_request()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IEncoder.get_state_request"><code class="docutils literal notranslate"><span class="pre">IEncoder.get_state_request()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IEncoder.is_pulse_request_allowed"><code class="docutils literal notranslate"><span class="pre">IEncoder.is_pulse_request_allowed()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IMQTTService"><code class="docutils literal notranslate"><span class="pre">IMQTTService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IMQTTService.connect"><code class="docutils literal notranslate"><span class="pre">IMQTTService.connect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IMQTTService.connect_handler_add"><code class="docutils literal notranslate"><span class="pre">IMQTTService.connect_handler_add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IMQTTService.disconnect"><code class="docutils literal notranslate"><span class="pre">IMQTTService.disconnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IMQTTService.disconnect_handler_add"><code class="docutils literal notranslate"><span class="pre">IMQTTService.disconnect_handler_add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IMQTTService.mqtt_client"><code class="docutils literal notranslate"><span class="pre">IMQTTService.mqtt_client</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IVirtualDevice"><code class="docutils literal notranslate"><span class="pre">IVirtualDevice</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IVirtualDevice.handle_value"><code class="docutils literal notranslate"><span class="pre">IVirtualDevice.handle_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IVirtualDevice.processor_append"><code class="docutils literal notranslate"><span class="pre">IVirtualDevice.processor_append()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IVirtualDeviceProcessor"><code class="docutils literal notranslate"><span class="pre">IVirtualDeviceProcessor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IVirtualDeviceProcessor.compatible_with_device"><code class="docutils literal notranslate"><span class="pre">IVirtualDeviceProcessor.compatible_with_device()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.IVirtualDeviceProcessor.process_value_update"><code class="docutils literal notranslate"><span class="pre">IVirtualDeviceProcessor.process_value_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ResultType"><code class="docutils literal notranslate"><span class="pre">ResultType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ResultType.ECHO"><code class="docutils literal notranslate"><span class="pre">ResultType.ECHO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ResultType.IGNORE"><code class="docutils literal notranslate"><span class="pre">ResultType.IGNORE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.abstracts.ResultType.SUCCESS"><code class="docutils literal notranslate"><span class="pre">ResultType.SUCCESS</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.abstracts.Surrogate"><code class="docutils literal notranslate"><span class="pre">Surrogate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.bridge">iotlib.bridge module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.bridge.MQTTBridge"><code class="docutils literal notranslate"><span class="pre">MQTTBridge</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.bridge.MQTTBridge.add_availability_processor"><code class="docutils literal notranslate"><span class="pre">MQTTBridge.add_availability_processor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.bridge.MQTTBridge.availability"><code class="docutils literal notranslate"><span class="pre">MQTTBridge.availability</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.client">iotlib.client module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient"><code class="docutils literal notranslate"><span class="pre">MQTTClient</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.clean_start"><code class="docutils literal notranslate"><span class="pre">MQTTClient.clean_start</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.client_id"><code class="docutils literal notranslate"><span class="pre">MQTTClient.client_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.connect"><code class="docutils literal notranslate"><span class="pre">MQTTClient.connect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.connect_handler_add"><code class="docutils literal notranslate"><span class="pre">MQTTClient.connect_handler_add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.connected"><code class="docutils literal notranslate"><span class="pre">MQTTClient.connected</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.disconnect"><code class="docutils literal notranslate"><span class="pre">MQTTClient.disconnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.disconnect_handler_add"><code class="docutils literal notranslate"><span class="pre">MQTTClient.disconnect_handler_add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.hostname"><code class="docutils literal notranslate"><span class="pre">MQTTClient.hostname</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.keepalive"><code class="docutils literal notranslate"><span class="pre">MQTTClient.keepalive</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.loop_forever"><code class="docutils literal notranslate"><span class="pre">MQTTClient.loop_forever()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.mqtt_client"><code class="docutils literal notranslate"><span class="pre">MQTTClient.mqtt_client</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.port"><code class="docutils literal notranslate"><span class="pre">MQTTClient.port</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.start"><code class="docutils literal notranslate"><span class="pre">MQTTClient.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.started"><code class="docutils literal notranslate"><span class="pre">MQTTClient.started</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.stop"><code class="docutils literal notranslate"><span class="pre">MQTTClient.stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.tls"><code class="docutils literal notranslate"><span class="pre">MQTTClient.tls</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.user_name"><code class="docutils literal notranslate"><span class="pre">MQTTClient.user_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClient.user_pwd"><code class="docutils literal notranslate"><span class="pre">MQTTClient.user_pwd</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClientHelper"><code class="docutils literal notranslate"><span class="pre">MQTTClientHelper</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClientHelper.default_message_callback_add"><code class="docutils literal notranslate"><span class="pre">MQTTClientHelper.default_message_callback_add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClientHelper.publish"><code class="docutils literal notranslate"><span class="pre">MQTTClientHelper.publish()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClientHelper.subscribe"><code class="docutils literal notranslate"><span class="pre">MQTTClientHelper.subscribe()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.client.MQTTClientHelper.subscribe_handler_add"><code class="docutils literal notranslate"><span class="pre">MQTTClientHelper.subscribe_handler_add()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.devconfig">iotlib.devconfig module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.devconfig.ButtonValues"><code class="docutils literal notranslate"><span class="pre">ButtonValues</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.ButtonValues.DOUBLE_ACTION"><code class="docutils literal notranslate"><span class="pre">ButtonValues.DOUBLE_ACTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.ButtonValues.LONG_ACTION"><code class="docutils literal notranslate"><span class="pre">ButtonValues.LONG_ACTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.ButtonValues.OFF"><code class="docutils literal notranslate"><span class="pre">ButtonValues.OFF</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.ButtonValues.SINGLE_ACTION"><code class="docutils literal notranslate"><span class="pre">ButtonValues.SINGLE_ACTION</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig"><code class="docutils literal notranslate"><span class="pre">PropertyConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.ADC_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.ADC_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.ALARM_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.ALARM_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.BUTTON_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.BUTTON_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.CONDUCTIVITY_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.CONDUCTIVITY_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.HUMIDITY_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.HUMIDITY_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.LIGHT_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.LIGHT_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.MOTION_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.MOTION_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.SWITCH0_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.SWITCH0_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.SWITCH1_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.SWITCH1_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.SWITCH_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.SWITCH_PROPERTY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.devconfig.PropertyConfig.TEMPERATURE_PROPERTY"><code class="docutils literal notranslate"><span class="pre">PropertyConfig.TEMPERATURE_PROPERTY</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.discoverer">iotlib.discoverer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Device"><code class="docutils literal notranslate"><span class="pre">Device</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Device.address"><code class="docutils literal notranslate"><span class="pre">Device.address</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Device.friendly_name"><code class="docutils literal notranslate"><span class="pre">Device.friendly_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Device.model"><code class="docutils literal notranslate"><span class="pre">Device.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Device.protocol"><code class="docutils literal notranslate"><span class="pre">Device.protocol</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Discoverer"><code class="docutils literal notranslate"><span class="pre">Discoverer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Discoverer.add_discovery_processor"><code class="docutils literal notranslate"><span class="pre">Discoverer.add_discovery_processor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.Discoverer.get_devices"><code class="docutils literal notranslate"><span class="pre">Discoverer.get_devices()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.discoverer.TasmotaDiscoverer"><code class="docutils literal notranslate"><span class="pre">TasmotaDiscoverer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.discoverer.UnifiedDiscoverer"><code class="docutils literal notranslate"><span class="pre">UnifiedDiscoverer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.UnifiedDiscoverer.add_discovery_processor"><code class="docutils literal notranslate"><span class="pre">UnifiedDiscoverer.add_discovery_processor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.discoverer.UnifiedDiscoverer.get_devices"><code class="docutils literal notranslate"><span class="pre">UnifiedDiscoverer.get_devices()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.discoverer.ZigbeeDiscoverer"><code class="docutils literal notranslate"><span class="pre">ZigbeeDiscoverer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.factory">iotlib.factory module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.factory.CodecFactory"><code class="docutils literal notranslate"><span class="pre">CodecFactory</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.CodecFactory.create_instance"><code class="docutils literal notranslate"><span class="pre">CodecFactory.create_instance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.CodecFactory.registers"><code class="docutils literal notranslate"><span class="pre">CodecFactory.registers()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.factory.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.MIFLORA"><code class="docutils literal notranslate"><span class="pre">Model.MIFLORA</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.NEO_ALARM"><code class="docutils literal notranslate"><span class="pre">Model.NEO_ALARM</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.NONE"><code class="docutils literal notranslate"><span class="pre">Model.NONE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.RING_CAMERA"><code class="docutils literal notranslate"><span class="pre">Model.RING_CAMERA</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.SHELLY_PLUGS"><code class="docutils literal notranslate"><span class="pre">Model.SHELLY_PLUGS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.SHELLY_UNI"><code class="docutils literal notranslate"><span class="pre">Model.SHELLY_UNI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.TUYA_SOIL"><code class="docutils literal notranslate"><span class="pre">Model.TUYA_SOIL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.TUYA_TS0002"><code class="docutils literal notranslate"><span class="pre">Model.TUYA_TS0002</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.UNKNOWN"><code class="docutils literal notranslate"><span class="pre">Model.UNKNOWN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.ZB_AIRSENSOR"><code class="docutils literal notranslate"><span class="pre">Model.ZB_AIRSENSOR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.ZB_BUTTON"><code class="docutils literal notranslate"><span class="pre">Model.ZB_BUTTON</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.ZB_MINI"><code class="docutils literal notranslate"><span class="pre">Model.ZB_MINI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.ZB_MOTION"><code class="docutils literal notranslate"><span class="pre">Model.ZB_MOTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Model.from_str"><code class="docutils literal notranslate"><span class="pre">Model.from_str()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol"><code class="docutils literal notranslate"><span class="pre">Protocol</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.DEFAULT"><code class="docutils literal notranslate"><span class="pre">Protocol.DEFAULT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.HOMIE"><code class="docutils literal notranslate"><span class="pre">Protocol.HOMIE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.RING"><code class="docutils literal notranslate"><span class="pre">Protocol.RING</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.SHELLY"><code class="docutils literal notranslate"><span class="pre">Protocol.SHELLY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.TASMOTA"><code class="docutils literal notranslate"><span class="pre">Protocol.TASMOTA</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.Z2M"><code class="docutils literal notranslate"><span class="pre">Protocol.Z2M</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.factory.Protocol.Z2T"><code class="docutils literal notranslate"><span class="pre">Protocol.Z2T</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.processor">iotlib.processor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.processor.AvailabilityLogger"><code class="docutils literal notranslate"><span class="pre">AvailabilityLogger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.AvailabilityLogger.attach"><code class="docutils literal notranslate"><span class="pre">AvailabilityLogger.attach()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.AvailabilityLogger.process_availability_update"><code class="docutils literal notranslate"><span class="pre">AvailabilityLogger.process_availability_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.processor.AvailabilityPublisher"><code class="docutils literal notranslate"><span class="pre">AvailabilityPublisher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.AvailabilityPublisher.attach"><code class="docutils literal notranslate"><span class="pre">AvailabilityPublisher.attach()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.AvailabilityPublisher.process_availability_update"><code class="docutils literal notranslate"><span class="pre">AvailabilityPublisher.process_availability_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.processor.ButtonTrigger"><code class="docutils literal notranslate"><span class="pre">ButtonTrigger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.ButtonTrigger.compatible_with_device"><code class="docutils literal notranslate"><span class="pre">ButtonTrigger.compatible_with_device()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.ButtonTrigger.process_value_update"><code class="docutils literal notranslate"><span class="pre">ButtonTrigger.process_value_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.processor.MotionTrigger"><code class="docutils literal notranslate"><span class="pre">MotionTrigger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.MotionTrigger.compatible_with_device"><code class="docutils literal notranslate"><span class="pre">MotionTrigger.compatible_with_device()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.MotionTrigger.process_value_update"><code class="docutils literal notranslate"><span class="pre">MotionTrigger.process_value_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.processor.PropertyPublisher"><code class="docutils literal notranslate"><span class="pre">PropertyPublisher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.PropertyPublisher.compatible_with_device"><code class="docutils literal notranslate"><span class="pre">PropertyPublisher.compatible_with_device()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.PropertyPublisher.process_value_update"><code class="docutils literal notranslate"><span class="pre">PropertyPublisher.process_value_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.processor.VirtualDeviceLogger"><code class="docutils literal notranslate"><span class="pre">VirtualDeviceLogger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.VirtualDeviceLogger.compatible_with_device"><code class="docutils literal notranslate"><span class="pre">VirtualDeviceLogger.compatible_with_device()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.processor.VirtualDeviceLogger.process_value_update"><code class="docutils literal notranslate"><span class="pre">VirtualDeviceLogger.process_value_update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.utils">iotlib.utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.utils.InfiniteTimer"><code class="docutils literal notranslate"><span class="pre">InfiniteTimer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.utils.InfiniteTimer.cancel"><code class="docutils literal notranslate"><span class="pre">InfiniteTimer.cancel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.utils.InfiniteTimer.start"><code class="docutils literal notranslate"><span class="pre">InfiniteTimer.start()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.utils.Singleton"><code class="docutils literal notranslate"><span class="pre">Singleton</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib.virtualdev">iotlib.virtualdev module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.ADC"><code class="docutils literal notranslate"><span class="pre">ADC</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.ADC.get_property"><code class="docutils literal notranslate"><span class="pre">ADC.get_property()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.ADC.handle_value"><code class="docutils literal notranslate"><span class="pre">ADC.handle_value()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Alarm"><code class="docutils literal notranslate"><span class="pre">Alarm</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Alarm.get_property"><code class="docutils literal notranslate"><span class="pre">Alarm.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Button"><code class="docutils literal notranslate"><span class="pre">Button</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Button.get_property"><code class="docutils literal notranslate"><span class="pre">Button.get_property()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Button.value"><code class="docutils literal notranslate"><span class="pre">Button.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.ConductivitySensor"><code class="docutils literal notranslate"><span class="pre">ConductivitySensor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.ConductivitySensor.get_property"><code class="docutils literal notranslate"><span class="pre">ConductivitySensor.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.HumiditySensor"><code class="docutils literal notranslate"><span class="pre">HumiditySensor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.HumiditySensor.get_property"><code class="docutils literal notranslate"><span class="pre">HumiditySensor.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Level"><code class="docutils literal notranslate"><span class="pre">Level</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Level.HIGH"><code class="docutils literal notranslate"><span class="pre">Level.HIGH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Level.LOW"><code class="docutils literal notranslate"><span class="pre">Level.LOW</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Level.MEDIUM"><code class="docutils literal notranslate"><span class="pre">Level.MEDIUM</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.LightSensor"><code class="docutils literal notranslate"><span class="pre">LightSensor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.LightSensor.get_property"><code class="docutils literal notranslate"><span class="pre">LightSensor.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies"><code class="docutils literal notranslate"><span class="pre">Melodies</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.AMBULANCE"><code class="docutils literal notranslate"><span class="pre">Melodies.AMBULANCE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.DING_DONG1"><code class="docutils literal notranslate"><span class="pre">Melodies.DING_DONG1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.DING_DONG2"><code class="docutils literal notranslate"><span class="pre">Melodies.DING_DONG2</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.DING_DONG3"><code class="docutils literal notranslate"><span class="pre">Melodies.DING_DONG3</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.DING_DONG4"><code class="docutils literal notranslate"><span class="pre">Melodies.DING_DONG4</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.DOG"><code class="docutils literal notranslate"><span class="pre">Melodies.DOG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.FIRE"><code class="docutils literal notranslate"><span class="pre">Melodies.FIRE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.HORN"><code class="docutils literal notranslate"><span class="pre">Melodies.HORN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_01"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_01</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_04"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_04</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_05"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_05</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_08"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_08</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_09"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_09</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_14"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_14</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.MELO_15"><code class="docutils literal notranslate"><span class="pre">Melodies.MELO_15</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.PHONE"><code class="docutils literal notranslate"><span class="pre">Melodies.PHONE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.WAKE_UP1"><code class="docutils literal notranslate"><span class="pre">Melodies.WAKE_UP1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Melodies.WAKE_UP2"><code class="docutils literal notranslate"><span class="pre">Melodies.WAKE_UP2</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Motion"><code class="docutils literal notranslate"><span class="pre">Motion</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Motion.get_property"><code class="docutils literal notranslate"><span class="pre">Motion.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable"><code class="docutils literal notranslate"><span class="pre">Operable</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable.countdown"><code class="docutils literal notranslate"><span class="pre">Operable.countdown</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable.device_id"><code class="docutils literal notranslate"><span class="pre">Operable.device_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable.trigger_change_state"><code class="docutils literal notranslate"><span class="pre">Operable.trigger_change_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable.trigger_get_state"><code class="docutils literal notranslate"><span class="pre">Operable.trigger_get_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable.trigger_start"><code class="docutils literal notranslate"><span class="pre">Operable.trigger_start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Operable.trigger_stop"><code class="docutils literal notranslate"><span class="pre">Operable.trigger_stop()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Sensor"><code class="docutils literal notranslate"><span class="pre">Sensor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Sensor.add_observer"><code class="docutils literal notranslate"><span class="pre">Sensor.add_observer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Sensor.get_sensor_observers"><code class="docutils literal notranslate"><span class="pre">Sensor.get_sensor_observers()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Switch"><code class="docutils literal notranslate"><span class="pre">Switch</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Switch.get_property"><code class="docutils literal notranslate"><span class="pre">Switch.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Switch0"><code class="docutils literal notranslate"><span class="pre">Switch0</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Switch0.get_property"><code class="docutils literal notranslate"><span class="pre">Switch0.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Switch1"><code class="docutils literal notranslate"><span class="pre">Switch1</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.Switch1.get_property"><code class="docutils literal notranslate"><span class="pre">Switch1.get_property()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.TemperatureSensor"><code class="docutils literal notranslate"><span class="pre">TemperatureSensor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.TemperatureSensor.get_property"><code class="docutils literal notranslate"><span class="pre">TemperatureSensor.get_property()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.TemperatureSensor.handle_value"><code class="docutils literal notranslate"><span class="pre">TemperatureSensor.handle_value()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.VirtualDevice"><code class="docutils literal notranslate"><span class="pre">VirtualDevice</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.VirtualDevice.get_property"><code class="docutils literal notranslate"><span class="pre">VirtualDevice.get_property()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.VirtualDevice.handle_value"><code class="docutils literal notranslate"><span class="pre">VirtualDevice.handle_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.VirtualDevice.processor_append"><code class="docutils literal notranslate"><span class="pre">VirtualDevice.processor_append()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.VirtualDevice.set_encoder"><code class="docutils literal notranslate"><span class="pre">VirtualDevice.set_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="iotlib.html#iotlib.virtualdev.VirtualDevice.value"><code class="docutils literal notranslate"><span class="pre">VirtualDevice.value</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="iotlib.html#module-iotlib">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="userguide.html" class="btn btn-neutral float-left" title="User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="iotlib.html" class="btn btn-neutral float-right" title="iotlib package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

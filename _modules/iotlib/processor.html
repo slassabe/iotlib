@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.processor &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.processor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.processor</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module containing processor classes for handling virtual devices.</span>
+
+<span class="sd">This module provides classes for processing virtual devices. These classes </span>
+<span class="sd">implement the IVirtualDeviceProcessor interface and provide specific functionality </span>
+<span class="sd">for handling virtual devices.</span>
+
+<span class="sd">The primary class in this module is the VirtualDeviceLogger. This class logs </span>
+<span class="sd">the actions performed on virtual devices and can be used for debugging and tracking purposes.</span>
+
+<span class="sd">:Example: </span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    v_switch = Switch()</span>
+<span class="sd">    factory = CodecFactory()</span>
+<span class="sd">    codec = factory.create_instance(model=Model.ZB_MINI,</span>
+<span class="sd">                                    protocol=Protocol.Z2M,</span>
+<span class="sd">                                    device_name=&#39;SWITCH_PLUG&#39;,</span>
+<span class="sd">                                    v_switch=v_switch)</span>
+<span class="sd">    bridge = iotlib.bridge.MQTTBridge(client, codec)</span>
+<span class="sd">    # Create a logger instance for the virtual switch</span>
+<span class="sd">    logger = VirtualDeviceLogger()</span>
+<span class="sd">    v_switch.processor_append(logger)</span>
+
+<span class="sd">The example above shows how to use the VirtualDeviceLogger .</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">iotlib.devconfig</span> <span class="kn">import</span> <span class="n">ButtonValues</span>
+<span class="kn">from</span> <span class="nn">iotlib.abstracts</span> <span class="kn">import</span> <span class="p">(</span><span class="n">IAvailabilityProcessor</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">,</span> 
+                              <span class="n">Surrogate</span><span class="p">,</span> <span class="n">IVirtualDeviceProcessor</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">iotlib.virtualdev</span> <span class="kn">import</span> <span class="n">VirtualDevice</span><span class="p">,</span> <span class="n">Button</span><span class="p">,</span> <span class="n">Motion</span>
+<span class="kn">from</span> <span class="nn">iotlib.utils</span> <span class="kn">import</span> <span class="n">iotlib_logger</span>
+
+<span class="n">PUBLISH_TOPIC_BASE</span> <span class="o">=</span> <span class="s1">&#39;canonical&#39;</span>
+
+
+<div class="viewcode-block" id="VirtualDeviceLogger">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.VirtualDeviceLogger">[docs]</a>
+<span class="k">class</span> <span class="nc">VirtualDeviceLogger</span><span class="p">(</span><span class="n">IVirtualDeviceProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Logs updates from virtual devices.</span>
+
+<span class="sd">    This processor logs a debug message when a virtual device value is updated. It implements the </span>
+<span class="sd">    IVirtualDeviceProcessor interface.</span>
+
+<span class="sd">    :ivar logger: The logger instance used to log debug messages.</span>
+<span class="sd">    :vartype logger: logging.Logger</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the VirtualDeviceLogger class.</span>
+
+<span class="sd">        This method initializes a new instance of the VirtualDeviceLogger class. If the debug parameter is set to True, </span>
+<span class="sd">        the logger will log debug messages.</span>
+
+<span class="sd">        :param debug: A flag indicating whether to log debug messages, defaults to False.</span>
+<span class="sd">        :type debug: bool, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_debug</span> <span class="o">=</span> <span class="n">debug</span>
+
+<div class="viewcode-block" id="VirtualDeviceLogger.process_value_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.VirtualDeviceLogger.process_value_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_value_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from VirtualDeviceProcessor</span>
+        <span class="n">_log_fn</span> <span class="o">=</span> <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">info</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug</span> <span class="k">else</span> <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span>
+        <span class="n">_log_fn</span><span class="p">(</span><span class="s1">&#39;-&gt; Logging virtual device (friendly_name : &quot;</span><span class="si">%s</span><span class="s1">&quot; - property : &quot;</span><span class="si">%s</span><span class="s1">&quot; - value : &quot;</span><span class="si">%s</span><span class="s1">&quot;)&#39;</span><span class="p">,</span>
+                <span class="n">v_dev</span><span class="o">.</span><span class="n">friendly_name</span><span class="p">,</span>
+                <span class="n">v_dev</span><span class="o">.</span><span class="n">get_property</span><span class="p">(),</span>
+                <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VirtualDeviceLogger.compatible_with_device">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.VirtualDeviceLogger.compatible_with_device">[docs]</a>
+    <span class="k">def</span> <span class="nf">compatible_with_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Define device compatibility for this processor</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ButtonTrigger">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.ButtonTrigger">[docs]</a>
+<span class="k">class</span> <span class="nc">ButtonTrigger</span><span class="p">(</span><span class="n">IVirtualDeviceProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This processor triggers button actions on virtual devices when their state changes. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">,</span>
+                 <span class="n">countdown_long</span><span class="o">=</span><span class="mi">60</span><span class="o">*</span><span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the ButtonTrigger class.</span>
+
+<span class="sd">        This method initializes a new instance of the ButtonTrigger class with a given button map. The button map is a </span>
+<span class="sd">        dictionary mapping button states to actions.</span>
+
+<span class="sd">        :param button_map: A dictionary mapping button states to actions.</span>
+<span class="sd">        :type button_map: Dict[str, Callable]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span> <span class="o">=</span> <span class="n">mqtt_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_countdown_long</span> <span class="o">=</span> <span class="n">countdown_long</span>
+
+<div class="viewcode-block" id="ButtonTrigger.compatible_with_device">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.ButtonTrigger.compatible_with_device">[docs]</a>
+    <span class="k">def</span> <span class="nf">compatible_with_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Define device compatibility for this processor</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v_dev</span><span class="p">,</span> <span class="n">Button</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="ButtonTrigger.process_value_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.ButtonTrigger.process_value_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_value_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Processes a value update from a virtual device.</span>
+
+<span class="sd">        This method takes a virtual device as input and triggers the appropriate action based on the device&#39;s state.</span>
+
+<span class="sd">        :param v_dev: The virtual device whose value has been updated.</span>
+<span class="sd">        :type v_dev: VirtualDevice</span>
+
+<span class="sd">        Actions:</span>
+<span class="sd">            - single press: Start registered switches with default countdown.</span>
+<span class="sd">            - double press: Start and stop registered switches for countdown_long.</span>
+<span class="sd">            - long press: Stop registered switches.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="n">v_dev</span><span class="si">}</span><span class="s1">] : event &quot;</span><span class="si">{</span><span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&quot; occured&#39;</span>
+        <span class="k">if</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> -&gt; discarded&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">ButtonValues</span><span class="o">.</span><span class="n">SINGLE_ACTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> -&gt; &quot;start_and_stop&quot; with short period&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_sw</span> <span class="ow">in</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">get_sensor_observers</span><span class="p">():</span>
+                <span class="n">_sw</span><span class="o">.</span><span class="n">trigger_start</span><span class="p">(</span><span class="n">mqtt_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">ButtonValues</span><span class="o">.</span><span class="n">DOUBLE_ACTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> -&gt; &quot;start_and_stop&quot; with long period&#39;</span><span class="p">,</span>
+                               <span class="n">prefix</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_sw</span> <span class="ow">in</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">get_sensor_observers</span><span class="p">():</span>
+                <span class="n">_sw</span><span class="o">.</span><span class="n">trigger_start</span><span class="p">(</span><span class="n">mqtt_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="p">,</span>
+                                  <span class="n">on_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_countdown_long</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">ButtonValues</span><span class="o">.</span><span class="n">LONG_ACTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> -&gt; &quot;trigger_stop&quot;&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_sw</span> <span class="ow">in</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">get_sensor_observers</span><span class="p">():</span>
+                <span class="n">_sw</span><span class="o">.</span><span class="n">trigger_stop</span><span class="p">(</span><span class="n">mqtt_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> : action unknown &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
+                                <span class="n">prefix</span><span class="p">,</span>
+                                <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MotionTrigger">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.MotionTrigger">[docs]</a>
+<span class="k">class</span> <span class="nc">MotionTrigger</span><span class="p">(</span><span class="n">IVirtualDeviceProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A class that handles motion sensor state changes and triggers registered switches </span>
+<span class="sd">    when occupancy is detected.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a MotionTrigger instance.</span>
+
+<span class="sd">        :param mqtt_service: The MQTT service to be used for communication.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span> <span class="o">=</span> <span class="n">mqtt_service</span>
+
+<div class="viewcode-block" id="MotionTrigger.compatible_with_device">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.MotionTrigger.compatible_with_device">[docs]</a>
+    <span class="k">def</span> <span class="nf">compatible_with_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Define device compatibility for this processor</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v_dev</span><span class="p">,</span> <span class="n">Motion</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="MotionTrigger.process_value_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.MotionTrigger.process_value_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_value_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process the value update of a virtual device.</span>
+
+<span class="sd">        :param v_dev: The virtual device whose value has been updated.</span>
+<span class="sd">        :type v_dev: VirtualDevice</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] occupancy changed to &quot;</span><span class="si">%s</span><span class="s1">&quot; &#39;</span>
+                               <span class="s1">&#39;-&gt; &quot;start_and_stop&quot; on registered switch&#39;</span><span class="p">,</span>
+                               <span class="n">v_dev</span><span class="o">.</span><span class="n">friendly_name</span><span class="p">,</span>
+                               <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_sw</span> <span class="ow">in</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">get_sensor_observers</span><span class="p">():</span>
+                <span class="n">_sw</span><span class="o">.</span><span class="n">trigger_start</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="p">,</span>
+                                  <span class="n">on_time</span><span class="o">=</span><span class="n">_sw</span><span class="o">.</span><span class="n">countdown</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] occupancy changed to &quot;</span><span class="si">%s</span><span class="s1">&quot; &#39;</span>
+                                <span class="s1">&#39;-&gt; nothing to do (timer will stop switch)&#39;</span><span class="p">,</span>
+                                <span class="n">v_dev</span><span class="o">.</span><span class="n">friendly_name</span><span class="p">,</span>
+                                <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PropertyPublisher">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.PropertyPublisher">[docs]</a>
+<span class="k">class</span> <span class="nc">PropertyPublisher</span><span class="p">(</span><span class="n">IVirtualDeviceProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class that publishes property updates to an MQTT broker.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">,</span>
+                 <span class="n">publish_topic_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the class.</span>
+
+<span class="sd">        This method initializes a new instance of the class with a given MQTT service </span>
+<span class="sd">        and an optional publish topic base.</span>
+
+<span class="sd">        :param mqtt_service: The MQTT service to be used for communication.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        :param publish_topic_base: The base topic for publishing messages. Default base topic is </span>
+<span class="sd">            used if set to None.</span>
+<span class="sd">        :type publish_topic_base: str | None, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span> <span class="o">=</span> <span class="n">mqtt_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_publish_topic_base</span> <span class="o">=</span> <span class="n">publish_topic_base</span> <span class="ow">or</span> <span class="n">PUBLISH_TOPIC_BASE</span>
+
+<div class="viewcode-block" id="PropertyPublisher.process_value_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.PropertyPublisher.process_value_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_value_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Publishes the updated value of a virtual device&#39;s property to the MQTT broker.</span>
+
+<span class="sd">        :param v_dev: The virtual device whose value has been updated.</span>
+<span class="sd">        :type v_dev: VirtualDevice</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_property_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_publish_topic_base</span>
+        <span class="n">_property_topic</span> <span class="o">+=</span> <span class="s1">&#39;/device/&#39;</span> <span class="o">+</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">friendly_name</span>
+        <span class="n">_property_topic</span> <span class="o">+=</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">get_property</span><span class="p">()</span><span class="o">.</span><span class="n">property_node</span>
+        <span class="n">_property_topic</span> <span class="o">+=</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">v_dev</span><span class="o">.</span><span class="n">get_property</span><span class="p">()</span><span class="o">.</span><span class="n">property_name</span>
+
+        <span class="n">_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span>
+        <span class="n">_client</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">_property_topic</span><span class="p">,</span>
+                        <span class="n">v_dev</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                        <span class="n">qos</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">retain</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PropertyPublisher.compatible_with_device">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.PropertyPublisher.compatible_with_device">[docs]</a>
+    <span class="k">def</span> <span class="nf">compatible_with_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="n">VirtualDevice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Define device compatibility for this processor</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AvailabilityLogger">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.AvailabilityLogger">[docs]</a>
+<span class="k">class</span> <span class="nc">AvailabilityLogger</span><span class="p">(</span><span class="n">IAvailabilityProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs availability updates of devices.</span>
+
+<span class="sd">    This processor logs a message when a device&#39;s </span>
+<span class="sd">    availability changes.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_debug</span> <span class="o">=</span> <span class="n">debug</span>
+
+<div class="viewcode-block" id="AvailabilityLogger.attach">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.AvailabilityLogger.attach">[docs]</a>
+    <span class="k">def</span> <span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bridge</span><span class="p">:</span> <span class="n">Surrogate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from AvailabilityProcessor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_name</span> <span class="o">=</span> <span class="n">bridge</span><span class="o">.</span><span class="n">codec</span><span class="o">.</span><span class="n">device_name</span></div>
+
+
+<div class="viewcode-block" id="AvailabilityLogger.process_availability_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.AvailabilityLogger.process_availability_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_availability_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">availability</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from IAvailabilityProcessor</span>
+        <span class="k">if</span> <span class="n">availability</span><span class="p">:</span>
+            <span class="n">_log_fn</span> <span class="o">=</span> <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">info</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug</span> <span class="k">else</span> <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span>
+            <span class="n">_log_fn</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] is available&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] is unavailable&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_name</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AvailabilityPublisher">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.AvailabilityPublisher">[docs]</a>
+<span class="k">class</span> <span class="nc">AvailabilityPublisher</span><span class="p">(</span><span class="n">IAvailabilityProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Processes availability updates from MQTTBridge.</span>
+
+<span class="sd">    This processor handles availability updates from a MQTTBridge </span>
+<span class="sd">    instance. It publishes the availability status to a MQTT topic.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">publish_topic_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">publish_topic_base</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;publish_topic_base must be string, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">publish_topic_base</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_topic</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_publish_topic_base</span> <span class="o">=</span> <span class="n">publish_topic_base</span> <span class="ow">or</span> <span class="n">PUBLISH_TOPIC_BASE</span>
+
+<div class="viewcode-block" id="AvailabilityPublisher.attach">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.AvailabilityPublisher.attach">[docs]</a>
+    <span class="k">def</span> <span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bridge</span><span class="p">:</span> <span class="n">Surrogate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from IAvailabilityProcessor</span>
+        <span class="n">_device_name</span> <span class="o">=</span> <span class="n">bridge</span><span class="o">.</span><span class="n">codec</span><span class="o">.</span><span class="n">device_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span> <span class="o">=</span> <span class="n">bridge</span><span class="o">.</span><span class="n">mqtt_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_topic</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_publish_topic_base</span><span class="si">}</span><span class="s2">/device/</span><span class="si">{</span><span class="n">_device_name</span><span class="si">}</span><span class="s2">/$state&quot;</span>
+        <span class="n">_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span>
+        <span class="n">_client</span><span class="o">.</span><span class="n">will_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state_topic</span><span class="p">,</span>
+                         <span class="s1">&#39;lost&#39;</span><span class="p">,</span>
+                         <span class="n">qos</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">retain</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AvailabilityPublisher.process_availability_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.processor.AvailabilityPublisher.process_availability_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_availability_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">availability</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from IAvailabilityProcessor</span>
+        <span class="k">if</span> <span class="n">availability</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_state_str</span> <span class="o">=</span> <span class="s1">&#39;init&#39;</span>
+        <span class="k">elif</span> <span class="n">availability</span><span class="p">:</span>
+            <span class="n">_state_str</span> <span class="o">=</span> <span class="s1">&#39;ready&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_state_str</span> <span class="o">=</span> <span class="s1">&#39;disconnected&#39;</span>
+        <span class="n">_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span>
+        <span class="n">_client</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state_topic</span><span class="p">,</span>
+                        <span class="n">_state_str</span><span class="p">,</span>
+                        <span class="n">qos</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">retain</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

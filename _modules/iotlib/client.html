@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.client &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.client</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.client</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains the MQTTClient class which implements the IMQTTService interface.</span>
+
+<span class="sd">The MQTTClient class is responsible for handling MQTT-specific operations. It uses the </span>
+<span class="sd">paho.mqtt.client library for MQTT operations and provides methods for connecting, disconnecting, </span>
+<span class="sd">and handling MQTT events.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">dataclasses</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">certifi</span>
+<span class="kn">import</span> <span class="nn">paho.mqtt.client</span> <span class="k">as</span> <span class="nn">mqtt</span>
+
+<span class="kn">from</span> <span class="nn">iotlib.abstracts</span> <span class="kn">import</span> <span class="n">IMQTTService</span>
+<span class="kn">from</span> <span class="nn">iotlib.utils</span> <span class="kn">import</span> <span class="n">iotlib_logger</span>
+
+
+<div class="viewcode-block" id="MQTTClient">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+<span class="k">class</span> <span class="nc">MQTTClient</span><span class="p">(</span><span class="n">IMQTTService</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    MQTTClient is a class that implements the IMQTTService interface.</span>
+
+<span class="sd">    This class is responsible for handling MQTT-specific operations. It uses the paho.mqtt.client </span>
+<span class="sd">    library for MQTT operations and provides methods for connecting, disconnecting, and handling </span>
+<span class="sd">    MQTT events.</span>
+
+<span class="sd">    :ivar client: The MQTT client instance.</span>
+<span class="sd">    :vartype client: mqtt.Client</span>
+<span class="sd">    :ivar host: The MQTT broker host.</span>
+<span class="sd">    :vartype host: str</span>
+<span class="sd">    :ivar port: The MQTT broker port.</span>
+<span class="sd">    :vartype port: int</span>
+<span class="sd">    :ivar keepalive: The keepalive timeout value for the client.</span>
+<span class="sd">    :vartype keepalive: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1883</span>
+    <span class="n">user_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">user_pwd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">keepalive</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span>
+    <span class="n">tls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">clean_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the `Client` class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected client_id to be a str, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected hostname to be a str, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected port to be an int, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected user_name to be a str or None, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_pwd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_pwd</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected user_pwd to be a str or None, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_pwd</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keepalive</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected keepalive to be an int, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keepalive</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tls</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected tls to be a bool, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tls</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clean_start</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected clean_start to be a bool, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clean_start</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_started</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_forever_used</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span> <span class="o">=</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">mqtt</span><span class="o">.</span><span class="n">CallbackAPIVersion</span><span class="o">.</span><span class="n">VERSION2</span><span class="p">,</span>
+                                        <span class="n">client_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
+                                        <span class="n">userdata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">protocol</span><span class="o">=</span><span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTv5</span><span class="p">,</span>
+                                        <span class="n">transport</span><span class="o">=</span><span class="s2">&quot;tcp&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tls</span><span class="p">:</span>
+            <span class="c1"># enable TLS for secure connection</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">tls_set</span><span class="p">(</span><span class="n">certifi</span><span class="o">.</span><span class="n">where</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">username_pw_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_name</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">user_pwd</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">on_connect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_on_connect</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">on_disconnect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_on_disconnect</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_connect_handlers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_disconnect_handlers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">enable_logger</span><span class="p">(</span><span class="n">iotlib_logger</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mqtt_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">:</span>
+        <span class="c1"># Implement IMQTTService interface</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">connected</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the connection status of the client.</span>
+
+<span class="sd">        :return: True if the client is connected, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">started</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the current status of the client.</span>
+
+<span class="sd">        :return: True if the client has started, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_started</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">_client_id</span><span class="si">}</span><span class="s1">&quot;&gt;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> obj.  &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">_client_id</span><span class="si">}</span><span class="s1">&quot; | &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s1">&quot;&gt;&#39;</span>
+
+<div class="viewcode-block" id="MQTTClient.loop_forever">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.loop_forever">[docs]</a>
+    <span class="k">def</span> <span class="nf">loop_forever</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Start a new thread to run the network loop. &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop_forever_used</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">loop_forever</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MQTTClient.start">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.start">[docs]</a>
+    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">mqtt</span><span class="o">.</span><span class="n">Properties</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Starts the client MQTT network loop.</span>
+
+<span class="sd">        Connects the client if not already connected, starts the network loop</span>
+
+<span class="sd">        :param properties: The properties to be used for the CONNECT message.</span>
+<span class="sd">        :type properties: Optional[mqtt.Properties]</span>
+<span class="sd">        :return: The result of calling client.loop_start().</span>
+<span class="sd">        :rtype: mqtt.MQTTErrorCode</span>
+<span class="sd">        :raises RuntimeError: If loop_start fails or connection is refused.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">loop_start</span><span class="p">()</span> <span class="o">!=</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="o">.</span><span class="n">MQTT_ERR_SUCCESS</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] loop_start failed : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="p">,</span>
+                                    <span class="n">mqtt</span><span class="o">.</span><span class="n">error_string</span><span class="p">(</span><span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;loop_start failed&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_started</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">return</span> <span class="n">_rc</span>
+        <span class="k">except</span> <span class="ne">ConnectionRefusedError</span> <span class="k">as</span> <span class="n">exp</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] cannot connect host </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="n">exp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] connection refused&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exp</span></div>
+
+
+<div class="viewcode-block" id="MQTTClient.stop">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.stop">[docs]</a>
+    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stops the client MQTT connection.</span>
+
+<span class="sd">        Stops the async loop if it was not already running. Calls disconnect() </span>
+<span class="sd">        to close the client connection.</span>
+
+<span class="sd">        :return: The result of calling disconnect().</span>
+<span class="sd">        :rtype: mqtt.MQTTErrorCode</span>
+<span class="sd">        :raises RuntimeError: If loop_stop fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Unable to stop disconnected client&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;loop_stop failed&#39;</span><span class="p">)</span>
+        <span class="n">_rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop_forever_used</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">loop_stop</span><span class="p">()</span> <span class="o">!=</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="o">.</span><span class="n">MQTT_ERR_SUCCESS</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] loop_stop failed : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="p">,</span>
+                                    <span class="n">mqtt</span><span class="o">.</span><span class="n">error_string</span><span class="p">(</span><span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;loop_stop failed&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_started</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">_rc</span></div>
+
+
+<div class="viewcode-block" id="MQTTClient.connect">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.connect">[docs]</a>
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">mqtt</span><span class="o">.</span><span class="n">Properties</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+        <span class="c1"># Implement IMQTTService interface</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+                                            <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+                                            <span class="n">keepalive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">keepalive</span><span class="p">,</span>
+                                            <span class="n">clean_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clean_start</span><span class="p">,</span>
+                                            <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+                                            <span class="p">)</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Connection request returns : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="p">,</span> <span class="n">_rc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_rc</span>
+        <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span> <span class="k">as</span> <span class="n">exp</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] cannot connect host </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="n">exp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;connect failed&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exp</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_handle_on_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                           <span class="n">client</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">,</span>
+                           <span class="n">userdata</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                           <span class="n">flags</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">ConnectFlags</span><span class="p">,</span>
+                           <span class="n">reason_code</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">ReasonCode</span><span class="p">,</span>
+                           <span class="n">properties</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Properties</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Define the default connect callback implementation. </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">reason_code</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">on_connect_handler</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_connect_handlers</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">on_connect_handler</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span>
+                                   <span class="n">reason_code</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Failed handling connect </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MQTTClient.connect_handler_add">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.connect_handler_add">[docs]</a>
+    <span class="k">def</span> <span class="nf">connect_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement IMQTTService interface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_connect_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MQTTClient.disconnect">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.disconnect">[docs]</a>
+    <span class="k">def</span> <span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+        <span class="c1"># Implement IMQTTService interface</span>
+        <span class="n">_rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Disconnection request returns : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="p">,</span> <span class="n">_rc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_rc</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_handle_on_disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                              <span class="n">client</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">,</span>
+                              <span class="n">userdata</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                              <span class="n">disconnect_flags</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">DisconnectFlags</span><span class="p">,</span>
+                              <span class="n">reason_code</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">ReasonCode</span><span class="p">,</span>
+                              <span class="n">properties</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Properties</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Define the default disconnect callback implementation. </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">on_disconnect_handler</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_disconnect_handlers</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">on_disconnect_handler</span><span class="p">(</span><span class="n">client</span><span class="p">,</span>
+                                      <span class="n">userdata</span><span class="p">,</span>
+                                      <span class="n">disconnect_flags</span><span class="p">,</span>
+                                      <span class="n">reason_code</span><span class="p">,</span>
+                                      <span class="n">properties</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Failed handling disconnect </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MQTTClient.disconnect_handler_add">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClient.disconnect_handler_add">[docs]</a>
+    <span class="k">def</span> <span class="nf">disconnect_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement IMQTTService interface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_disconnect_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MQTTClientHelper">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClientHelper">[docs]</a>
+<span class="k">class</span> <span class="nc">MQTTClientHelper</span><span class="p">(</span><span class="n">MQTTClient</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides additional helper methods for MQTT operations, not directly related to the </span>
+<span class="sd">    IMQTTService interface.</span>
+<span class="sd">    Could evolve to a more generic class in the future.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">on_subscribe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_on_subscribe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">on_message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_on_message</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_message_callbacks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_subscribe_handlers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">_handle_on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">,</span>
+                           <span class="n">userdata</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                           <span class="n">message</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Define the message received callback implementation.</span>
+
+<span class="sd">        client:     the client instance for this callback</span>
+<span class="sd">        userdata:   the private user data as set in Client() or userdata_set()</span>
+<span class="sd">        message:    the received message with members : topic, payload, qos, retain</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">on_message_handler</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_message_callbacks</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">on_message_handler</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Exception occured : </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MQTTClientHelper.default_message_callback_add">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClientHelper.default_message_callback_add">[docs]</a>
+    <span class="k">def</span> <span class="nf">default_message_callback_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a callback function to the list of default message callbacks.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        - callback (Callable): The callback function to be added.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_message_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MQTTClientHelper.subscribe">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClientHelper.subscribe">[docs]</a>
+    <span class="k">def</span> <span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Subscribes to the specified topic. &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_handle_on_subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">client</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">,</span>
+                             <span class="n">userdata</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                             <span class="n">mid</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                             <span class="n">reason_code_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">mqtt</span><span class="o">.</span><span class="n">ReasonCode</span><span class="p">],</span>
+                             <span class="n">properties</span><span class="p">:</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Properties</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">on_subscribe_handler</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_subscribe_handlers</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">on_subscribe_handler</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">mid</span><span class="p">,</span>
+                                     <span class="n">reason_code_list</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Failed handling subscribe </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MQTTClientHelper.subscribe_handler_add">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClientHelper.subscribe_handler_add">[docs]</a>
+    <span class="k">def</span> <span class="nf">subscribe_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a handler function to the list of subscribe event handlers.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            handler (Callable): The handler function to be added.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_subscribe_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MQTTClientHelper.publish">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.client.MQTTClientHelper.publish">[docs]</a>
+    <span class="k">def</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Publish a message on a topic. &#39;&#39;&#39;</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Publish on topic : </span><span class="si">%s</span><span class="s1"> - payload : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mqtt_client</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

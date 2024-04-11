@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.abstracts &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.abstracts</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.abstracts</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains abstract base classes for various components of an IoT system.</span>
+
+<span class="sd">These classes define the common interfaces for MQTT services, message encoders and decoders,</span>
+<span class="sd">device surrogates, discovery and availability processors, virtual device processors, and devices.</span>
+
+<span class="sd">Each class has its own specific methods that need to be implemented in any concrete subclasses.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">import</span> <span class="nn">paho.mqtt.client</span> <span class="k">as</span> <span class="nn">mqtt</span>
+
+<div class="viewcode-block" id="IMQTTService">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IMQTTService">[docs]</a>
+<span class="k">class</span> <span class="nc">IMQTTService</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;    Interface for the MQTT services used by Surrogate classes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">mqtt_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">Client</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the MQTT client object.</span>
+
+<span class="sd">        :return: The MQTT client object.</span>
+<span class="sd">        :rtype: mqtt.Client</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IMQTTService.connect">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IMQTTService.connect">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">mqtt</span><span class="o">.</span><span class="n">Properties</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect to a MQTT remote broker.</span>
+
+<span class="sd">        :param properties: The properties for the MQTT connection, defaults to None</span>
+<span class="sd">        :type properties: Optional[mqtt.Properties]</span>
+<span class="sd">        :return: The MQTT error code for the connection attempt.</span>
+<span class="sd">        :rtype: mqtt.MQTTErrorCode</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IMQTTService.disconnect">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IMQTTService.disconnect">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mqtt</span><span class="o">.</span><span class="n">MQTTErrorCode</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disconnect from a MQTT remote broker.</span>
+
+<span class="sd">        :return: The MQTT error code for the disconnection attempt.</span>
+<span class="sd">        :rtype: mqtt.MQTTErrorCode</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IMQTTService.connect_handler_add">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IMQTTService.connect_handler_add">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">connect_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a connect event handler.</span>
+
+<span class="sd">        :param handler: The callback function to handle the connect event.</span>
+<span class="sd">        :type handler: Callable</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IMQTTService.disconnect_handler_add">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IMQTTService.disconnect_handler_add">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">disconnect_handler_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a disconnect event handler.</span>
+
+<span class="sd">        :param handler: The callback function to handle the disconnect event.</span>
+<span class="sd">        :type handler: Callable</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="IEncoder">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IEncoder">[docs]</a>
+<span class="k">class</span> <span class="nc">IEncoder</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface for encoding messages to send on MQTT to IoT devices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IEncoder.get_state_request">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IEncoder.get_state_request">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_state_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current state request for a device.</span>
+
+<span class="sd">        :param device_id: The device ID to get the state request for.</span>
+<span class="sd">        :type device_id: Optional[int]</span>
+<span class="sd">        :return: A tuple containing the state request topic and payload or None if such a request </span>
+<span class="sd">            is not accepted.</span>
+<span class="sd">        :rtype: tuple[str, str]</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IEncoder.is_pulse_request_allowed">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IEncoder.is_pulse_request_allowed">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">is_pulse_request_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a pulse request is allowed for a device.</span>
+
+<span class="sd">        :param device_id: The device ID to check if a pulse request is allowed for.</span>
+<span class="sd">        :type device_id: Optional[int]</span>
+<span class="sd">        :return: True if a pulse request is allowed, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IEncoder.change_state_request">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IEncoder.change_state_request">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">change_state_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_on</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">device_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs a change state request for the device.</span>
+
+<span class="sd">        :param is_on: Indicates whether the device should be turned on or off.</span>
+<span class="sd">        :type is_on: bool</span>
+<span class="sd">        :param device_id: The ID of the device. If None, the request is for all devices.</span>
+<span class="sd">        :type device_id: Optional[int]</span>
+<span class="sd">        :return: A tuple containing the MQTT topic and the payload in JSON format.</span>
+<span class="sd">        :rtype: tuple[str, str]</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ICodec">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.ICodec">[docs]</a>
+<span class="k">class</span> <span class="nc">ICodec</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Interface for decoding messages received on MQTT to IoT devices&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="ICodec.decode_avail_pl">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.ICodec.decode_avail_pl">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">decode_avail_pl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decode message received on topic dedicated to availability.</span>
+
+<span class="sd">        :param payload: The payload of the message received on the availability topic.</span>
+<span class="sd">        :type payload: str</span>
+<span class="sd">        :return: True if the decoding is successful, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ICodec.get_availability_topic">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.ICodec.get_availability_topic">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_availability_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the availability topic the client must subscribe.</span>
+
+<span class="sd">        :return: The topic dedicated to handle availability messages.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Surrogate">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.Surrogate">[docs]</a>
+<span class="k">class</span> <span class="nc">Surrogate</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A surrogate class that wraps an MQTT client and codec.</span>
+
+<span class="sd">    This class acts as a surrogate for devices that use the given</span>
+<span class="sd">    MQTT client and codec for communication. It can handle</span>
+<span class="sd">    encoding/decoding messages to interact with real devices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">,</span>
+                 <span class="n">codec</span><span class="p">:</span> <span class="n">ICodec</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_service</span> <span class="o">=</span> <span class="n">mqtt_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">codec</span> <span class="o">=</span> <span class="n">codec</span></div>
+
+
+
+<div class="viewcode-block" id="IDiscoveryProcessor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IDiscoveryProcessor">[docs]</a>
+<span class="k">class</span> <span class="nc">IDiscoveryProcessor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interface for discovery processors.</span>
+
+<span class="sd">    This interface defines the methods that a discovery processor should implement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IDiscoveryProcessor.process_discovery_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IDiscoveryProcessor.process_discovery_update">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">process_discovery_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">devices</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a discovery update.</span>
+
+<span class="sd">        This method is called when a discovery update is received. It should handle the</span>
+<span class="sd">        list of devices and perform any necessary processing.</span>
+
+<span class="sd">        :param devices: The list of devices discovered.</span>
+<span class="sd">        :type devices: list</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="IAvailabilityProcessor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IAvailabilityProcessor">[docs]</a>
+<span class="k">class</span> <span class="nc">IAvailabilityProcessor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface for availability processors.</span>
+
+<span class="sd">    Subclasses must implement the `process_availability_update` method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IAvailabilityProcessor.attach">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IAvailabilityProcessor.attach">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bridge</span><span class="p">:</span> <span class="n">Surrogate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Attach the processor to a bridge instance.</span>
+
+<span class="sd">        :param bridge: The bridge instance to attach to.</span>
+<span class="sd">        :type bridge: Surrogate</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IAvailabilityProcessor.process_availability_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IAvailabilityProcessor.process_availability_update">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">process_availability_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">availability</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle an update to the device availability status.</span>
+
+<span class="sd">        :param availability: The new availability status of the device.</span>
+<span class="sd">        :type availability: bool</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="IVirtualDeviceProcessor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IVirtualDeviceProcessor">[docs]</a>
+<span class="k">class</span> <span class="nc">IVirtualDeviceProcessor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface for virtual device processors.</span>
+
+<span class="sd">    This class defines the interface for processing updates from virtual devices.</span>
+<span class="sd">    Child classes should implement the `process_value_update` method to handle</span>
+<span class="sd">    specific processing logic for the device type.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IVirtualDeviceProcessor.process_value_update">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IVirtualDeviceProcessor.process_value_update">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">process_value_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="nb">any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle an update from a virtual device.</span>
+
+<span class="sd">        This method is called when a value changes on a virtual </span>
+<span class="sd">        device. It should be implemented in child classes to </span>
+<span class="sd">        handle specific processing logic for the device type.</span>
+
+<span class="sd">        :param v_dev: The virtual device instance.</span>
+<span class="sd">        :type v_dev: any</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IVirtualDeviceProcessor.compatible_with_device">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IVirtualDeviceProcessor.compatible_with_device">[docs]</a>
+    <span class="k">def</span> <span class="nf">compatible_with_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_dev</span><span class="p">:</span> <span class="nb">any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="c1"># pylint: disable=unused-argument</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if the given virtual device is compatible with this processor.</span>
+
+<span class="sd">        :param v_dev: The virtual device to check compatibility with.</span>
+<span class="sd">        :type v_dev: any</span>
+<span class="sd">        :return: True if the virtual device is compatible, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+<div class="viewcode-block" id="ResultType">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.ResultType">[docs]</a>
+<span class="k">class</span> <span class="nc">ResultType</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enum representing the result types.</span>
+
+<span class="sd">    :cvar IGNORE: Represents an ignored result.</span>
+<span class="sd">    :cvar SUCCESS: Represents a successful result.</span>
+<span class="sd">    :cvar ECHO: Represents a value appearing twice.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">IGNORE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">SUCCESS</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ECHO</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+
+<div class="viewcode-block" id="IVirtualDevice">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IVirtualDevice">[docs]</a>
+<span class="k">class</span> <span class="nc">IVirtualDevice</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface for virtual devices in the IoT system.</span>
+
+<span class="sd">    This class defines the common interface for all devices in the system.</span>
+<span class="sd">    Subclasses must implement the `handle_value` and `processor_append` methods.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IVirtualDevice.handle_value">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IVirtualDevice.handle_value">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">handle_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResultType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handles the received value and performs necessary actions.</span>
+
+<span class="sd">        :param value: The received value.</span>
+<span class="sd">        :type value: Any</span>
+<span class="sd">        :return: The result of handling the value.</span>
+<span class="sd">        :rtype: ResultType</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="IVirtualDevice.processor_append">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.abstracts.IVirtualDevice.processor_append">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">processor_append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processor</span><span class="p">:</span> <span class="n">IVirtualDeviceProcessor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Appends a VirtualDeviceProcessor to the list of processors.</span>
+
+<span class="sd">        :param processor: The VirtualDeviceProcessor to append.</span>
+<span class="sd">        :type processor: VirtualDeviceProcessor</span>
+<span class="sd">        :raises TypeError: If the processor is not an instance of VirtualDeviceProcessor.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

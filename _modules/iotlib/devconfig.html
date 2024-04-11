@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.devconfig &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.devconfig</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.devconfig</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module defines the `PropertyConfig` and `ButtonValues` enums.</span>
+
+<span class="sd">The `PropertyConfig` enum defines property names, types, and owning nodes for different </span>
+<span class="sd">virtual device types. </span>
+<span class="sd">It allows generic access to property configuration details.</span>
+
+<span class="sd">The `ButtonValues` enum defines string constants for possible button actions like single </span>
+<span class="sd">press, double press, long press etc. Using this enum allows code to refer to button actions </span>
+<span class="sd">through constant values rather than string literals.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+
+
+<div class="viewcode-block" id="PropertyConfig">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.devconfig.PropertyConfig">[docs]</a>
+<span class="k">class</span> <span class="nc">PropertyConfig</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Defines property name enums for virtual devices.</span>
+
+<span class="sd">    This enum defines property names, types, and owning node </span>
+<span class="sd">    for different virtual device types. Allows generic access </span>
+<span class="sd">    to property configuration details.</span>
+
+<span class="sd">    :ivar ALARM_PROPERTY: Represents the &#39;alarm.power&#39; property of type bool.</span>
+<span class="sd">    :ivar ADC_PROPERTY: Represents the &#39;sensor.voltage&#39; property of type float.</span>
+<span class="sd">    :ivar BUTTON_PROPERTY: Represents the &#39;sensor.action&#39; property of type str.</span>
+<span class="sd">    :ivar CONDUCTIVITY_PROPERTY: Represents the &#39;sensor.conductivity&#39; property of type int.</span>
+<span class="sd">    :ivar HUMIDITY_PROPERTY: Represents the &#39;sensor.humidity&#39; property of type int.</span>
+<span class="sd">    :ivar LIGHT_PROPERTY: Represents the &#39;sensor.light&#39; property of type int.</span>
+<span class="sd">    :ivar MOTION_PROPERTY: Represents the &#39;sensor.occupancy&#39; property of type bool.</span>
+<span class="sd">    :ivar SWITCH_PROPERTY: Represents the &#39;switch.power&#39; property of type bool.</span>
+<span class="sd">    :ivar SWITCH0_PROPERTY: Represents the &#39;switch0.power&#39; property of type bool.</span>
+<span class="sd">    :ivar SWITCH1_PROPERTY: Represents the &#39;switch1.power&#39; property of type bool.</span>
+<span class="sd">    :ivar TEMPERATURE_PROPERTY: Represents the &#39;sensor.temperature&#39; property of type float.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ALARM_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;alarm.power&#39;</span><span class="p">,</span> <span class="nb">bool</span>
+    <span class="n">ADC_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.voltage&#39;</span><span class="p">,</span> <span class="nb">float</span>
+    <span class="n">BUTTON_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.action&#39;</span><span class="p">,</span> <span class="nb">str</span>
+    <span class="n">CONDUCTIVITY_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.conductivity&#39;</span><span class="p">,</span> <span class="nb">int</span>
+    <span class="n">HUMIDITY_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.humidity&#39;</span><span class="p">,</span> <span class="nb">int</span>
+    <span class="n">LIGHT_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.light&#39;</span><span class="p">,</span> <span class="nb">int</span>
+    <span class="n">MOTION_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.occupancy&#39;</span><span class="p">,</span> <span class="nb">bool</span>
+    <span class="n">SWITCH_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;switch.power&#39;</span><span class="p">,</span> <span class="nb">bool</span>
+    <span class="n">SWITCH0_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;switch0.power&#39;</span><span class="p">,</span> <span class="nb">bool</span>
+    <span class="n">SWITCH1_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;switch1.power&#39;</span><span class="p">,</span> <span class="nb">bool</span>
+    <span class="n">TEMPERATURE_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;sensor.temperature&#39;</span><span class="p">,</span> <span class="nb">float</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">qualified_property</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">property_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="n">member</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">member</span><span class="o">.</span><span class="n">property_name</span> <span class="o">=</span> <span class="n">qualified_property</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">member</span><span class="o">.</span><span class="n">property_type</span> <span class="o">=</span> <span class="n">property_type</span>
+        <span class="n">member</span><span class="o">.</span><span class="n">property_node</span> <span class="o">=</span> <span class="n">qualified_property</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">member</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">property_name</span><span class="si">}</span><span class="s1">&#39;</span></div>
+
+
+
+<div class="viewcode-block" id="ButtonValues">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.devconfig.ButtonValues">[docs]</a>
+<span class="k">class</span> <span class="nc">ButtonValues</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enumeration defining button action values.</span>
+
+<span class="sd">    This enum defines string constants for possible button actions</span>
+<span class="sd">    like single press, double press, long press etc.</span>
+
+<span class="sd">    Using this enum allows code to refer to button actions</span>
+<span class="sd">    through constant values rather than string literals.</span>
+
+<span class="sd">    :ivar SINGLE_ACTION: Represents a single button press action.</span>
+<span class="sd">    :ivar DOUBLE_ACTION: Represents a double button press action.</span>
+<span class="sd">    :ivar LONG_ACTION: Represents a long button press action.</span>
+<span class="sd">    :ivar OFF: Represents the button off state.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">SINGLE_ACTION</span> <span class="o">=</span> <span class="s1">&#39;single&#39;</span>
+    <span class="n">DOUBLE_ACTION</span> <span class="o">=</span> <span class="s1">&#39;double&#39;</span>
+    <span class="n">LONG_ACTION</span> <span class="o">=</span> <span class="s1">&#39;long&#39;</span>
+    <span class="n">OFF</span> <span class="o">=</span> <span class="s1">&#39;off&#39;</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

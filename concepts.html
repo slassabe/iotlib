@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core Concepts &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=51b770b3"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="User Guide" href="userguide.html" />
+    <link rel="prev" title="Introduction" href="introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Core Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#mqtt-service">MQTT Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mqtt-bridge">MQTT Bridge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coding-and-decoding-message">Coding and decoding message</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#virtual-devices">Virtual Devices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codec-factory">Codec Factory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#processor">Processor</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Core Concepts</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/concepts.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="core-concepts">
+<h1>Core Concepts<a class="headerlink" href="#core-concepts" title="Link to this heading"></a></h1>
+<p>This section provides an overview of the fundamental concepts and principles that underpin this project. Understanding these concepts will help you to use and contribute to the project more effectively.</p>
+<p><img alt="Alt text" src="_images/stack.png" /></p>
+<section id="mqtt-service">
+<h2>MQTT Service<a class="headerlink" href="#mqtt-service" title="Link to this heading"></a></h2>
+<p>The MQTT service is essential for establishing a connection to an MQTT broker and handling events such as connect and disconnect. It also allows for the addition of custom handlers for these events. Furthermore, main loop facilities are necessary for the continuous processing of these events. This support is provided by the <code class="docutils literal notranslate"><span class="pre">MQTTClient</span></code> class.</p>
+</section>
+<section id="mqtt-bridge">
+<h2>MQTT Bridge<a class="headerlink" href="#mqtt-bridge" title="Link to this heading"></a></h2>
+<p>MQTT Bridges serve as the intermediary between the MQTT Services and the decoding layer. They manage several key tasks:</p>
+<ul class="simple">
+<li><p><strong>MQTT Connections</strong>: Establish and maintain connections with the MQTT broker.</p></li>
+<li><p><strong>Message Callbacks</strong>: Handle incoming MQTT messages and pass them to the appropriate decoder.</p></li>
+<li><p><strong>Availability Updates</strong>: Monitor and report the online/offline status of MQTT clients.</p></li>
+<li><p><strong>Value Handling</strong>: Process the decoded values and pass them to the appropriate handlers.</p></li>
+</ul>
+<p>For example, when a message is received from an MQTT client, the MQTT Bridge will pass the message to the appropriate decoder based on the topic of the message. Once the message is decoded, the MQTT Bridge will then pass the decoded values to the appropriate handlers for further processing.</p>
+</section>
+<section id="coding-and-decoding-message">
+<h2>Coding and decoding message<a class="headerlink" href="#coding-and-decoding-message" title="Link to this heading"></a></h2>
+<p>Each device model and protocol uses its own unique MQTT-based exchange format for encoding and decoding messages.</p>
+<ul class="simple">
+<li><p>Decoding functionalities are essential for extracting values from messages received from <code class="docutils literal notranslate"><span class="pre">sensors</span></code> and <code class="docutils literal notranslate"><span class="pre">operables</span></code> devices.</p></li>
+<li><p>Encoding functionalities are utilized by <code class="docutils literal notranslate"><span class="pre">operables</span></code> to send commands to the devices.</p></li>
+</ul>
+<p>A separate codec is required to handle each protocol, ensuring accurate and efficient communication.</p>
+</section>
+<section id="virtual-devices">
+<h2>Virtual Devices<a class="headerlink" href="#virtual-devices" title="Link to this heading"></a></h2>
+<p>Virtual devices serve as an abstraction layer over physical devices, facilitating interoperability across different types of devices. These virtual devices are organized into a hierarchical structure as follows:</p>
+<ul class="simple">
+<li><p><strong>Sensors</strong>: These virtual devices are responsible for measuring and reporting various environmental conditions. They include:</p>
+<ul>
+<li><p>Temperature Sensor</p></li>
+<li><p>Humidity Sensor</p></li>
+<li><p>Light Sensor</p></li>
+<li><p>Conductivity Sensor</p></li>
+<li><p>Button Sensor</p></li>
+<li><p>Motion Sensor</p></li>
+<li><p>Analog-to-Digital Converter</p></li>
+</ul>
+</li>
+<li><p><strong>Operables</strong>: These virtual devices are capable of performing certain actions. They include:</p>
+<ul>
+<li><p>Alarm</p></li>
+<li><p>Switch</p></li>
+</ul>
+</li>
+</ul>
+<p>Each physical device is associated with one or more virtual devices, which handle the processing and management of data. For instance, an air sensor might be associated with a Temperature Sensor and a Humidity Sensor virtual device, which handle temperature and humidity data respectively.
+This support is provided by the <code class="docutils literal notranslate"><span class="pre">VirtualDevice</span></code> class.</p>
+</section>
+<section id="codec-factory">
+<h2>Codec Factory<a class="headerlink" href="#codec-factory" title="Link to this heading"></a></h2>
+<p>The process of codec instantiation can be tedious as it requires knowledge of the class name and the necessary arguments. To simplify this process, a codec factory is provided. By specifying the protocol and model you need, the factory will create the required instance for you.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">iotlib</span>
+<span class="n">factory</span> <span class="o">=</span> <span class="n">iotlib</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">CodecFactory</span><span class="p">()</span>
+<span class="n">codec</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">Model</span><span class="o">.</span><span class="n">TUYA_TS0002</span><span class="p">,</span>
+                                <span class="n">protocol</span><span class="o">=</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Z2M</span><span class="p">,</span>
+                                <span class="n">device_name</span><span class="o">=</span><span class="n">DEVICE_NAME</span><span class="p">,</span>
+                                <span class="n">v_switch0</span><span class="o">=</span><span class="n">v_switch0</span><span class="p">,</span>
+                                <span class="n">v_switch1</span><span class="o">=</span><span class="n">v_switch1</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>Below is a table outlining the available codecs.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Protocol</p></th>
+<th class="head"><p>Model</p></th>
+<th class="head"><p>Codec Class</p></th>
+<th class="head"><p>Virtual Device Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Z2M</p></td>
+<td><p>TUYA_TS0002</p></td>
+<td><p>TuYaTS0002</p></td>
+<td><p>v_switch0, v_switch1</p></td>
+</tr>
+<tr class="row-odd"><td><p>Homie</p></td>
+<td><p>MIFLORA</p></td>
+<td><p>In progress</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Z2M</p></td>
+<td><p>NEO_ALARM</p></td>
+<td><p>NeoNasAB02B2</p></td>
+<td><p>v_alarm</p></td>
+</tr>
+<tr class="row-odd"><td><p>RING</p></td>
+<td><p>RING_CAMERA</p></td>
+<td><p>In progress</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>TASMOTA</p></td>
+<td><p>SHELLY_PLUGS</p></td>
+<td><p>In progress</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>SHELLY</p></td>
+<td><p>SHELLY_PLUGS</p></td>
+<td><p>In progress</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>TASMOTA</p></td>
+<td><p>SHELLY_UNI</p></td>
+<td><p>In progress</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>SHELLY</p></td>
+<td><p>SHELLY_UNI</p></td>
+<td><p>In progress</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Z2M</p></td>
+<td><p>TUYA_SOIL</p></td>
+<td><p>Ts0601Soil</p></td>
+<td><p>v_temp, v_humi</p></td>
+</tr>
+<tr class="row-odd"><td><p>Z2M</p></td>
+<td><p>ZB_AIRSENSOR</p></td>
+<td><p>SonoffSnzb02</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Z2M</p></td>
+<td><p>ZB_BUTTON</p></td>
+<td><p>SonoffSnzb01</p></td>
+<td><p>v_button</p></td>
+</tr>
+<tr class="row-odd"><td><p>Z2M</p></td>
+<td><p>ZB_MOTION</p></td>
+<td><p>SonoffSnzb3</p></td>
+<td><p>v_motion</p></td>
+</tr>
+<tr class="row-even"><td><p>Z2M</p></td>
+<td><p>ZB_MINI</p></td>
+<td><p>SonoffZbminiL</p></td>
+<td><p>v_switch</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="processor">
+<h2>Processor<a class="headerlink" href="#processor" title="Link to this heading"></a></h2>
+<p>Processors are utilized to customize the behavior of devices for processing updates from virtual devices and sensors. They perform the following functions:</p>
+<ul class="simple">
+<li><p><strong>On Device Availability</strong>:</p>
+<ul>
+<li><p>Log the availability status of the device.</p></li>
+<li><p>Publish the availability status to an MQTT topic for real-time tracking.</p></li>
+</ul>
+</li>
+<li><p><strong>On Virtual Device Updates</strong>:</p>
+<ul>
+<li><p>Log updates from virtual devices for record-keeping and debugging.</p></li>
+<li><p>Process button press actions on registered switches and alarms, allowing for interactive control.</p></li>
+<li><p>Handle motion sensor state changes and trigger registered switches when occupancy is detected, enabling automated responses.</p></li>
+<li><p>Publish property updates to an MQTT broker for monitoring purpose.</p></li>
+</ul>
+</li>
+</ul>
+<p>The predefined behavior provided by these processors can be extended with your own code by subclassing the <code class="docutils literal notranslate"><span class="pre">AvailabilityProcessor</span></code> and <code class="docutils literal notranslate"><span class="pre">VirtualDeviceProcessor</span></code> classes. This allows for greater flexibility and customization to meet specific needs.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="introduction.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="userguide.html" class="btn btn-neutral float-right" title="User Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iotlib.virtualdev &mdash; iotlib 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=51b770b3"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            iotlib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts.html">Core Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../userguide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">iotlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">iotlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">iotlib.virtualdev</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for iotlib.virtualdev</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/local/bin/python3</span>
+<span class="c1"># coding=utf-8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Virtual devices serve as an abstraction layer over physical devices, facilitating interoperability across different </span>
+<span class="sd">types of devices. These virtual devices are organized into a hierarchical structure as follows:</span>
+
+<span class="sd">    - Sensors: These virtual devices are responsible for measuring and reporting various environmental conditions. They include:</span>
+<span class="sd">        - Temperature Sensor</span>
+<span class="sd">        - Humidity Sensor</span>
+<span class="sd">        - Light Sensor</span>
+<span class="sd">        - Conductivity Sensor</span>
+<span class="sd">        - Button Sensor</span>
+<span class="sd">        - Motion Sensor</span>
+<span class="sd">        - Analog-to-Digital Converter</span>
+
+<span class="sd">    - Operables: These virtual devices are capable of performing certain actions. They include:</span>
+<span class="sd">        - Alarm</span>
+<span class="sd">        - Switch</span>
+
+<span class="sd">Each physical device is associated with one or more virtual devices, which handle the processing and management of data. </span>
+<span class="sd">For instance, an air sensor might be associated with a Temperature Sensor and a Humidity Sensor virtual device, which </span>
+<span class="sd">handle temperature and humidity data respectively. This support is provided by the VirtualDevice class.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span><span class="p">,</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">iotlib.abstracts</span> <span class="kn">import</span> <span class="p">(</span><span class="n">IVirtualDevice</span><span class="p">,</span> <span class="n">IEncoder</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">,</span> <span class="n">ResultType</span><span class="p">,</span>
+                              <span class="n">IVirtualDeviceProcessor</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">iotlib.devconfig</span> <span class="kn">import</span> <span class="n">PropertyConfig</span><span class="p">,</span> <span class="n">ButtonValues</span>
+<span class="kn">from</span> <span class="nn">iotlib.utils</span> <span class="kn">import</span> <span class="n">iotlib_logger</span>
+
+
+<div class="viewcode-block" id="VirtualDevice">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.VirtualDevice">[docs]</a>
+<span class="k">class</span> <span class="nc">VirtualDevice</span><span class="p">(</span><span class="n">IVirtualDevice</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Virtual devices serve as an abstraction layer over physical devices, </span>
+<span class="sd">    facilitating interoperability across different types of devices. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friendly_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quiet_mode</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the class.</span>
+
+<span class="sd">        This method initializes a new instance of the class with a given friendly name and a quiet mode flag.</span>
+
+<span class="sd">        :param friendly_name: The friendly name to be used for the virtual device.</span>
+<span class="sd">        :type friendly_name: str</span>
+<span class="sd">        :param quiet_mode: A flag indicating whether the virtual device should operate in quiet mode.</span>
+<span class="sd">        :type quiet_mode: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">friendly_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">friendly_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> \
+                <span class="sa">f</span><span class="s1">&#39;Bad value for friendly_name : </span><span class="si">{</span><span class="n">friendly_name</span><span class="si">}</span><span class="s1"> of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">friendly_name</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">friendly_name</span> <span class="o">=</span> <span class="n">friendly_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_quiet_mode</span> <span class="o">=</span> <span class="n">quiet_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># List of processors associated with this device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_processor_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">IVirtualDeviceProcessor</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">_sep</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">_res</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">_attr</span><span class="p">,</span> <span class="n">_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">_res</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">_sep</span><span class="si">}{</span><span class="n">_attr</span><span class="si">}</span><span class="s1"> : </span><span class="si">{</span><span class="n">_val</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="n">_sep</span> <span class="o">=</span> <span class="s1">&#39; | &#39;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">_res</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">friendly_name</span><span class="si">}</span><span class="s1"> | value: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the current value of the virtual device.</span>
+
+<span class="sd">        This method returns the current value of the virtual device.</span>
+
+<span class="sd">        :return: The current value of the virtual device.</span>
+<span class="sd">        :rtype: Any</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="k">def</span> <span class="nf">_validate_value_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">any</span><span class="p">):</span>
+        <span class="n">_property</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_property</span><span class="p">()</span>
+        <span class="n">_type_cast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_property</span><span class="p">()</span><span class="o">.</span><span class="n">property_type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">_type_cast</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> is not of type </span><span class="si">{</span><span class="n">_type_cast</span><span class="si">}</span><span class="s2"> for property </span><span class="si">{</span><span class="n">_property</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="nd">@value</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the value of the device.</span>
+
+<span class="sd">        This method sets the value of the device. It validates the type of the value before setting it.</span>
+
+<span class="sd">        :param value: The value to set.</span>
+<span class="sd">        :type value: Any</span>
+<span class="sd">        :raises TypeError: If the value is not of the expected type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_value_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="VirtualDevice.set_encoder">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.VirtualDevice.set_encoder">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">:</span> <span class="n">IEncoder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the encoder for the device.</span>
+
+<span class="sd">        This method sets the encoder for the device. It validates the type of the encoder before setting it.</span>
+
+<span class="sd">        :param encoder: The encoder to set.</span>
+<span class="sd">        :type encoder: IEncoder</span>
+<span class="sd">        :raises TypeError: If the encoder is not of the expected type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span> <span class="n">IEncoder</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Encoder must be instance of AbstractEncoder, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">encoder</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">=</span> <span class="n">encoder</span></div>
+
+
+<div class="viewcode-block" id="VirtualDevice.handle_value">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.VirtualDevice.handle_value">[docs]</a>
+    <span class="k">def</span> <span class="nf">handle_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResultType</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from AbstractDevice class</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># No relevant value received (can be info on device like battery level), ignore</span>
+            <span class="k">return</span> <span class="n">ResultType</span><span class="o">.</span><span class="n">IGNORE</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">value</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quiet_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ResultType</span><span class="o">.</span><span class="n">ECHO</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">_processor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processor_list</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;Execute processor : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">_processor</span><span class="p">)</span>
+                <span class="n">_processor</span><span class="o">.</span><span class="n">process_value_update</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ResultType</span><span class="o">.</span><span class="n">SUCCESS</span></div>
+
+
+<div class="viewcode-block" id="VirtualDevice.processor_append">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.VirtualDevice.processor_append">[docs]</a>
+    <span class="k">def</span> <span class="nf">processor_append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processor</span><span class="p">:</span> <span class="n">IVirtualDeviceProcessor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from AbstractDevice class</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">IVirtualDeviceProcessor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Processor must be instance of Processor, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">processor</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">processor</span><span class="o">.</span><span class="n">compatible_with_device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Processor </span><span class="si">{</span><span class="n">processor</span><span class="si">}</span><span class="s2"> is not compatible with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_processor_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">processor</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VirtualDevice.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.VirtualDevice.get_property">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the property of the device.</span>
+
+<span class="sd">        This method returns the property of the device.</span>
+
+<span class="sd">        :return: The property of the device.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+</div>
+
+    
+
+<div class="viewcode-block" id="Operable">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Operable">[docs]</a>
+<span class="k">class</span> <span class="nc">Operable</span><span class="p">(</span><span class="n">VirtualDevice</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Root implementation of a virtual Operable device (Switch or Alarm)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">friendly_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">quiet_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">countdown</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the class.</span>
+
+<span class="sd">        This method initializes a new instance of the class with a given friendly name, a quiet mode flag, and an optional countdown.</span>
+
+<span class="sd">        :param friendly_name: The friendly name to be used for the virtual device, defaults to None.</span>
+<span class="sd">        :type friendly_name: str, optional</span>
+<span class="sd">        :param quiet_mode: A flag indicating whether the virtual device should operate in quiet mode, defaults to False.</span>
+<span class="sd">        :type quiet_mode: bool, optional</span>
+<span class="sd">        :param countdown: The countdown value for the virtual device, defaults to None.</span>
+<span class="sd">        :type countdown: Optional[int], optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">countdown</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">countdown</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;countdown must be integer, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">countdown</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">countdown</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;countdown must be positive integer, not </span><span class="si">{</span><span class="n">countdown</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">friendly_name</span><span class="p">,</span>
+                         <span class="n">quiet_mode</span><span class="o">=</span><span class="n">quiet_mode</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_countdown</span> <span class="o">=</span> <span class="n">countdown</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">device_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the device ID.</span>
+
+<span class="sd">        :return: The device ID of the virtual device.</span>
+<span class="sd">        :rtype: int | None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_id</span>
+
+    <span class="nd">@device_id</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">device_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the device ID.</span>
+
+<span class="sd">        :param value: The device ID to set.</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_id</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">countdown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the countdown value.</span>
+
+<span class="sd">        :return: The countdown value of the virtual device.</span>
+<span class="sd">        :rtype: Optional[int]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_countdown</span>
+
+    <span class="nd">@countdown</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">countdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the countdown value.</span>
+
+<span class="sd">        :param value: The countdown value to set.</span>
+<span class="sd">        :type value: Optional[int]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_countdown</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="Operable.trigger_get_state">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Operable.trigger_get_state">[docs]</a>
+    <span class="k">def</span> <span class="nf">trigger_get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                          <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">,</span>
+                          <span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Triggers a state request to the device.</span>
+
+<span class="sd">        :param mqtt_service: The client instance used for communication.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        :param device_id: Optional device ID to retrieve state for, defaults to None.</span>
+<span class="sd">        :type device_id: str, optional</span>
+<span class="sd">        :raises TypeError: If mqtt_service is not an instance of MQTTService.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mqtt_service must be instance of MQTTService, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">_encoder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span>
+        <span class="n">_state_request</span> <span class="o">=</span> <span class="n">_encoder</span><span class="o">.</span><span class="n">get_state_request</span><span class="p">(</span><span class="n">device_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_state_request</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> : unable to get state&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_state_topic</span><span class="p">,</span> <span class="n">_state_payload</span> <span class="o">=</span> <span class="n">_state_request</span>
+            <span class="n">mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">_state_topic</span><span class="p">,</span> <span class="n">_state_payload</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Operable.trigger_change_state">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Operable.trigger_change_state">[docs]</a>
+    <span class="k">def</span> <span class="nf">trigger_change_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">,</span>
+                             <span class="n">is_on</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                             <span class="n">on_time</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Triggers a change in the state of a device.</span>
+
+<span class="sd">        This method sends a request message to the device to change the current state of the device.</span>
+
+<span class="sd">        :param mqtt_service: The client instance used for communication.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        :param is_on: The new state of the device (True for ON, False for OFF).</span>
+<span class="sd">        :type is_on: bool</span>
+<span class="sd">        :param on_time: The duration for which the device should remain ON, in seconds. </span>
+<span class="sd">            If None, the device will remain ON indefinitely, defaults to None.</span>
+<span class="sd">        :type on_time: int | None, optional</span>
+<span class="sd">        :raises TypeError: If mqtt_service is not an instance of MQTTService.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mqtt_service must be instance of MQTTService, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">_encoder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span>
+
+        <span class="k">if</span> <span class="n">_encoder</span><span class="o">.</span><span class="n">is_pulse_request_allowed</span><span class="p">():</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Pulse request allowed -&gt; change state with on_time : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="p">,</span> <span class="n">on_time</span><span class="p">)</span>
+            <span class="n">_state_request</span> <span class="o">=</span> <span class="n">_encoder</span><span class="o">.</span><span class="n">change_state_request</span><span class="p">(</span><span class="n">is_on</span><span class="p">,</span>
+                                                           <span class="n">device_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="p">,</span>
+                                                           <span class="n">on_time</span><span class="o">=</span><span class="n">on_time</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Pulse request not allowed -&gt; change state&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="p">)</span>
+            <span class="n">_state_request</span> <span class="o">=</span> <span class="n">_encoder</span><span class="o">.</span><span class="n">change_state_request</span><span class="p">(</span><span class="n">is_on</span><span class="p">,</span>
+                                                           <span class="n">device_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">on_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Stop it later with on_time : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="p">,</span> <span class="n">on_time</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stop_later</span><span class="p">(</span><span class="n">on_time</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">_state_request</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> : unable to change state&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_state_topic</span><span class="p">,</span> <span class="n">_state_payload</span> <span class="o">=</span> <span class="n">_state_request</span>
+            <span class="n">_info</span> <span class="o">=</span> <span class="n">mqtt_service</span><span class="o">.</span><span class="n">mqtt_client</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">_state_topic</span><span class="p">,</span> <span class="n">_state_payload</span><span class="p">,</span>
+                                                     <span class="n">qos</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">retain</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Publishing to topic </span><span class="si">%s</span><span class="s1"> : </span><span class="si">%s</span><span class="s1"> - rc : </span><span class="si">%s</span><span class="s1"> - mid : </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="n">_state_topic</span><span class="p">,</span> <span class="n">_state_payload</span><span class="p">,</span> <span class="n">_info</span><span class="o">.</span><span class="n">rc</span><span class="p">,</span> <span class="n">_info</span><span class="o">.</span><span class="n">mid</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_stop_later</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] Automatially stop after &quot;</span><span class="si">%s</span><span class="s1">&quot; sec.&#39;</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="p">,</span>  <span class="n">when</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">when</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Expecting a positive int for period &quot;</span><span class="si">{</span><span class="n">when</span><span class="si">}</span><span class="s1">&quot;, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">when</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>    <span class="c1"># a timer is allready set, cancel it</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Timer</span><span class="p">(</span><span class="n">when</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">trigger_stop</span><span class="p">,</span>
+                                           <span class="p">[</span><span class="n">mqtt_service</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Operable.trigger_start">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Operable.trigger_start">[docs]</a>
+    <span class="k">def</span> <span class="nf">trigger_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">,</span>
+                      <span class="n">on_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span><span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ask the device to start.</span>
+
+<span class="sd">        This method triggers the device to start. If the device is already in the &quot;on&quot; state,</span>
+<span class="sd">        no action is required and the method returns False. Otherwise, the method requests</span>
+<span class="sd">        the device to turn on by calling the `trigger_change_state` method with the `is_on`</span>
+<span class="sd">        parameter set to True.</span>
+
+<span class="sd">        :param mqtt_service: The client object used to communicate with the device.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        :param on_time: The time duration for which the device should remain on. If None, the device will remain ON indefinitely, defaults to None.</span>
+<span class="sd">        :type on_time: int | None, optional</span>
+<span class="sd">        :return: Returns True if the switch state is OFF when the method is called.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        :raises TypeError: If mqtt_service is not an instance of MQTTService.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mqtt_service must be instance of MQTTService, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] is already &quot;on&quot; -&gt; no action required&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] is &quot;off&quot; -&gt; request to turn it &quot;on&quot;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trigger_change_state</span><span class="p">(</span><span class="n">mqtt_service</span><span class="o">=</span><span class="n">mqtt_service</span><span class="p">,</span>
+                                  <span class="n">is_on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">on_time</span><span class="o">=</span><span class="n">on_time</span> <span class="k">if</span> <span class="n">on_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">countdown</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Operable.trigger_stop">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Operable.trigger_stop">[docs]</a>
+    <span class="k">def</span> <span class="nf">trigger_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mqtt_service</span><span class="p">:</span> <span class="n">IMQTTService</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ask the device to stop.</span>
+
+<span class="sd">        This method is used to send a request to the device to stop its operation.</span>
+<span class="sd">        If the switch state is currently ON, it will send a request to turn it OFF via MQTT.</span>
+
+<span class="sd">        :param mqtt_service: The client object used to communicate with the device.</span>
+<span class="sd">        :type mqtt_service: IMQTTService</span>
+<span class="sd">        :return: Returns True if the switch state is ON when the method is called, indicating that a request to turn it OFF has been sent.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        :raises TypeError: If mqtt_service is not an instance of MQTTService.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">,</span> <span class="n">IMQTTService</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;mqtt_service must be instance of MQTTService, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">mqtt_service</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] stop switch and reset stop timer&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_timer</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1"> &gt; [</span><span class="si">%s</span><span class="s1">] is already &quot;off&quot; -&gt; no action required&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iotlib_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1"> &gt; [</span><span class="si">%s</span><span class="s1">] is &quot;on&quot; -&gt; request to turn it &quot;off&quot; via MQTT&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trigger_change_state</span><span class="p">(</span><span class="n">mqtt_service</span><span class="o">=</span><span class="n">mqtt_service</span><span class="p">,</span>
+                                      <span class="n">is_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                      <span class="n">on_time</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Melodies">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Melodies">[docs]</a>
+<span class="k">class</span> <span class="nc">Melodies</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enumeration of melodies available for virtual devices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">MELO_01</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">DING_DONG1</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">DING_DONG2</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">MELO_04</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">MELO_05</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">FIRE</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">HORN</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">MELO_08</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">MELO_09</span> <span class="o">=</span> <span class="mi">9</span>
+    <span class="n">DOG</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">AMBULANCE</span> <span class="o">=</span> <span class="mi">11</span>
+    <span class="n">DING_DONG3</span> <span class="o">=</span> <span class="mi">12</span>
+    <span class="n">PHONE</span> <span class="o">=</span> <span class="mi">13</span>
+    <span class="n">MELO_14</span> <span class="o">=</span> <span class="mi">14</span>
+    <span class="n">MELO_15</span> <span class="o">=</span> <span class="mi">15</span>
+    <span class="n">WAKE_UP1</span> <span class="o">=</span> <span class="mi">16</span>
+    <span class="n">WAKE_UP2</span> <span class="o">=</span> <span class="mi">17</span>
+    <span class="n">DING_DONG4</span> <span class="o">=</span> <span class="mi">18</span></div>
+
+
+
+<div class="viewcode-block" id="Level">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Level">[docs]</a>
+<span class="k">class</span> <span class="nc">Level</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents the level of alarm.</span>
+
+<span class="sd">    The `Level` class is an enumeration that defines three levels: LOW, MEDIUM, and HIGH.</span>
+<span class="sd">    Each level is associated with a string value.</span>
+
+<span class="sd">    :cvar LOW: Represents a low level of alarm.</span>
+<span class="sd">    :cvar MEDIUM: Represents a medium level of alarm.</span>
+<span class="sd">    :cvar HIGH: Represents a high level of alarm.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">LOW</span> <span class="o">=</span> <span class="s1">&#39;low&#39;</span>
+    <span class="n">MEDIUM</span> <span class="o">=</span> <span class="s1">&#39;medium&#39;</span>
+    <span class="n">HIGH</span> <span class="o">=</span> <span class="s1">&#39;high&#39;</span></div>
+
+
+
+<div class="viewcode-block" id="Alarm">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Alarm">[docs]</a>
+<span class="k">class</span> <span class="nc">Alarm</span><span class="p">(</span><span class="n">Operable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Implementation of a virtual Alarm.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Alarm.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Alarm.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">ALARM_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Switch">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Switch">[docs]</a>
+<span class="k">class</span> <span class="nc">Switch</span><span class="p">(</span><span class="n">Operable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Implementation of a virtual Switch </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">argc</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a new instance of the Switch class.</span>
+
+<span class="sd">        This method initializes a new instance of the Switch class with a given friendly name and a quiet mode flag.</span>
+
+<span class="sd">        :param argc: Variable length argument list.</span>
+<span class="sd">        :param kwargs: Arbitrary keyword arguments. Expected keys are:</span>
+<span class="sd">            - friendly_name (str): The friendly name of the switch. Defaults to &quot;&quot;.</span>
+<span class="sd">            - quiet_mode (bool): A flag indicating whether the switch is in quiet mode. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">argc</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_id</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Relay numbers of multi-channel devices</span>
+
+<div class="viewcode-block" id="Switch.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Switch.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">SWITCH_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Switch0">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Switch0">[docs]</a>
+<span class="k">class</span> <span class="nc">Switch0</span><span class="p">(</span><span class="n">Switch</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Virtual switch #0 of a multi channel device</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_id</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="Switch0.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Switch0.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">SWITCH0_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Switch1">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Switch1">[docs]</a>
+<span class="k">class</span> <span class="nc">Switch1</span><span class="p">(</span><span class="n">Switch</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Virtual switch #1 of a multi channel device</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_id</span> <span class="o">=</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="Switch1.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Switch1.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">SWITCH1_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Sensor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Sensor">[docs]</a>
+<span class="k">class</span> <span class="nc">Sensor</span><span class="p">(</span><span class="n">VirtualDevice</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sensor virtual devices</span>
+
+<span class="sd">    This virtual sensor device manages sensor values that can be </span>
+<span class="sd">    read by observer devices. </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friendly_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quiet_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">friendly_name</span><span class="p">,</span>
+                         <span class="n">quiet_mode</span><span class="o">=</span><span class="n">quiet_mode</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sensor_observers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Operable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Sensor.get_sensor_observers">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Sensor.get_sensor_observers">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_sensor_observers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">VirtualDevice</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the list of observer devices.</span>
+
+<span class="sd">        This method returns the list of Operable device objects that are observing the sensor values.</span>
+
+<span class="sd">        :return: The list of Operable device objects that are observing the sensor values.</span>
+<span class="sd">        :rtype: list[VirtualDevice]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sensor_observers</span></div>
+
+
+<div class="viewcode-block" id="Sensor.add_observer">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Sensor.add_observer">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">Operable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an observer device to be notified of sensor value changes.</span>
+
+<span class="sd">        This method adds an Operable device to the list of observer devices.</span>
+
+<span class="sd">        :param device: The Operable device to be added as an observer.</span>
+<span class="sd">        :type device: Operable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">Operable</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Device must be instance of Operable, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">device</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sensor_observers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">device</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TemperatureSensor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.TemperatureSensor">[docs]</a>
+<span class="k">class</span> <span class="nc">TemperatureSensor</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Temperature sensor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TemperatureSensor.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.TemperatureSensor.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">TEMPERATURE_PROPERTY</span></div>
+
+
+<div class="viewcode-block" id="TemperatureSensor.handle_value">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.TemperatureSensor.handle_value">[docs]</a>
+    <span class="k">def</span> <span class="nf">handle_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from AbstractDevice class</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">handle_value</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="HumiditySensor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.HumiditySensor">[docs]</a>
+<span class="k">class</span> <span class="nc">HumiditySensor</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Humidity sensor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="HumiditySensor.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.HumiditySensor.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">HUMIDITY_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LightSensor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.LightSensor">[docs]</a>
+<span class="k">class</span> <span class="nc">LightSensor</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Light sensor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LightSensor.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.LightSensor.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">LIGHT_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ConductivitySensor">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.ConductivitySensor">[docs]</a>
+<span class="k">class</span> <span class="nc">ConductivitySensor</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Conductivity sensor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ConductivitySensor.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.ConductivitySensor.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">CONDUCTIVITY_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Button">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Button">[docs]</a>
+<span class="k">class</span> <span class="nc">Button</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Button managing 3 types of messages : single, double and long button press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friendly_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">friendly_name</span><span class="p">,</span>
+                         <span class="n">quiet_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Button.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Button.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">BUTTON_PROPERTY</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="nd">@value</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># Handle button action</span>
+        <span class="n">_accepted_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">ButtonValues</span><span class="o">.</span><span class="n">SINGLE_ACTION</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                            <span class="n">ButtonValues</span><span class="o">.</span><span class="n">DOUBLE_ACTION</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                            <span class="n">ButtonValues</span><span class="o">.</span><span class="n">LONG_ACTION</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                            <span class="n">ButtonValues</span><span class="o">.</span><span class="n">OFF</span><span class="o">.</span><span class="n">value</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Discard value if None</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_accepted_values</span><span class="p">:</span>
+            <span class="c1"># Validate value type</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Button value &quot;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s1">&quot; is invalid, must be in  list : &quot;</span><span class="si">{</span><span class="n">_accepted_values</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Value </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> is not of type string&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+
+<div class="viewcode-block" id="Motion">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Motion">[docs]</a>
+<span class="k">class</span> <span class="nc">Motion</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Virtual button manager</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Motion.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.Motion.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">MOTION_PROPERTY</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ADC">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.ADC">[docs]</a>
+<span class="k">class</span> <span class="nc">ADC</span><span class="p">(</span><span class="n">Sensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Analog-to-digital converter</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ADC.get_property">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.ADC.get_property">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># Returns the property of the virtual device.</span>
+        <span class="k">return</span> <span class="n">PropertyConfig</span><span class="o">.</span><span class="n">ADC_PROPERTY</span></div>
+
+
+<div class="viewcode-block" id="ADC.handle_value">
+<a class="viewcode-back" href="../../iotlib.html#iotlib.virtualdev.ADC.handle_value">[docs]</a>
+    <span class="k">def</span> <span class="nf">handle_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="c1"># Implement the abstract method from AbstractDevice class</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">handle_value</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Serge LASSABE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
