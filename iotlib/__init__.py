@@ -5,7 +5,7 @@ This is the initialization module for the iotlib package.
 
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 import iotlib.bridge
 import iotlib.client
