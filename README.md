@@ -5,7 +5,7 @@
 
 ## Description
 
-**iotlib** is a versatile python library built upon Paho™ MQTT, designed to streamline the development of IoT applications.
+**iotlib** is a versatile python library built upon PahoTM MQTT, designed to simplify IoT application development without the overpromises of no-code platforms.
 
 ![Alt text](doc/src/_images/landscape.png)
 
