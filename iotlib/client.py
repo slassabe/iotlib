@@ -257,7 +257,6 @@ class MQTTClient(IMQTTService):
         # Implement IMQTTService interface
         self.on_disconnect_handlers.append(handler)
 
-
 class MQTTClientHelper(MQTTClient):
     """
     This class provides additional helper methods for MQTT operations, not directly related to the 
@@ -267,8 +266,8 @@ class MQTTClientHelper(MQTTClient):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mqtt_client.on_subscribe = self._handle_on_subscribe
         self._mqtt_client.on_message = self._handle_on_message
+        self._mqtt_client.on_subscribe = self._handle_on_subscribe
 
         self._default_message_callbacks: List[Callable] = []
         self.on_subscribe_handlers: List[Callable] = []
@@ -304,34 +303,45 @@ class MQTTClientHelper(MQTTClient):
         ''' Subscribes to the specified topic. '''
         return self._mqtt_client.subscribe(topic, **kwargs)
 
+    def publish(self, topic, payload, **kwargs):
+        ''' Publish a message on a topic. '''
+        iotlib_logger.debug(
+            'Publish on topic : %s - payload : %s', topic, payload)
+        return self._mqtt_client.publish(topic, payload, **kwargs)
+
     def _handle_on_subscribe(self,
                              client: mqtt.Client,
                              userdata: Any,
                              mid: int,
                              reason_code_list: List[mqtt.ReasonCode],
                              properties: mqtt.Properties) -> None:
+        ''' Define the default subscribtion callback implementation. 
+        '''
+        for reason_code in reason_code_list:
+            if reason_code.is_failure:
+                iotlib_logger.warning('[%s] subscribe refused - reason code : %s',
+                                    self,
+                                    reason_code)
+                return
+        iotlib_logger.debug('[%s] subscribe accepted', client)
         for on_subscribe_handler in self.on_subscribe_handlers:
             try:
                 on_subscribe_handler(client, userdata, mid,
-                                     reason_code_list, properties)
+                                    reason_code_list, properties)
             except Exception as error:
                 iotlib_logger.exception(
                     "Failed handling subscribe %s", error)
 
     def subscribe_handler_add(self, handler: Callable):
         """
-        Adds a handler function to the list of subscribe event handlers.
+        Adds a subscribe handler.
 
-        Args:
-            handler (Callable): The handler function to be added.
+        Subscribe handlers are called when a subscription
+        is received from the MQTT broker.
 
-        Returns:
-            None
+        :param handler: The callback function to handle the subscribe event.
+        :type handler: Callable
+        :return: None
         """
         self.on_subscribe_handlers.append(handler)
 
-    def publish(self, topic, payload, **kwargs):
-        ''' Publish a message on a topic. '''
-        iotlib_logger.debug(
-            'Publish on topic : %s - payload : %s', topic, payload)
-        return self._mqtt_client.publish(topic, payload, **kwargs)

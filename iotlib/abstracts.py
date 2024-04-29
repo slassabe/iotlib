@@ -75,7 +75,7 @@ class IEncoder(ABC):
     """
 
     @abstractmethod
-    def get_state_request(self, device_id: Optional[int]) -> tuple[str, str]:
+    def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
         """
         Get the current state request for a device.
 
@@ -110,6 +110,14 @@ class IEncoder(ABC):
         :rtype: tuple[str, str]
         """
 
+    @abstractmethod
+    def device_configure_message(self) -> Optional[tuple[str, str]]:
+        """Configure the device before using it
+    
+        :return: A tuple containing the backlog command and topic
+        :rtype: tuple[str, str]
+        """
+
 
 class ICodec(ABC):
     '''Interface for decoding messages received on MQTT to IoT devices'''
@@ -135,7 +143,7 @@ class ICodec(ABC):
         """
 
 
-class Surrogate:
+class IMQTTBridge:
     """A surrogate class that wraps an MQTT client and codec.
 
     This class acts as a surrogate for devices that use the given
@@ -143,12 +151,16 @@ class Surrogate:
     encoding/decoding messages to interact with real devices.
     """
 
-    def __init__(self,
-                 mqtt_service: IMQTTService,
-                 codec: ICodec):
-        self.mqtt_service = mqtt_service
-        self.codec = codec
+    @property
+    @abstractmethod
+    def availability(self) -> bool:
+        """
+        Get the availability status of the bridge.
 
+        :return: True if the bridge is available, False otherwise.
+        :rtype: bool
+        """
+        pass
 
 class IDiscoveryProcessor(ABC):
     """
@@ -177,7 +189,7 @@ class IAvailabilityProcessor(ABC):
     """
 
     @abstractmethod
-    def attach(self, bridge: Surrogate) -> None:
+    def attach(self, bridge: IMQTTBridge) -> None:
         """
         Attach the processor to a bridge instance.
 

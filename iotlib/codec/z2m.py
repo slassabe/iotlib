@@ -73,7 +73,7 @@ class Availability(enum.Enum):
 _AVAILABILITY_VALUES = [avail.value for avail in Availability]
 
 
-class DeviceOnZigbee2MQTT(Codec):
+class DecoderOnZigbee2MQTT(Codec):
     """
     Represents a device on the Zigbee2MQTT protocol.
 
@@ -82,6 +82,9 @@ class DeviceOnZigbee2MQTT(Codec):
 
     :inherits: `Codec`
     """
+    #    <base_topic>
+    #    └── <device_name>                                     <== self._root_topic
+    #        └── availability : "online" | "offline" | None    <== self._availability_topic
 
     def __init__(self,
                  device_name: str,
@@ -133,8 +136,17 @@ class DeviceOnZigbee2MQTT(Codec):
                 f'Exception occured while decoding : "{payload}"') from exp
 
 
-class SensorOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
+class SensorOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
     ''' Bridge between SENSOR devices and MQTT Clients '''
+    #    <base_topic>
+    #    └── <device_name> : <json_payload>      <== self._root_topic
+    #
+    # JSON payload example :
+    #    {"battery": Float,       <- dismiss
+    #     "humidity": Float,
+    #     "linkquality": Int,     <- dismiss
+    #     "temperature": Float,
+    #     "voltage": Int}'      <- dismiss
 
     def __init__(self,
                  device_name: str,
@@ -214,10 +226,18 @@ class Ts0601Soil(SensorOnZigbee):
             return int(_value)
 
 
-class ButtonOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
+class ButtonOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
     """
     Represents a button device on the Zigbee2MQTT protocol.
     """
+    #    <base_topic>
+    #    └── <device_name> : <json_payload>      <== self._root_topic
+    #
+    # JSON payload example :
+    #    {"action": "single" | "double" | "long"
+    #     "battery": Int,       <- dismiss
+    #     "linkquality": Int,   <- dismiss
+    #     "voltage": Int}'      <- dismiss
 
     def __init__(self,
                  device_name: str,
@@ -271,9 +291,19 @@ class SonoffSnzb01(ButtonOnZigbee):
             f'Received erroneous Action value : "{_pl}"')
 
 
-class MotionOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
+class MotionOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
     '''  Bridge between MOTION SENSOR devices and MQTT Clients '''
-
+    #    <base_topic>
+    #    └── <device_name> : <json_payload>      <== self._root_topic
+    #
+    # JSON payload example :
+    #    {"occupancy": Bool,
+    #     "tamper": Bool,       <- dismiss
+    #     "battery": Int,       <- dismiss
+    #     "battery_low": Bool,  <- dismiss
+    #     "linkquality": Int,   <- dismiss
+    #     "voltage": Int}'      <- dismiss
+ 
     def __init__(self,
                  device_name: str,
                  friendly_name: Optional[str] = None,
@@ -322,7 +352,7 @@ class SonoffSnzb3(MotionOnZigbee):
             return _value
 
 
-class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
+class AlarmOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
     """
     Represents an alarm device on the Zigbee2MQTT protocol.
     """
@@ -359,7 +389,7 @@ class AlarmOnZigbee(DeviceOnZigbee2MQTT, metaclass=ABCMeta):
             raise ValueError(f'Bad value : {encoder} of type {type(encoder)}')
         if not isinstance(v_alarm, Alarm):
             raise ValueError(f'Bad value : {v_alarm} of type {type(v_alarm)}')
-        v_alarm.set_encoder(encoder)
+        v_alarm.encoder = encoder
 
         self._set_message_handler(self._root_topic,
                                   self.__class__._decode_value_pl,
@@ -426,7 +456,6 @@ class NeoNasAB02B2Encoder(IEncoder):
             f'Bad value for alarm_level : {alarm_level}'
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
-        # Implementing this method is not necessary for the sensor devices
         return None
 
     def is_pulse_request_allowed(self, device_id: Optional[int] = None) -> bool:
@@ -448,7 +477,10 @@ class NeoNasAB02B2Encoder(IEncoder):
         return f'{self._root_topic}/set', json.dumps(_set)
 
 
-class SwitchDecoder(DeviceOnZigbee2MQTT):
+    def device_configure_message(self) -> Optional[tuple[str, str]]:
+        return None
+    
+class SwitchDecoder(DecoderOnZigbee2MQTT):
     """
     Represents a multi-switch device on the Zigbee2MQTT protocol.
     """
@@ -490,22 +522,20 @@ class SwitchDecoder(DeviceOnZigbee2MQTT):
         if not isinstance(encoder, IEncoder):
             raise TypeError(f'Bad type for {encoder} of type {type(encoder)}')
         if v_switch is not None:
-            v_switch.set_encoder(encoder)
+            v_switch.encoder = encoder
             self._set_message_handler(self._root_topic,
                                       self.__class__._decode_switch_value_pl,
                                       v_switch)
         if v_switch0 is not None:
-            v_switch0.set_encoder(encoder)
+            v_switch0.encoder = encoder
             self._set_message_handler(self._root_topic,
                                       self.__class__._decode_switch0_value_pl,
                                       v_switch0)
         if v_switch1 is not None:
-            v_switch1.set_encoder(encoder)
+            v_switch1.encoder = encoder
             self._set_message_handler(self._root_topic,
                                       self.__class__._decode_switch1_value_pl,
                                       v_switch1)
-        # self.ask_for_state()
-        iotlib_logger.warning('%s : unable to ask state', self)
 
     def _decode_generic_switch_value_pl(self, topic, payload, key_power) -> bool | None:
         """
@@ -526,18 +556,17 @@ class SwitchDecoder(DeviceOnZigbee2MQTT):
         if not isinstance(payload, dict):
             raise DecodingException(
                 f'Received erroneous payload : "{payload}" of type {type(payload)}')
-        _the_switch = next(iter(payload))
-        if _the_switch == key_power:
-            _pl = payload.get(key_power)
-            if _pl == PowerState.ON.value:
-                return True
-            elif _pl == PowerState.OFF.value:
-                return False
-            else:
-                raise DecodingException(
-                    f'Received erroneous State value : "{_pl}"')
-        else:
+
+        _power_state = payload.get(key_power)
+        if _power_state == PowerState.ON.value:
+            return True
+        elif _power_state == PowerState.OFF.value:
+            return False
+        elif _power_state is None:
             return None
+        else:
+            raise DecodingException(
+                f'Received erroneous State value : "{_power_state}"')
 
     def _decode_switch_value_pl(self, topic, payload) -> bool | None:
         return self._decode_generic_switch_value_pl(topic, payload, SWITCH_POWER)
@@ -588,6 +617,9 @@ class SwitchEncoder(IEncoder):
             _json_pl["on_time"] = on_time
         _payload = json.dumps(_json_pl)
         return _topic, _payload
+
+    def device_configure_message(self) -> Optional[tuple[str, str]]:
+        return None
 
 
 class SonoffZbminiL(SwitchDecoder):

@@ -80,8 +80,6 @@ class DecoderOnTasmota(Codec):
         _tele_topic = f'{_root_topic}tele/{device_name}'
         self._tele_sensors_topic = f'{_tele_topic}/SENSOR'
         self._availability_topic = f'{_tele_topic}/LWT'
-        # self._configure_device()
-        iotlib_logger.warning('%s : unable to configure device', self)
 
     def get_availability_topic(self) -> str:
         # Implement abstract method
@@ -245,7 +243,7 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
         return _topic, _pl
 
     @abstractmethod
-    def _configure_device(self) -> tuple[str, str]:
+    def device_configure_message(self) -> tuple[str, str]:
         """Configure the device.
         """
 
@@ -298,7 +296,7 @@ class TasmotaPlugS(DecoderOnTasmota):
             device_name=device_name,
             base_topic=base_topic,
         )
-        v_switch0.set_encoder(_encoder)
+        v_switch0.encoder = _encoder
         self._set_message_handler(self._stat_power_topic,
                                   self.__class__._decode_state_pl,
                                   v_switch0)
@@ -308,8 +306,6 @@ class TasmotaPlugS(DecoderOnTasmota):
         self._set_message_handler(self._tele_sensors_topic,
                                   self.__class__._decode_voltage_pl,
                                   v_adc)
-        # self.ask_for_state()
-        iotlib_logger.warning('%s : unable to ask state', self)
 
     def _decode_voltage_pl(self, topic: str, payload: str) -> float:
         """Decode voltage payload from Tasmota device.
@@ -342,9 +338,8 @@ class TasmotaPlugS(DecoderOnTasmota):
 
 class TasmotaPlugSEncoder(EncoderOnTasmota):
 
-    def _configure_device(self) -> tuple[str, str]:
-        """Configure the device.
-        """
+    def device_configure_message(self) -> tuple[str, str]:
+        # Implement IEncoder interface method
         return self.format_backlog_cmnd("PulseTime 0")    # Reset pulseTime
 
 
@@ -401,7 +396,7 @@ class TasmotaUni(DecoderOnTasmota):
             base_topic=base_topic,
         )
         for _v_switch in [v_switch0, v_switch1]:
-            _v_switch.set_encoder(_encoder)
+            _v_switch.encoder = _encoder
             self._set_message_handler(f'{self._stat_power_topic}{_v_switch.device_id}',
                                       self.__class__._decode_state_pl,
                                       _v_switch)
@@ -431,8 +426,7 @@ class TasmotaUni(DecoderOnTasmota):
 
 class TasmotaUniEncoder(EncoderOnTasmota):
 
-    def _configure_device(self) -> tuple[str, str]:
-        """Configure the device.
-        """
+    def device_configure_message(self) -> tuple[str, str]:
+        # Implement IEncoder interface method
         # Reset pulseTime and set AdcParam
         return self.format_backlog_cmnd("PulseTime 0; AdcParam 6,0,71,0,100")

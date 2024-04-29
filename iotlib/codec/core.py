@@ -17,7 +17,7 @@ To handle each protocol effectively and ensure accurate and efficient communicat
 from collections import defaultdict
 from typing import Callable, TypeAlias, Tuple, Dict, Any
 
-from iotlib.abstracts import ICodec, IEncoder, IVirtualDevice
+from iotlib.abstracts import ICodec,IVirtualDevice
 
 
 MessageHandlerType: TypeAlias = Tuple[
@@ -51,7 +51,6 @@ class Codec(ICodec):
         """
         self.device_name = device_name
         self.base_topic = base_topic
-        self.encoder: IEncoder = None
         self._managed_virtual_devices: list[IVirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
@@ -66,11 +65,6 @@ class Codec(ICodec):
     def __str__(self) -> str:
         _dev = self.device_name if hasattr(self, 'device_name') else 'UNSET'
         return f'{self.__class__.__name__} ("{_dev}")'
-
-    def get_encoder(self) -> IEncoder | None:
-        """Get the encoder for this codec.
-        """
-        return self.encoder
 
     def get_managed_virtual_devices(self) -> list[IVirtualDevice]:
         """Return the list of virtual devices managed by the codec.

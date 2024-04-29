@@ -104,7 +104,12 @@ class VirtualDevice(IVirtualDevice, metaclass=ABCMeta):
         self._validate_value_type(value)
         self._value = value
 
-    def set_encoder(self, encoder: IEncoder) -> None:
+    @property
+    def encoder(self) -> Optional[IEncoder]:
+        return self._encoder
+
+    @encoder.setter
+    def encoder(self, encoder: IEncoder) -> None:
         """
         Sets the encoder for the device.
 

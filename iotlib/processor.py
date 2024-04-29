@@ -31,7 +31,7 @@ The example above shows how to use the VirtualDeviceLogger .
 
 from iotlib.devconfig import ButtonValues
 from iotlib.abstracts import (IAvailabilityProcessor, IMQTTService, 
-                              Surrogate, IVirtualDeviceProcessor)
+                              IMQTTBridge, IVirtualDeviceProcessor)
 from iotlib.virtualdev import VirtualDevice, Button, Motion
 from iotlib.utils import iotlib_logger
 
@@ -244,7 +244,7 @@ class AvailabilityLogger(IAvailabilityProcessor):
         self._device_name = None
         self._debug = debug
 
-    def attach(self, bridge: Surrogate) -> None:
+    def attach(self, bridge: IMQTTBridge) -> None:
         # Implement the abstract method from AvailabilityProcessor
         self._device_name = bridge.codec.device_name
 
@@ -277,7 +277,7 @@ class AvailabilityPublisher(IAvailabilityProcessor):
         self._state_topic = None
         self._publish_topic_base = publish_topic_base or PUBLISH_TOPIC_BASE
 
-    def attach(self, bridge: Surrogate) -> None:
+    def attach(self, bridge: IMQTTBridge) -> None:
         # Implement the abstract method from IAvailabilityProcessor
         _device_name = bridge.codec.device_name
         self._mqtt_service = bridge.mqtt_service
