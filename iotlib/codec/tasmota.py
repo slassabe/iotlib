@@ -1,20 +1,19 @@
 #!/usr/local/bin/python3
 # coding=utf-8
-''' This module provides codec implementations for encoding/decoding data from 
+""" This module provides codec implementations for encoding/decoding data from 
 Tasmota-based devices using MQTT.
-'''
+"""
 
-from abc import ABCMeta, abstractmethod
 import enum
 import json
+from abc import ABCMeta, abstractmethod
 from json.decoder import JSONDecodeError
 from typing import Optional
 
 from iotlib.abstracts import IEncoder
 from iotlib.codec.core import Codec, DecodingException
 from iotlib.utils import iotlib_logger
-from iotlib.virtualdev import (
-    ADC, Switch, Switch0, Switch1, TemperatureSensor)
+from iotlib.virtualdev import ADC, Switch, Switch0, Switch1, TemperatureSensor
 
 
 class PowerState(enum.Enum):
@@ -25,23 +24,26 @@ class PowerState(enum.Enum):
         ON (str): Constant representing the device being powered on.
             Has value ``'ON'``.
 
-        OFF (str): Constant representing the device being powered off. 
+        OFF (str): Constant representing the device being powered off.
             Has value ``'OFF'``.
     """
-    ON = 'ON'
-    OFF = 'OFF'
+
+    ON = "ON"
+    OFF = "OFF"
 
 
 class Availability(enum.Enum):
     """Enumeration representing the availability of a Tasmota device.
 
-    The `Availability` enumeration defines three possible states for the availability of a Rasmota device:
+    The `Availability` enumeration defines three possible states for
+    the availability of a Rasmota device:
     - `ONLINE`: The device is online and available.
     - `OFFLINE`: The device is offline and unavailable.
     - `NONE`: The availability status is unknown or not applicable.
     """
-    ONLINE = 'Online'
-    OFFLINE = 'Offline'
+
+    ONLINE = "Online"
+    OFFLINE = "Offline"
     NONE = None
 
 
@@ -49,8 +51,8 @@ _AVAILABILITY_VALUES = [avail.value for avail in Availability]
 
 
 class DecoderOnTasmota(Codec):
-    ''' Tasmota device implementation
-    '''
+    """Tasmota device implementation"""
+
     # sub-topic `tele` reports telemetry info on the device
     #    <base_topic>
     #    └── tele
@@ -65,21 +67,25 @@ class DecoderOnTasmota(Codec):
     #        └── <device_name>
     #            └── POWER : ON | OFF               <== self._stat_power_topic
 
-    def __init__(self,
-                 device_name: str,
-                 friendly_name: Optional[str] = None,
-                 base_topic: Optional[str] = None) -> None:
-        assert isinstance(device_name, str), \
-            f'Bad value for device_name : {device_name} of type {type(device_name)}'
+    def __init__(
+        self,
+        device_name: str,
+        friendly_name: Optional[str] = None,
+        base_topic: Optional[str] = None,
+    ) -> None:
+        if not isinstance(device_name, str):
+            raise TypeError(
+                f'"device_name" must be an instance of str, not {type(device_name)}'
+            )
         super().__init__(device_name, base_topic)
 
         friendly_name = friendly_name or device_name
 
-        _root_topic = f'{base_topic}/' if base_topic is not None else ''
-        self._stat_power_topic = f'{_root_topic}stat/{device_name}/POWER'
-        _tele_topic = f'{_root_topic}tele/{device_name}'
-        self._tele_sensors_topic = f'{_tele_topic}/SENSOR'
-        self._availability_topic = f'{_tele_topic}/LWT'
+        _root_topic = f"{base_topic}/" if base_topic is not None else ""
+        self._stat_power_topic = f"{_root_topic}stat/{device_name}/POWER"
+        _tele_topic = f"{_root_topic}tele/{device_name}"
+        self._tele_sensors_topic = f"{_tele_topic}/SENSOR"
+        self._availability_topic = f"{_tele_topic}/LWT"
 
     def get_availability_topic(self) -> str:
         # Implement abstract method
@@ -88,10 +94,11 @@ class DecoderOnTasmota(Codec):
     def decode_avail_pl(self, payload: str) -> bool:
         # Implement abstract method
         iotlib_logger.debug(
-            '>> %s (%s) : decode availability payload', repr(payload), type(payload))
+            ">> %s (%s) : decode availability payload", repr(payload), type(payload)
+        )
 
         if payload not in _AVAILABILITY_VALUES:
-            raise DecodingException(f'Payload value error: {payload}')
+            raise DecodingException(f"Payload value error: {payload}")
         return payload == Availability.ONLINE.value
 
     def _decode_state_pl(self, topic: str, payload: str) -> bool:
@@ -103,13 +110,12 @@ class DecoderOnTasmota(Codec):
             iotlib_logger.debug('"%s": is available', self)
         else:
             raise DecodingException(
-                f'Received erroneous attribute value : "{payload}" on topic "{topic}"')
+                f'Received erroneous attribute value : "{payload}" on topic "{topic}"'
+            )
 
-    def _decode_json_pl(self,
-                        topic: str,
-                        payload: str,
-                        section_name: str,
-                        property_name: str) -> any:
+    def _decode_json_pl(
+        self, topic: str, payload: str, section_name: str, property_name: str
+    ) -> any:
         """Decode a generic payload from a Tasmota device.
 
         Args:
@@ -129,26 +135,32 @@ class DecoderOnTasmota(Codec):
         from that section. If any expected fields are missing, raises
         an DecodingException.
         """
-        iotlib_logger.debug('"%s": received %s value : "%s"',
-                            self, property_name, payload)
+        iotlib_logger.debug(
+            '"%s": received %s value : "%s"', self, property_name, payload
+        )
         try:
             _section_pl = json.loads(payload).get(section_name)
             if _section_pl is None:
-                raise DecodingException(f'Received erroneous attribute value :'
-                                        f'"{payload}" on "{topic}" - missing "{section_name}"')
+                raise DecodingException(
+                    f"Received erroneous attribute value :"
+                    f'"{payload}" on "{topic}" - missing "{section_name}"'
+                )
             _value = _section_pl.get(property_name)
             if _value is None:
-                raise DecodingException(f'Received erroneous attribute value :'
-                                        f'"{payload}" on "{topic}" - missing "{property_name}"')
+                raise DecodingException(
+                    f"Received erroneous attribute value :"
+                    f'"{payload}" on "{topic}" - missing "{property_name}"'
+                )
             return _value
         except JSONDecodeError as exp:
             raise DecodingException(
-                f'Exception occured while decoding : "{payload}"') from exp
+                f'Exception occured while decoding : "{payload}"'
+            ) from exp
 
 
 class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
-    """Encoder for Tasmota devices.
-    """
+    """Encoder for Tasmota devices."""
+
     # sub-topic `tele` reports telemetry info on the device
     #    <base_topic>
     #    └── tele
@@ -161,33 +173,32 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
     #        └── <device_name>                      <== self._base_cmd_topi
     #            ├── PulseTime (str)                <== self._cmnd_pulsetime_topic
     #            ├── Power : ON | OFF               <== self._cmnd_power_topic
-    #            └── Backlog (str)                  <== self._cmnd_backlog_topic 
+    #            └── Backlog (str)                  <== self._cmnd_backlog_topic
 
-    def __init__(self,
-                 device_name: str,
-                 base_topic: Optional[str] = None) -> None:
+    def __init__(self, device_name: str, base_topic: Optional[str] = None) -> None:
 
-        _root_topic = f'{base_topic}/' if base_topic is not None else ''
-        self._base_cmd_topic = f'{_root_topic}cmnd/{device_name}'
-        self._cmnd_pulsetime_topic = f'{self._base_cmd_topic}/PulseTime'
-        self._cmnd_power_topic = f'{self._base_cmd_topic}/Power'
-        self._cmnd_backlog_topic = f'{self._base_cmd_topic}/Backlog'
+        _root_topic = f"{base_topic}/" if base_topic is not None else ""
+        self._base_cmd_topic = f"{_root_topic}cmnd/{device_name}"
+        self._cmnd_pulsetime_topic = f"{self._base_cmd_topic}/PulseTime"
+        self._cmnd_power_topic = f"{self._base_cmd_topic}/Power"
+        self._cmnd_backlog_topic = f"{self._base_cmd_topic}/Backlog"
         super().__init__()
 
-    def change_state_request(self,
-                             is_on: bool,
-                             device_id: Optional[int] = None,
-                             on_time: Optional[str] = None) -> tuple[str, str]:
+    def change_state_request(
+        self,
+        is_on: bool,
+        device_id: Optional[int] = None,
+        on_time: Optional[str] = None,
+    ) -> tuple[str, str]:
         # Implement abstract method
         def _encode_state_pl(is_on: bool) -> None:
             return PowerState.ON.value if is_on else PowerState.OFF.value
 
         _topic = self._cmnd_power_topic
         if device_id is not None:
-            _topic += f'{device_id}'
+            _topic += f"{device_id}"
         _pl = _encode_state_pl(is_on)
-        iotlib_logger.info('[%s] sending  "%s" on topic "%s"',
-                           self, _pl, _topic)
+        iotlib_logger.info('[%s] sending  "%s" on topic "%s"', self, _pl, _topic)
         return _topic, _pl
 
     def is_pulse_request_allowed(self, device_id: Optional[int] = None) -> bool:
@@ -202,17 +213,18 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
         _topic = self._cmnd_backlog_topic
         return _topic, cmnd
 
-    def change_state_request_PULSE(self,
-                                   is_on: bool,
-                                   device_id: Optional[int] = None,
-                                   on_time: Optional[str] = None) -> tuple[str, str]:
+    def change_state_request_PULSE(
+        self,
+        is_on: bool,
+        device_id: Optional[int] = None,
+        on_time: Optional[str] = None,
+    ) -> tuple[str, str]:
         # Implement abstract method
         if on_time is not None:
             if not isinstance(on_time, int):
                 raise TypeError(f"Value {on_time} is not of type int")
             if on_time < 0:
-                raise ValueError(
-                    f'Bad value for duration: {on_time}, must be >= 0')
+                raise ValueError(f"Bad value for duration: {on_time}, must be >= 0")
 
         if is_on:
             _topic = self._cmnd_pulsetime_topic
@@ -226,10 +238,11 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
             _payload = self._encode_state_pl(is_on)
 
         if device_id is not None:
-            _topic += f'{device_id}'
+            _topic += f"{device_id}"
 
-        iotlib_logger.info('"%s": sending payload: "%s" on topic: "%s"',
-                           self, _payload, _topic)
+        iotlib_logger.info(
+            '"%s": sending payload: "%s" on topic: "%s"', self, _payload, _topic
+        )
         return _topic, _payload
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
@@ -238,20 +251,20 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
 
         _topic = self._cmnd_power_topic
         if device_id is not None:
-            _topic += f'{device_id}'
-        _pl = ''
+            _topic += f"{device_id}"
+        _pl = ""
         return _topic, _pl
 
     @abstractmethod
     def device_configure_message(self) -> tuple[str, str]:
-        """Configure the device.
-        """
+        """Configure the device."""
 
 
 class TasmotaPlugS(DecoderOnTasmota):
-    """Represents a Shelly Plug S device and  provides methods for controlling and 
+    """Represents a Shelly Plug S device and  provides methods for controlling and
     retrieving its state over Tasmota MQTT.
     """
+
     # JSON payload example :
     # {"Time":"2024-04-16T09:15:03",
     #  "ANALOG":{"Temperature":28.6},
@@ -268,14 +281,15 @@ class TasmotaPlugS(DecoderOnTasmota):
     #            "Current":0.099},
     #  "TempUnit":"C"}
 
-    def __init__(self,
-                 device_name: str,
-                 friendly_name: Optional[str] = None,
-                 base_topic: Optional[str] = None,
-                 v_switch0: Optional[Switch] = None,
-                 v_temp: Optional[TemperatureSensor] = None,
-                 v_adc: Optional[ADC] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        device_name: str,
+        friendly_name: Optional[str] = None,
+        base_topic: Optional[str] = None,
+        v_switch0: Optional[Switch] = None,
+        v_temp: Optional[TemperatureSensor] = None,
+        v_adc: Optional[ADC] = None,
+    ) -> None:
         super().__init__(
             device_name=device_name,
             friendly_name=friendly_name,
@@ -285,27 +299,30 @@ class TasmotaPlugS(DecoderOnTasmota):
         v_switch0 = v_switch0 or Switch(friendly_name)
         v_temp = v_temp or TemperatureSensor(friendly_name)
         v_adc = v_adc or ADC(friendly_name)
-        assert issubclass(type(v_switch0), Switch), \
-            f'Bad value : {v_switch0} of type {type(v_switch0)}'
-        assert issubclass(type(v_temp), TemperatureSensor), \
-            f'Bad value : {v_temp} of type {type(v_temp)}'
-        assert issubclass(type(v_adc), ADC), \
-            f'Bad value : {v_adc} of type {type(v_adc)}'
+        assert issubclass(
+            type(v_switch0), Switch
+        ), f"Bad value : {v_switch0} of type {type(v_switch0)}"
+        assert issubclass(
+            type(v_temp), TemperatureSensor
+        ), f"Bad value : {v_temp} of type {type(v_temp)}"
+        assert issubclass(
+            type(v_adc), ADC
+        ), f"Bad value : {v_adc} of type {type(v_adc)}"
 
         _encoder = TasmotaPlugSEncoder(
             device_name=device_name,
             base_topic=base_topic,
         )
         v_switch0.encoder = _encoder
-        self._set_message_handler(self._stat_power_topic,
-                                  self.__class__._decode_state_pl,
-                                  v_switch0)
-        self._set_message_handler(self._tele_sensors_topic,
-                                  self.__class__._decode_temp_pl,
-                                  v_temp)
-        self._set_message_handler(self._tele_sensors_topic,
-                                  self.__class__._decode_voltage_pl,
-                                  v_adc)
+        self._set_message_handler(
+            self._stat_power_topic, self.__class__._decode_state_pl, v_switch0
+        )
+        self._set_message_handler(
+            self._tele_sensors_topic, self.__class__._decode_temp_pl, v_temp
+        )
+        self._set_message_handler(
+            self._tele_sensors_topic, self.__class__._decode_voltage_pl, v_adc
+        )
 
     def _decode_voltage_pl(self, topic: str, payload: str) -> float:
         """Decode voltage payload from Tasmota device.
@@ -318,7 +335,7 @@ class TasmotaPlugS(DecoderOnTasmota):
             float: The decoded voltage value.
 
         """
-        _value = self._decode_json_pl(topic, payload, 'ENERGY', 'Voltage')
+        _value = self._decode_json_pl(topic, payload, "ENERGY", "Voltage")
         return float(_value)
 
     def _decode_temp_pl(self, topic: str, payload: str) -> float:
@@ -332,7 +349,7 @@ class TasmotaPlugS(DecoderOnTasmota):
             float: The decoded temperature value.
 
         """
-        _value = self._decode_json_pl(topic, payload, 'ANALOG', 'Temperature')
+        _value = self._decode_json_pl(topic, payload, "ANALOG", "Temperature")
         return float(_value)
 
 
@@ -340,7 +357,7 @@ class TasmotaPlugSEncoder(EncoderOnTasmota):
 
     def device_configure_message(self) -> tuple[str, str]:
         # Implement IEncoder interface method
-        return self.format_backlog_cmnd("PulseTime 0")    # Reset pulseTime
+        return self.format_backlog_cmnd("PulseTime 0")  # Reset pulseTime
 
 
 class TasmotaUni(DecoderOnTasmota):
@@ -356,6 +373,7 @@ class TasmotaUni(DecoderOnTasmota):
         v_adc (VirtualADC): The virtual ADC sensor.
 
     """
+
     # JSON payload example :
     #
     # {"Time":"2024-04-16T09:48:02",
@@ -366,14 +384,15 @@ class TasmotaUni(DecoderOnTasmota):
     #   "AM2301":{"Temperature":null,"Humidity":null,"DewPoint":null},
     # "TempUnit":"C"}
 
-    def __init__(self,
-                 device_name: str,
-                 friendly_name: Optional[str] = None,
-                 base_topic: Optional[str] = None,
-                 v_switch0: Optional[Switch0] = None,
-                 v_switch1: Optional[Switch1] = None,
-                 v_adc: Optional[ADC] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        device_name: str,
+        friendly_name: Optional[str] = None,
+        base_topic: Optional[str] = None,
+        v_switch0: Optional[Switch0] = None,
+        v_switch1: Optional[Switch1] = None,
+        v_adc: Optional[ADC] = None,
+    ) -> None:
         super().__init__(
             device_name=device_name,
             friendly_name=friendly_name,
@@ -384,12 +403,15 @@ class TasmotaUni(DecoderOnTasmota):
         v_switch1 = v_switch1 or Switch(friendly_name)
         v_adc = v_adc or ADC(friendly_name)
 
-        assert issubclass(type(v_switch0), Switch0), \
-            f'Bad value : {v_switch0} of type {type(v_switch0)}'
-        assert issubclass(type(v_switch1), Switch1), \
-            f'Bad value : {v_switch1} of type {type(v_switch1)}'
-        assert issubclass(type(v_adc), ADC), \
-            f'Bad value : {v_adc} of type {type(v_adc)}'
+        assert issubclass(
+            type(v_switch0), Switch0
+        ), f"Bad value : {v_switch0} of type {type(v_switch0)}"
+        assert issubclass(
+            type(v_switch1), Switch1
+        ), f"Bad value : {v_switch1} of type {type(v_switch1)}"
+        assert issubclass(
+            type(v_adc), ADC
+        ), f"Bad value : {v_adc} of type {type(v_adc)}"
 
         _encoder = TasmotaUniEncoder(
             device_name=device_name,
@@ -397,15 +419,17 @@ class TasmotaUni(DecoderOnTasmota):
         )
         for _v_switch in [v_switch0, v_switch1]:
             _v_switch.encoder = _encoder
-            self._set_message_handler(f'{self._stat_power_topic}{_v_switch.device_id}',
-                                      self.__class__._decode_state_pl,
-                                      _v_switch)
+            self._set_message_handler(
+                f"{self._stat_power_topic}{_v_switch.device_id}",
+                self.__class__._decode_state_pl,
+                _v_switch,
+            )
 
-        self._set_message_handler(self._tele_sensors_topic,
-                                  self.__class__._decode_voltage_pl,
-                                  v_adc)
+        self._set_message_handler(
+            self._tele_sensors_topic, self.__class__._decode_voltage_pl, v_adc
+        )
         # self.ask_for_state()
-        iotlib_logger.warning('%s : unable to ask state', self)
+        iotlib_logger.warning("%s : unable to ask state", self)
 
     def _decode_voltage_pl(self, topic: str, payload: str) -> float:
         """Decode voltage payload from Tasmota device.
@@ -418,7 +442,7 @@ class TasmotaUni(DecoderOnTasmota):
             float: The decoded voltage value.
 
         """
-        _value = self._decode_json_pl(topic, payload, 'ANALOG', 'Range')
+        _value = self._decode_json_pl(topic, payload, "ANALOG", "Range")
         _value = float(_value / 100)
         iotlib_logger.debug('"%s": _decode_voltage_pl: %s', self, _value)
         return _value

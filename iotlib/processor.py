@@ -29,20 +29,20 @@ the actions performed on virtual devices and can be used for debugging and track
 The example above shows how to use the VirtualDeviceLogger .
 """
 
+from iotlib.abstracts import (IAvailabilityProcessor, IMQTTBridge,
+                              IMQTTService, IVirtualDeviceProcessor)
 from iotlib.devconfig import ButtonValues
-from iotlib.abstracts import (IAvailabilityProcessor, IMQTTService, 
-                              IMQTTBridge, IVirtualDeviceProcessor)
-from iotlib.virtualdev import VirtualDevice, Button, Motion
 from iotlib.utils import iotlib_logger
+from iotlib.virtualdev import Button, Motion, VirtualDevice
 
-PUBLISH_TOPIC_BASE = 'canonical'
+PUBLISH_TOPIC_BASE = "canonical"
 
 
 class VirtualDeviceLogger(IVirtualDeviceProcessor):
     """
     Logs updates from virtual devices.
 
-    This processor logs a debug message when a virtual device value is updated. It implements the 
+    This processor logs a debug message when a virtual device value is updated. It implements the
     IVirtualDeviceProcessor interface.
 
     :ivar logger: The logger instance used to log debug messages.
@@ -53,8 +53,8 @@ class VirtualDeviceLogger(IVirtualDeviceProcessor):
         """
         Initializes a new instance of the VirtualDeviceLogger class.
 
-        This method initializes a new instance of the VirtualDeviceLogger class. If the debug parameter is set to True, 
-        the logger will log debug messages.
+        This method initializes a new instance of the VirtualDeviceLogger class. If the debug
+        parameter is set to True, the logger will log debug messages.
 
         :param debug: A flag indicating whether to log debug messages, defaults to False.
         :type debug: bool, optional
@@ -65,10 +65,12 @@ class VirtualDeviceLogger(IVirtualDeviceProcessor):
     def process_value_update(self, v_dev: VirtualDevice) -> None:
         # Implement the abstract method from VirtualDeviceProcessor
         _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
-        _log_fn('-> Logging virtual device (friendly_name : "%s" - property : "%s" - value : "%s")',
-                v_dev.friendly_name,
-                v_dev.get_property(),
-                v_dev.value)
+        _log_fn(
+            '-> Logging virtual device (friendly_name : "%s" - property : "%s" - value : "%s")',
+            v_dev.friendly_name,
+            v_dev.get_property(),
+            v_dev.value,
+        )
 
     def compatible_with_device(self, v_dev: VirtualDevice) -> None:
         # Define device compatibility for this processor
@@ -76,17 +78,14 @@ class VirtualDeviceLogger(IVirtualDeviceProcessor):
 
 
 class ButtonTrigger(IVirtualDeviceProcessor):
-    """This processor triggers button actions on virtual devices when their state changes. 
-    """
+    """This processor triggers button actions on virtual devices when their state changes."""
 
-    def __init__(self,
-                 mqtt_service: IMQTTService,
-                 countdown_long=60*10) -> None:
+    def __init__(self, mqtt_service: IMQTTService, countdown_long=60 * 10) -> None:
         """
         Initializes a new instance of the ButtonTrigger class.
 
-        This method initializes a new instance of the ButtonTrigger class with a given button map. The button map is a 
-        dictionary mapping button states to actions.
+        This method initializes a new instance of the ButtonTrigger class with a given button map.
+        The button map is a dictionary mapping button states to actions.
 
         :param button_map: A dictionary mapping button states to actions.
         :type button_map: Dict[str, Callable]
@@ -105,7 +104,8 @@ class ButtonTrigger(IVirtualDeviceProcessor):
         """
         Processes a value update from a virtual device.
 
-        This method takes a virtual device as input and triggers the appropriate action based on the device's state.
+        This method takes a virtual device as input and triggers the appropriate action
+        based on the device's state.
 
         :param v_dev: The virtual device whose value has been updated.
         :type v_dev: VirtualDevice
@@ -117,35 +117,31 @@ class ButtonTrigger(IVirtualDeviceProcessor):
         """
         prefix = f'[{v_dev}] : event "{v_dev.value}" occured'
         if v_dev.value is None:
-            iotlib_logger.debug(
-                '%s -> discarded', prefix)
+            iotlib_logger.debug("%s -> discarded", prefix)
             return
         elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
-            iotlib_logger.info(
-                '%s -> "start_and_stop" with short period', prefix)
+            iotlib_logger.info('%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(mqtt_service=self._mqtt_service)
         elif v_dev.value == ButtonValues.DOUBLE_ACTION.value:
-            iotlib_logger.info('%s -> "start_and_stop" with long period',
-                               prefix)
+            iotlib_logger.info('%s -> "start_and_stop" with long period', prefix)
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(mqtt_service=self._mqtt_service,
-                                  on_time=self._countdown_long)
+                _sw.trigger_start(
+                    mqtt_service=self._mqtt_service, on_time=self._countdown_long
+                )
         elif v_dev.value == ButtonValues.LONG_ACTION.value:
             iotlib_logger.info('%s -> "trigger_stop"', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_stop(mqtt_service=self._mqtt_service)
         else:
-            iotlib_logger.error('%s : action unknown "%s"',
-                                prefix,
-                                v_dev.value)
+            iotlib_logger.error('%s : action unknown "%s"', prefix, v_dev.value)
 
 
 class MotionTrigger(IVirtualDeviceProcessor):
-    '''
-    A class that handles motion sensor state changes and triggers registered switches 
+    """
+    A class that handles motion sensor state changes and triggers registered switches
     when occupancy is detected.
-    '''
+    """
 
     def __init__(self, mqtt_service: IMQTTService) -> None:
         """
@@ -171,36 +167,38 @@ class MotionTrigger(IVirtualDeviceProcessor):
         :type v_dev: VirtualDevice
         """
         if v_dev.value:
-            iotlib_logger.info('[%s] occupancy changed to "%s" '
-                               '-> "start_and_stop" on registered switch',
-                               v_dev.friendly_name,
-                               v_dev.value)
+            iotlib_logger.info(
+                '[%s] occupancy changed to "%s" '
+                '-> "start_and_stop" on registered switch',
+                v_dev.friendly_name,
+                v_dev.value,
+            )
             for _sw in v_dev.get_sensor_observers():
-                _sw.trigger_start(self._mqtt_service,
-                                  on_time=_sw.countdown)
+                _sw.trigger_start(self._mqtt_service, on_time=_sw.countdown)
         else:
-            iotlib_logger.debug('[%s] occupancy changed to "%s" '
-                                '-> nothing to do (timer will stop switch)',
-                                v_dev.friendly_name,
-                                v_dev.value)
+            iotlib_logger.debug(
+                '[%s] occupancy changed to "%s" '
+                "-> nothing to do (timer will stop switch)",
+                v_dev.friendly_name,
+                v_dev.value,
+            )
 
 
 class PropertyPublisher(IVirtualDeviceProcessor):
-    """A class that publishes property updates to an MQTT broker.
-    """
+    """A class that publishes property updates to an MQTT broker."""
 
-    def __init__(self,
-                 mqtt_service: IMQTTService,
-                 publish_topic_base: str | None = None):
+    def __init__(
+        self, mqtt_service: IMQTTService, publish_topic_base: str | None = None
+    ):
         """
         Initializes a new instance of the class.
 
-        This method initializes a new instance of the class with a given MQTT service 
+        This method initializes a new instance of the class with a given MQTT service
         and an optional publish topic base.
 
         :param mqtt_service: The MQTT service to be used for communication.
         :type mqtt_service: IMQTTService
-        :param publish_topic_base: The base topic for publishing messages. Default base topic is 
+        :param publish_topic_base: The base topic for publishing messages. Default base topic is
             used if set to None.
         :type publish_topic_base: str | None, optional
         """
@@ -217,14 +215,12 @@ class PropertyPublisher(IVirtualDeviceProcessor):
         :type v_dev: VirtualDevice
         """
         _property_topic = self._publish_topic_base
-        _property_topic += '/device/' + v_dev.friendly_name
-        _property_topic += '/' + v_dev.get_property().property_node
-        _property_topic += '/' + v_dev.get_property().property_name
+        _property_topic += "/device/" + v_dev.friendly_name
+        _property_topic += "/" + v_dev.get_property().property_node
+        _property_topic += "/" + v_dev.get_property().property_name
 
         _client = self._mqtt_service.mqtt_client
-        _client.publish(_property_topic,
-                        v_dev.value,
-                        qos=1, retain=True)
+        _client.publish(_property_topic, v_dev.value, qos=1, retain=True)
 
     def compatible_with_device(self, v_dev: VirtualDevice) -> None:
         # Define device compatibility for this processor
@@ -234,43 +230,41 @@ class PropertyPublisher(IVirtualDeviceProcessor):
 class AvailabilityLogger(IAvailabilityProcessor):
     """Logs availability updates of devices.
 
-    This processor logs a message when a device's 
+    This processor logs a message when a device's
     availability changes.
 
     """
 
     def __init__(self, debug: bool = False):
         super().__init__()
-        self._device_name = None
         self._debug = debug
 
     def attach(self, bridge: IMQTTBridge) -> None:
-        # Implement the abstract method from AvailabilityProcessor
-        self._device_name = bridge.codec.device_name
+        # Implement the abstract method from IAvailabilityProcessor
+        pass
 
-    def process_availability_update(self, availability: bool) -> None:
+    def process_availability_update(self, availability: bool, device_name: str) -> None:
         # Implement the abstract method from IAvailabilityProcessor
         if availability:
             _log_fn = iotlib_logger.info if self._debug else iotlib_logger.debug
-            _log_fn("[%s] is available", self._device_name)
+            _log_fn("[%s] is available", device_name)
         else:
-            iotlib_logger.warning(
-                "[%s] is unavailable", self._device_name)
+            iotlib_logger.warning("[%s] is unavailable", device_name)
 
 
 class AvailabilityPublisher(IAvailabilityProcessor):
     """Processes availability updates from MQTTBridge.
 
-    This processor handles availability updates from a MQTTBridge 
+    This processor handles availability updates from a MQTTBridge
     instance. It publishes the availability status to a MQTT topic.
 
     """
 
-    def __init__(self,
-                 publish_topic_base: str = None):
+    def __init__(self, publish_topic_base: str = None):
         if not isinstance(publish_topic_base, str):
             raise TypeError(
-                f"publish_topic_base must be string, not {type(publish_topic_base)}")
+                f"publish_topic_base must be string, not {type(publish_topic_base)}"
+            )
 
         super().__init__()
         self._mqtt_service = None
@@ -283,19 +277,15 @@ class AvailabilityPublisher(IAvailabilityProcessor):
         self._mqtt_service = bridge.mqtt_service
         self._state_topic = f"{self._publish_topic_base}/device/{_device_name}/$state"
         _client = self._mqtt_service.mqtt_client
-        _client.will_set(self._state_topic,
-                         'lost',
-                         qos=1, retain=True)
+        _client.will_set(self._state_topic, "lost", qos=1, retain=True)
 
-    def process_availability_update(self, availability: bool) -> None:
+    def process_availability_update(self, availability: bool, device_name: str) -> None:
         # Implement the abstract method from IAvailabilityProcessor
         if availability is None:
-            _state_str = 'init'
+            _state_str = "init"
         elif availability:
-            _state_str = 'ready'
+            _state_str = "ready"
         else:
-            _state_str = 'disconnected'
+            _state_str = "disconnected"
         _client = self._mqtt_service.mqtt_client
-        _client.publish(self._state_topic,
-                        _state_str,
-                        qos=1, retain=True)
+        _client.publish(self._state_topic, _state_str, qos=1, retain=True)

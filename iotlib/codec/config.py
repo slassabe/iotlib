@@ -12,6 +12,7 @@ class BaseTopic(enum.Enum):
     - `Z2M_BASE_TOPIC`: Base topic for Zigbee2MQTT messages.
     - `TASMOTA_DISCOVERY_TOPIC`: Base topic for Tasmota discovery messages.
     """
-    Z2M_BASE_TOPIC = 'zigbee2mqtt'
 
-    TASMOTA_DISCOVERY_TOPIC = 'tasmota/discovery'
+    Z2M_BASE_TOPIC = "zigbee2mqtt"
+
+    TASMOTA_DISCOVERY_TOPIC = "tasmota/discovery"

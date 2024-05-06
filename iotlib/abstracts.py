@@ -11,14 +11,16 @@ Each class has its own specific methods that need to be implemented in any concr
 
 """
 
+import enum
 from abc import ABC, abstractmethod
 from typing import Callable, Optional
-import enum
+
 import paho.mqtt.client as mqtt
 
+
 class IMQTTService(ABC):
-    """    Interface for the MQTT services used by Surrogate classes
-    """
+    """Interface for the MQTT services used by Surrogate classes"""
+
     @property
     @abstractmethod
     def mqtt_client(self) -> mqtt.Client:
@@ -30,7 +32,9 @@ class IMQTTService(ABC):
         """
 
     @abstractmethod
-    def connect(self, properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTErrorCode:
+    def connect(
+        self, properties: Optional[mqtt.Properties] = None
+    ) -> mqtt.MQTTErrorCode:
         """
         Connect to a MQTT remote broker.
 
@@ -71,8 +75,7 @@ class IMQTTService(ABC):
 
 
 class IEncoder(ABC):
-    """Interface for encoding messages to send on MQTT to IoT devices.
-    """
+    """Interface for encoding messages to send on MQTT to IoT devices."""
 
     @abstractmethod
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
@@ -81,7 +84,7 @@ class IEncoder(ABC):
 
         :param device_id: The device ID to get the state request for.
         :type device_id: Optional[int]
-        :return: A tuple containing the state request topic and payload or None if such a request 
+        :return: A tuple containing the state request topic and payload or None if such a request
             is not accepted.
         :rtype: tuple[str, str]
         """
@@ -98,7 +101,9 @@ class IEncoder(ABC):
         """
 
     @abstractmethod
-    def change_state_request(self, is_on: bool, device_id: Optional[int]) -> tuple[str, str]:
+    def change_state_request(
+        self, is_on: bool, device_id: Optional[int]
+    ) -> tuple[str, str]:
         """
         Constructs a change state request for the device.
 
@@ -113,14 +118,14 @@ class IEncoder(ABC):
     @abstractmethod
     def device_configure_message(self) -> Optional[tuple[str, str]]:
         """Configure the device before using it
-    
+
         :return: A tuple containing the backlog command and topic
         :rtype: tuple[str, str]
         """
 
 
 class ICodec(ABC):
-    '''Interface for decoding messages received on MQTT to IoT devices'''
+    """Interface for decoding messages received on MQTT to IoT devices"""
 
     @abstractmethod
     def decode_avail_pl(self, payload: str) -> bool:
@@ -162,6 +167,7 @@ class IMQTTBridge:
         """
         pass
 
+
 class IDiscoveryProcessor(ABC):
     """
     Interface for discovery processors.
@@ -199,12 +205,14 @@ class IAvailabilityProcessor(ABC):
         """
 
     @abstractmethod
-    def process_availability_update(self, availability: bool) -> None:
+    def process_availability_update(self, availability: bool, device_name: str) -> None:
         """
         Handle an update to the device availability status.
 
         :param availability: The new availability status of the device.
         :type availability: bool
+        :param device_name: The device name.
+        :type device_name: str
         :return: None
         """
 
@@ -223,8 +231,8 @@ class IVirtualDeviceProcessor(ABC):
         """
         Handle an update from a virtual device.
 
-        This method is called when a value changes on a virtual 
-        device. It should be implemented in child classes to 
+        This method is called when a value changes on a virtual
+        device. It should be implemented in child classes to
         handle specific processing logic for the device type.
 
         :param v_dev: The virtual device instance.
@@ -232,7 +240,9 @@ class IVirtualDeviceProcessor(ABC):
         :return: None
         """
 
-    def compatible_with_device(self, v_dev: any) -> bool: # pylint: disable=unused-argument
+    def compatible_with_device(
+        self, v_dev: any
+    ) -> bool:  # pylint: disable=unused-argument
         """
         Checks if the given virtual device is compatible with this processor.
 
@@ -243,6 +253,7 @@ class IVirtualDeviceProcessor(ABC):
         """
         return False
 
+
 class ResultType(enum.IntEnum):
     """
     Enum representing the result types.
@@ -251,6 +262,7 @@ class ResultType(enum.IntEnum):
     :cvar SUCCESS: Represents a successful result.
     :cvar ECHO: Represents a value appearing twice.
     """
+
     IGNORE = -1
     SUCCESS = 0
     ECHO = 1

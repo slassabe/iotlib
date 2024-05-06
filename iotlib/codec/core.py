@@ -15,14 +15,11 @@ To handle each protocol effectively and ensure accurate and efficient communicat
 """
 
 from collections import defaultdict
-from typing import Callable, TypeAlias, Tuple, Dict, Any
+from typing import Any, Callable, Dict, Tuple, TypeAlias
 
-from iotlib.abstracts import ICodec,IVirtualDevice
+from iotlib.abstracts import ICodec, IVirtualDevice
 
-
-MessageHandlerType: TypeAlias = Tuple[
-    Callable[..., Any],
-    IVirtualDevice]
+MessageHandlerType: TypeAlias = Tuple[Callable[..., Any], IVirtualDevice]
 HandlersListType: TypeAlias = Dict[str, MessageHandlerType]
 
 
@@ -31,17 +28,15 @@ class Codec(ICodec):
     The Codec class is responsible for encoding and decoding MQTT messages for a s
     pecific device.
 
-    It manages a list of virtual devices and a dictionary of message handlers, 
+    It manages a list of virtual devices and a dictionary of message handlers,
     which are functions that handle messages received on specific MQTT topics.
     """
 
-    def __init__(self,
-                 device_name: str,
-                 base_topic: str) -> None:
+    def __init__(self, device_name: str, base_topic: str) -> None:
         """
         Initializes a new instance of the Codec class.
 
-        This method initializes a new instance of the Codec class with a given device 
+        This method initializes a new instance of the Codec class with a given device
         name and a base topic for MQTT communication.
 
         :param device_name: The name of the device.
@@ -55,36 +50,32 @@ class Codec(ICodec):
         self._message_handler_dict: HandlersListType = defaultdict(list)
 
     def __repr__(self) -> str:
-        _sep = ''
-        _res = ''
+        _sep = ""
+        _res = ""
         for _attr, _val in self.__dict__.items():
-            _res += f'{_sep}{_attr} : {_val}'
-            _sep = ' | '
-        return f'{self.__class__.__name__} ({_res})'
+            _res += f"{_sep}{_attr} : {_val}"
+            _sep = " | "
+        return f"{self.__class__.__name__} ({_res})"
 
     def __str__(self) -> str:
-        _dev = self.device_name if hasattr(self, 'device_name') else 'UNSET'
+        _dev = self.device_name if hasattr(self, "device_name") else "UNSET"
         return f'{self.__class__.__name__} ("{_dev}")'
 
     def get_managed_virtual_devices(self) -> list[IVirtualDevice]:
-        """Return the list of virtual devices managed by the codec.
-        """
+        """Return the list of virtual devices managed by the codec."""
         return self._managed_virtual_devices
 
     def _add_virtual_device(self, vdev: IVirtualDevice) -> None:
-        """Add a virtual device to the list of managed virtual devices.
-        """
+        """Add a virtual device to the list of managed virtual devices."""
         self._managed_virtual_devices.append(vdev)
 
     def get_subscription_topics(self) -> list[str]:
-        """Return the topics the client must subscribe according to message handler set
-        """
+        """Return the topics the client must subscribe according to message handler set"""
         return list(self._message_handler_dict.keys())
 
-    def _set_message_handler(self,
-                             topic: str,
-                             decoder: Callable,
-                             vdev: IVirtualDevice) -> None:
+    def _set_message_handler(
+        self, topic: str, decoder: Callable, vdev: IVirtualDevice
+    ) -> None:
         """
         Sets the message handler for a given topic.
 
@@ -93,7 +84,7 @@ class Codec(ICodec):
             decoder (Callable): The decoder function to be used for decoding messages.
             vdev (IVirtualDevice): The virtual device associated with the message handler.
 
-        This method associates a topic with a decoding function, virtual device, 
+        This method associates a topic with a decoding function, virtual device,
         and node name. It stores this association in a dictionary self._handler_list
         so that when a message is received on the given topic, the provided decoder
         function can be called to process it and update the virtual device.
@@ -115,14 +106,12 @@ class Codec(ICodec):
 
     @staticmethod
     def fit_payload(payload) -> str:
-        """Adjust payload to be decoded, that is, fit in string
-        """
+        """Adjust payload to be decoded, that is, fit in string"""
         return payload
 
 
 class DecodingException(Exception):
-    """ Exception if message received on wrong topic
-    """
+    """Exception if message received on wrong topic"""
 
     def __init__(self, message: str):
         self.message = message

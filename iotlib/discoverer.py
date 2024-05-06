@@ -15,19 +15,22 @@ Device class provides properties for accessing these attributes and methods
 for getting string representations of the device.
 """
 import json
+from typing import Any
 
-from iotlib.utils import iotlib_logger
+import paho.mqtt.client as mqtt
+
 from iotlib.abstracts import IDiscoveryProcessor, IMQTTService
 from iotlib.codec.config import BaseTopic
 from iotlib.factory import Model, Protocol
+from iotlib.utils import iotlib_logger
 
 
-class Device():
+class Device:
     """
     Represents a generic device in the system.
 
-    This class provides a base for all types of devices. It defines common properties and methods 
-    that all devices should have. Specific device types should inherit from this class and add 
+    This class provides a base for all types of devices. It defines common properties and methods
+    that all devices should have. Specific device types should inherit from this class and add
     their own unique properties and methods.
 
     :ivar id: The unique identifier for the device.
@@ -39,11 +42,10 @@ class Device():
     :ivar status: The current status of the device (e.g., 'online', 'offline').
     :vartype status: str
     """
-    def __init__(self,
-                 address: str,
-                 friendly_name: str,
-                 model: Model,
-                 protocol: Protocol):
+
+    def __init__(
+        self, address: str, friendly_name: str, model: Model, protocol: Protocol
+    ):
         """
         Initializes a new instance of the Discoverer class.
 
@@ -85,14 +87,19 @@ class Device():
         return f"<{self.__class__.__name__} : {self.friendly_name}>"
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} : {self.friendly_name}, address : {self.address}, model: {self.model}, protocol: {self.protocol}>"
+        return (
+            f"<{self.__class__.__name__} : {self.friendly_name}, "
+            f"address : {self.address}, "
+            f"model: {self.model}, "
+            f"protocol: {self.protocol}>"
+        )
 
 
-class Discoverer():
+class Discoverer:
     """
     Discovers devices on the network.
 
-    This class provides methods to discover devices on the network using different protocols. 
+    This class provides methods to discover devices on the network using different protocols.
     It can be used to find devices, get their information, and add them to the system.
 
     :ivar address: The IP address or hostname of the device.
@@ -104,6 +111,7 @@ class Discoverer():
     :ivar protocol: The protocol used by the device.
     :vartype protocol: Protocol
     """
+
     def __init__(self, mqtt_service: IMQTTService):
         """
         Initializes a new instance of the Discoverer class.
@@ -113,7 +121,8 @@ class Discoverer():
         """
         if not isinstance(mqtt_service, IMQTTService):
             raise TypeError(
-                f"mqtt_service must be an instance of MQTTService, not {type(mqtt_service)}")
+                f"mqtt_service must be an instance of MQTTService, not {type(mqtt_service)}"
+            )
         self.mqtt_service = mqtt_service
         self.devices = []
         self._discovery_processors = []
@@ -133,7 +142,7 @@ class Discoverer():
         """
         Adds a discovery processor to the Discoverer.
 
-        Discovery processors are used to process the results of a device discovery operation. 
+        Discovery processors are used to process the results of a device discovery operation.
         This method allows adding custom processors to the Discoverer.
 
         :param processor: The discovery processor to be added.
@@ -149,8 +158,8 @@ class ZigbeeDiscoverer(Discoverer):
     """
     Discovers Zigbee devices on the network.
 
-    This class extends the Discoverer class and provides methods to discover Zigbee 
-    devices on the network. 
+    This class extends the Discoverer class and provides methods to discover Zigbee
+    devices on the network.
     It uses the Zigbee protocol for device discovery.
 
     :ivar address: The IP address or hostname of the Zigbee device.
@@ -162,12 +171,14 @@ class ZigbeeDiscoverer(Discoverer):
     :ivar protocol: The protocol used by the Zigbee device, should be Zigbee.
     :vartype protocol: Protocol
     """
+
     def __init__(self, mqtt_service: IMQTTService):
         """Initializes the ZigbeeDiscoverer with the given MQTT client."""
         super().__init__(mqtt_service)
-        self._base_topic = BaseTopic.Z2M_BASE_TOPIC.value + '/bridge/devices'
-        mqtt_service.mqtt_client.message_callback_add(self._base_topic,
-                                                      self._on_message_cb)
+        self._base_topic = BaseTopic.Z2M_BASE_TOPIC.value + "/bridge/devices"
+        mqtt_service.mqtt_client.message_callback_add(
+            self._base_topic, self._on_message_cb
+        )
         mqtt_service.connect_handler_add(self._on_connect_cb)
 
     def _on_message_cb(self, client, userdata, message) -> None:
@@ -177,17 +188,23 @@ class ZigbeeDiscoverer(Discoverer):
         for _processor in self._discovery_processors:
             _processor.process_discovery_update(_new_devices)
 
-    def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+    def _on_connect_cb(
+        self,
+        client: mqtt.Client,
+        userdata: Any,
+        flags: mqtt.ConnectFlags,
+        reason_code: mqtt.ReasonCode,
+        properties: mqtt.Properties,
+    ) -> None:
         """Handles the MQTT connection event."""
-        iotlib_logger.debug(
-            '[%s] Connection accepted -> subscribe', self.mqtt_service)
+        iotlib_logger.debug("[%s] Connection accepted -> subscribe", self.mqtt_service)
         self.mqtt_service.mqtt_client.subscribe(self._base_topic)
 
     def _parse_devices(self, payload: json) -> list[Device]:
         """
         Parses the payload to extract device information.
 
-        This method takes a JSON payload, typically received from a device discovery operation, 
+        This method takes a JSON payload, typically received from a device discovery operation,
         and extracts device information from it. It returns a list of Device objects.
 
         :param payload: The JSON payload to parse.
@@ -195,12 +212,16 @@ class ZigbeeDiscoverer(Discoverer):
         :return: A list of Device objects extracted from the payload.
         :rtype: list[Device]
         """
-        devices = [Device(entry.get("ieee_address"),
-                          entry.get("friendly_name"),
-                          Model.from_str(
-                              entry.get("definition", {}).get("model")),
-                          Protocol.Z2M)
-                   for entry in payload if entry.get("type") == 'EndDevice']
+        devices = [
+            Device(
+                entry.get("ieee_address"),
+                entry.get("friendly_name"),
+                Model.from_str(entry.get("definition", {}).get("model")),
+                Protocol.Z2M,
+            )
+            for entry in payload
+            if entry.get("type") == "EndDevice"
+        ]
         self.devices = devices
 
         return devices
@@ -210,7 +231,7 @@ class TasmotaDiscoverer(Discoverer):
     """
     Discovers Tasmota devices on the network.
 
-    This class extends the Discoverer class and provides methods to discover Tasmota 
+    This class extends the Discoverer class and provides methods to discover Tasmota
     devices on the network. It uses the Tasmota protocol for device discovery.
 
     :ivar address: The IP address or hostname of the Tasmota device.
@@ -222,12 +243,14 @@ class TasmotaDiscoverer(Discoverer):
     :ivar protocol: The protocol used by the Tasmota device, should be Tasmota.
     :vartype protocol: Protocol
     """
+
     def __init__(self, mqtt_service: IMQTTService):
         super().__init__(mqtt_service)
         self.devices = []
-        self._base_topic = BaseTopic.TASMOTA_DISCOVERY_TOPIC.value + '/+/config'
-        mqtt_service.mqtt_client.message_callback_add(self._base_topic,
-                                                      self._on_message_cb)
+        self._base_topic = BaseTopic.TASMOTA_DISCOVERY_TOPIC.value + "/+/config"
+        mqtt_service.mqtt_client.message_callback_add(
+            self._base_topic, self._on_message_cb
+        )
         mqtt_service.connect_handler_add(self._on_connect_cb)
 
     def _on_message_cb(self, client, userdata, message) -> None:
@@ -237,41 +260,52 @@ class TasmotaDiscoverer(Discoverer):
         for _processor in self._discovery_processors:
             _processor.process_discovery_update(new_devices)
 
-    def _on_connect_cb(self, client, userdata, flags, rc, properties) -> None:
+    def _on_connect_cb(
+        self,
+        client: mqtt.Client,
+        userdata: Any,
+        flags: mqtt.ConnectFlags,
+        reason_code: mqtt.ReasonCode,
+        properties: mqtt.Properties,
+    ) -> None:
         """Handles the MQTT connection event."""
-        iotlib_logger.debug(
-            '[%s] Connection accepted -> subscribe', self.mqtt_service)
+        iotlib_logger.debug("[%s] Connection accepted -> subscribe", self.mqtt_service)
         self.mqtt_service.mqtt_client.subscribe(self._base_topic)
 
     def _parse_devices(self, payload: dict) -> list[Device]:
         """Parses the devices from the given payload."""
         if all(k in payload for k in ("hn", "t", "md")):
-            device = Device(payload.get("hn"),
-                            payload.get("t"),
-                            Model.from_str(payload.get('md')),
-                            Protocol.TASMOTA)
+            device = Device(
+                payload.get("hn"),
+                payload.get("t"),
+                Model.from_str(payload.get("md")),
+                Protocol.TASMOTA,
+            )
             self.devices.append(device)
             return [device]
 
 
-class UnifiedDiscoverer():
+class UnifiedDiscoverer:
     """
     A class that unifies the discovery of devices from different protocols.
     """
 
     def __init__(self, mqtt_service: IMQTTService):
-        """ Initializes the UnifiedDiscoverer with a list of specific protocol discoverers.
-        """
-        self._discoverers = [ZigbeeDiscoverer(
-            mqtt_service), TasmotaDiscoverer(mqtt_service)]
+        """Initializes the UnifiedDiscoverer with a list of specific protocol discoverers."""
+        self._discoverers = [
+            ZigbeeDiscoverer(mqtt_service),
+            TasmotaDiscoverer(mqtt_service),
+        ]
 
     def get_devices(self) -> list[Device]:
-        """ Returns a list of all devices discovered by all protocol discoverers.
-        """
-        return [device for _discoverer in self._discoverers for device in _discoverer.get_devices()]
+        """Returns a list of all devices discovered by all protocol discoverers."""
+        return [
+            device
+            for _discoverer in self._discoverers
+            for device in _discoverer.get_devices()
+        ]
 
     def add_discovery_processor(self, processor: IDiscoveryProcessor) -> None:
-        """Appends an Discovery Processor instance to the processor list
-        """
+        """Appends an Discovery Processor instance to the processor list"""
         for _discoverer in self._discoverers:
             _discoverer.add_discovery_processor(processor)

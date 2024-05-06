@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.2.0] - 2024-05-06
+
+### Added
+
+- Packaging
+
+### Fixed
+
+- Addressed various bugs to improve system stability and performance.
+
 ## [2.1.0] - 2024-04-10
 
 ### Added
@@ -19,7 +29,7 @@
 
 ### Removed
 
-- Temporary removed support for the following codecs: Tasmota, Shelly, ring-mqtt, miflora-mqtt. 
+- Temporary removed support for the following codecs: Tasmota, Shelly, ring-mqtt, miflora-mqtt.
 
 ### Deprecated
 

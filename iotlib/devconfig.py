@@ -21,8 +21,8 @@ class PropertyConfig(Enum):
     """
     Defines property name enums for virtual devices.
 
-    This enum defines property names, types, and owning node 
-    for different virtual device types. Allows generic access 
+    This enum defines property names, types, and owning node
+    for different virtual device types. Allows generic access
     to property configuration details.
 
     :ivar ALARM_PROPERTY: Represents the 'alarm.power' property of type bool.
@@ -39,27 +39,27 @@ class PropertyConfig(Enum):
 
     """
 
-    ALARM_PROPERTY = 'alarm.power', bool
-    ADC_PROPERTY = 'sensor.voltage', float
-    BUTTON_PROPERTY = 'sensor.action', str
-    CONDUCTIVITY_PROPERTY = 'sensor.conductivity', int
-    HUMIDITY_PROPERTY = 'sensor.humidity', int
-    LIGHT_PROPERTY = 'sensor.light', int
-    MOTION_PROPERTY = 'sensor.occupancy', bool
-    SWITCH_PROPERTY = 'switch.power', bool
-    SWITCH0_PROPERTY = 'switch0.power', bool
-    SWITCH1_PROPERTY = 'switch1.power', bool
-    TEMPERATURE_PROPERTY = 'sensor.temperature', float
+    ALARM_PROPERTY = "alarm.power", bool
+    ADC_PROPERTY = "sensor.voltage", float
+    BUTTON_PROPERTY = "sensor.action", str
+    CONDUCTIVITY_PROPERTY = "sensor.conductivity", int
+    HUMIDITY_PROPERTY = "sensor.humidity", int
+    LIGHT_PROPERTY = "sensor.light", int
+    MOTION_PROPERTY = "sensor.occupancy", bool
+    SWITCH_PROPERTY = "switch.power", bool
+    SWITCH0_PROPERTY = "switch0.power", bool
+    SWITCH1_PROPERTY = "switch1.power", bool
+    TEMPERATURE_PROPERTY = "sensor.temperature", float
 
     def __new__(cls, qualified_property: str, property_type: type):
         member = object.__new__(cls)
-        member.property_name = qualified_property.split('.')[1]
+        member.property_name = qualified_property.split(".")[1]
         member.property_type = property_type
-        member.property_node = qualified_property.split('.')[0]
+        member.property_node = qualified_property.split(".")[0]
         return member
 
     def __str__(self):
-        return f'{self.property_name}'
+        return f"{self.property_name}"
 
 
 class ButtonValues(Enum):
@@ -77,7 +77,8 @@ class ButtonValues(Enum):
     :ivar LONG_ACTION: Represents a long button press action.
     :ivar OFF: Represents the button off state.
     """
-    SINGLE_ACTION = 'single'
-    DOUBLE_ACTION = 'double'
-    LONG_ACTION = 'long'
-    OFF = 'off'
+
+    SINGLE_ACTION = "single"
+    DOUBLE_ACTION = "double"
+    LONG_ACTION = "long"
+    OFF = "off"
