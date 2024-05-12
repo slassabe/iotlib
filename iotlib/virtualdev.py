@@ -173,11 +173,6 @@ class VirtualDevice(IVirtualDevice, metaclass=ABCMeta):
             _now = time.time()
             _time_delta = _now - self._last_updated
             self._last_updated = _now
-            iotlib_logger.warning(
-                "Delta time : %s -> disabled : %s",
-                _time_delta,
-                _time_delta < self.QUIET_MODE_DELAY,
-            )
             return _time_delta < self.QUIET_MODE_DELAY
 
         if value is None:

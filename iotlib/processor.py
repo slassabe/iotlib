@@ -37,13 +37,25 @@ from iotlib.virtualdev import Button, Motion, VirtualDevice
 
 PUBLISH_TOPIC_BASE = "canonical"
 
+class VirtualDeviceProcessor(IVirtualDeviceProcessor):
+    def compatible_with_device(
+        self, v_dev: any
+    ) -> bool:  # pylint: disable=unused-argument
+        """
+        Checks if the given virtual device is compatible with this processor.
 
-class VirtualDeviceLogger(IVirtualDeviceProcessor):
+        :param v_dev: The virtual device to check compatibility with.
+        :type v_dev: any
+        :return: True if the virtual device is compatible, False otherwise.
+        :rtype: bool
+        """
+        return False
+
+class VirtualDeviceLogger(VirtualDeviceProcessor):
     """
     Logs updates from virtual devices.
 
-    This processor logs a debug message when a virtual device value is updated. It implements the
-    IVirtualDeviceProcessor interface.
+    This processor logs a debug message when a virtual device value is updated.
 
     :ivar logger: The logger instance used to log debug messages.
     :vartype logger: logging.Logger
@@ -77,7 +89,7 @@ class VirtualDeviceLogger(IVirtualDeviceProcessor):
         return True
 
 
-class ButtonTrigger(IVirtualDeviceProcessor):
+class ButtonTrigger(VirtualDeviceProcessor):
     """This processor triggers button actions on virtual devices when their state changes."""
 
     def __init__(self, mqtt_service: IMQTTService, countdown_long=60 * 10) -> None:
@@ -119,7 +131,7 @@ class ButtonTrigger(IVirtualDeviceProcessor):
         if v_dev.value is None:
             iotlib_logger.debug("%s -> discarded", prefix)
             return
-        elif v_dev.value == ButtonValues.SINGLE_ACTION.value:
+        if v_dev.value == ButtonValues.SINGLE_ACTION.value:
             iotlib_logger.info('%s -> "start_and_stop" with short period', prefix)
             for _sw in v_dev.get_sensor_observers():
                 _sw.trigger_start(mqtt_service=self._mqtt_service)
@@ -137,7 +149,7 @@ class ButtonTrigger(IVirtualDeviceProcessor):
             iotlib_logger.error('%s : action unknown "%s"', prefix, v_dev.value)
 
 
-class MotionTrigger(IVirtualDeviceProcessor):
+class MotionTrigger(VirtualDeviceProcessor):
     """
     A class that handles motion sensor state changes and triggers registered switches
     when occupancy is detected.
@@ -184,7 +196,7 @@ class MotionTrigger(IVirtualDeviceProcessor):
             )
 
 
-class PropertyPublisher(IVirtualDeviceProcessor):
+class PropertyPublisher(VirtualDeviceProcessor):
     """A class that publishes property updates to an MQTT broker."""
 
     def __init__(
@@ -260,7 +272,7 @@ class AvailabilityPublisher(IAvailabilityProcessor):
 
     """
 
-    def __init__(self, publish_topic_base: str = None):
+    def __init__(self, publish_topic_base: str | None = None):
         if not isinstance(publish_topic_base, str):
             raise TypeError(
                 f"publish_topic_base must be string, not {type(publish_topic_base)}"

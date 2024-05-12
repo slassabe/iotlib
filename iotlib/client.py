@@ -106,7 +106,7 @@ class MQTTClient(IMQTTService):
 
         self.on_connect_handlers: List[Callable[..., None]] = []
         self.on_disconnect_handlers: List[Callable[..., None]] = []
-        self._mqtt_client.enable_logger(iotlib_logger)
+        # self._mqtt_client.enable_logger(iotlib_logger)
 
     @property
     def mqtt_client(self) -> mqtt.Client:
@@ -134,7 +134,7 @@ class MQTTClient(IMQTTService):
         return self._started
 
     def __str__(self) -> str:
-        return f'<{self.__class__.__name__} "{self._mqtt_client._client_id}">'
+        return f'<{self.__class__.__name__} "{self.hostname}:{self.port}">'
 
     def __repr__(self) -> str:
         return (
@@ -219,7 +219,7 @@ class MQTTClient(IMQTTService):
             iotlib_logger.fatal("[%s] cannot connect host %s", exp, self.hostname)
             raise RuntimeError("connect failed") from exp
 
-    def _handle_on_connect(
+    def _handle_on_connect(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,
@@ -246,7 +246,7 @@ class MQTTClient(IMQTTService):
         iotlib_logger.debug("[%s] Disconnection request returns : %s", self, _rc)
         return _rc
 
-    def _handle_on_disconnect(
+    def _handle_on_disconnect(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,
@@ -320,7 +320,7 @@ class MQTTClientHelper(MQTTClient):
         iotlib_logger.debug("Publish on topic : %s - payload : %s", topic, payload)
         return self._mqtt_client.publish(topic, payload, **kwargs)
 
-    def _handle_on_subscribe(
+    def _handle_on_subscribe(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,

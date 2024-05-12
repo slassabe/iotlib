@@ -23,8 +23,7 @@ class Singleton(type):
         if cls.__instance is None:
             cls.__instance = super().__call__(*args, **kwargs)
             return cls.__instance
-        else:
-            return cls.__instance
+        return cls.__instance
 
 
 class InfiniteTimer:

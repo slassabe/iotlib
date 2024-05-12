@@ -165,8 +165,6 @@ class IMQTTBridge:
         :return: True if the bridge is available, False otherwise.
         :rtype: bool
         """
-        pass
-
 
 class IDiscoveryProcessor(ABC):
     """
@@ -240,6 +238,7 @@ class IVirtualDeviceProcessor(ABC):
         :return: None
         """
 
+    @abstractmethod
     def compatible_with_device(
         self, v_dev: any
     ) -> bool:  # pylint: disable=unused-argument
@@ -251,7 +250,6 @@ class IVirtualDeviceProcessor(ABC):
         :return: True if the virtual device is compatible, False otherwise.
         :rtype: bool
         """
-        return False
 
 
 class ResultType(enum.IntEnum):

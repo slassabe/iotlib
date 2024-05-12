@@ -135,6 +135,7 @@ class MQTTBridge(IMQTTBridge):
         """Callback function for handling value messages."""
         payload = message.payload.decode("utf-8")
         try:
+            iotlib_logger.debug("%s : %s", message.topic, payload)
             self._handle_values(message.topic, payload)
         except DecodingException as exp:
             iotlib_logger.exception(
@@ -144,7 +145,7 @@ class MQTTBridge(IMQTTBridge):
                 payload[:100],
             )
 
-    def _on_connect_callback(
+    def _on_connect_callback(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,  # pylint: disable=unused-argument
         userdata: Any,  # pylint: disable=unused-argument
@@ -175,7 +176,7 @@ class MQTTBridge(IMQTTBridge):
                 mqtt.connack_string(reason_code),
             )
 
-    def _on_disconnect_callback(
+    def _on_disconnect_callback(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,  # pylint: disable=unused-argument
@@ -194,13 +195,13 @@ class MQTTBridge(IMQTTBridge):
                 '[%s] disconnection not required with rc "%s"', self, reason_code
             )
 
-    def _on_subscribe_callback(
+    def _on_subscribe_callback(  # pylint: disable=too-many-arguments
         self,
-        client: mqtt.Client,
-        userdata: Any,
-        mid: int,
-        reason_code_list: List[mqtt.ReasonCode],
-        properties: mqtt.Properties,
+        client: mqtt.Client, # pylint: disable=unused-argument
+        userdata: Any, # pylint: disable=unused-argument
+        mid: int, # pylint: disable=unused-argument
+        reason_code_list: List[mqtt.ReasonCode], # pylint: disable=unused-argument
+        properties: mqtt.Properties, # pylint: disable=unused-argument
     ) -> None:
         """Callback function for handling subscribe messages."""
 
@@ -208,7 +209,7 @@ class MQTTBridge(IMQTTBridge):
             """Configures the virtual device."""
             _configure_message = vdev.encoder.device_configure_message()
             if _configure_message is not None:
-                iotlib_logger.warning(">>> %s", _configure_message)
+                iotlib_logger.debug("%s", _configure_message)
                 _topic, _request = _configure_message
                 self.mqtt_service.mqtt_client.publish(_topic, _request)
 
@@ -223,7 +224,7 @@ class MQTTBridge(IMQTTBridge):
                     "[%s] No encoder available - skipping state request", self
                 )
 
-    def _handle_on_subscribe(
+    def _handle_on_subscribe(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,

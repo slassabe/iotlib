@@ -124,6 +124,15 @@ class DecoderOnZigbee2MQTT(Codec):
         # false = {"state":"online"} / {"state":"offline"}
 
         if payload not in _AVAILABILITY_VALUES:
+            if payload in ['{"state":"online"}', '{"state":"offline"}']:
+                iotlib_logger.error(
+                    "Z2M configuration error: set 'legacy_availability_payload' to true"
+                )
+            else:
+                iotlib_logger.error(
+                    "Z2M configuration error: unknown availability payload : %s",
+                    payload,
+                )
             raise DecodingException(f"Payload value error: {payload}")
         return payload == Availability.ONLINE.value
 

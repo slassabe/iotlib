@@ -188,7 +188,7 @@ class ZigbeeDiscoverer(Discoverer):
         for _processor in self._discovery_processors:
             _processor.process_discovery_update(_new_devices)
 
-    def _on_connect_cb(
+    def _on_connect_cb(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,
@@ -260,7 +260,7 @@ class TasmotaDiscoverer(Discoverer):
         for _processor in self._discovery_processors:
             _processor.process_discovery_update(new_devices)
 
-    def _on_connect_cb(
+    def _on_connect_cb(  # pylint: disable=too-many-arguments
         self,
         client: mqtt.Client,
         userdata: Any,
