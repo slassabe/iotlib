@@ -89,7 +89,10 @@ class DecoderOnZigbee2MQTT(Codec):
     #    └── <device_name>                                     <== self._root_topic
     #        └── availability : "online" | "offline" | None    <== self._availability_topic
 
-    def __init__(self, device_name: str, base_topic: Optional[str] = None):
+    def __init__(self,
+                 device_name: str,
+                 friendly_name: Optional[str] = None,
+                 base_topic: Optional[str] = None):
         """
         Initializes a new instance of the class.
 
@@ -98,14 +101,25 @@ class DecoderOnZigbee2MQTT(Codec):
 
         :param device_name: The name of the device.
         :type device_name: str
+        :param friendly_name: The friendly name to be used for the device.
+        :type friendly_name: str
         :param base_topic: The base topic for MQTT communication. If not provided, it defaults to None.
         :type base_topic: Optional[str]
-        :raises AssertionError: If device_name is not a string.
+        :raises TypeError: If device_name or friendly_name is not a string.
         """
-        assert isinstance(
-            device_name, str
-        ), f"Bad value for device_name : {device_name} of type {type(device_name)}"
-        super().__init__(device_name, base_topic)
+        friendly_name = friendly_name or device_name
+        if not isinstance(device_name, str):
+            raise TypeError(
+                f'"device_name" must be an instance of str, not {type(device_name)}'
+            )
+        if not isinstance(friendly_name, str):
+            raise TypeError(
+                f'"friendly_name" must be an instance of str, not {type(friendly_name)}'
+            )
+
+        super().__init__(device_name=device_name,
+                         friendly_name=friendly_name,
+                         base_topic=base_topic)
 
         _root_topic = get_root_topic(device_name, base_topic)
         self._root_topic = _root_topic
@@ -184,23 +198,27 @@ class SensorOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :type v_temp: Optional[TemperatureSensor]
         :param v_humi: An instance of `HumiditySensor`. If not provided, a new instance is created.
         :type v_humi: Optional[HumiditySensor]
-        :raises AssertionError: If v_temp is not an instance of `TemperatureSensor` or v_humi is not an instance of `HumiditySensor`.
+        :raises TypeError: If v_temp is not an instance of `TemperatureSensor` or v_humi is not an instance of `HumiditySensor`.
         """
-        super().__init__(device_name, base_topic)
-
         friendly_name = friendly_name or device_name
+        super().__init__(device_name=device_name,
+                         friendly_name=friendly_name,
+                         base_topic=base_topic)
+
         v_temp = v_temp or TemperatureSensor(friendly_name)
-        assert isinstance(
-            v_temp, TemperatureSensor
-        ), f"Bad value : {v_temp} of type {type(v_temp)}"
+        if not isinstance(v_temp, TemperatureSensor):
+            raise TypeError(
+                f'"v_temp" must be an instance of TemperatureSensor, not {type(v_temp)}'
+            )
         self._set_message_handler(
             self._root_topic, self.__class__._decode_temp_pl, v_temp
         )
 
         v_humi = v_humi or HumiditySensor(friendly_name)
-        assert isinstance(
-            v_humi, HumiditySensor
-        ), f"Bad value : {v_humi} of type {type(v_humi)}"
+        if not isinstance(v_humi, HumiditySensor):
+            raise TypeError(
+                f'"v_humi" must be an instance of HumiditySensor, not {type(v_humi)}'
+            )
         self._set_message_handler(
             self._root_topic, self.__class__._decode_humi_pl, v_humi
         )
@@ -274,15 +292,18 @@ class ButtonOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :type base_topic: Optional[str]
         :param v_button: An instance of `Button`. If not provided, a new instance is created.
         :type v_button: Optional[Button]
-        :raises AssertionError: If v_button is not an instance of `Button`.
+        :raises TypeError: If v_button is not an instance of `Button`.
         """
-        super().__init__(device_name, base_topic)
-
         friendly_name = friendly_name or device_name
+        super().__init__(device_name=device_name,
+                         friendly_name=friendly_name,
+                         base_topic=base_topic)
+
         v_button = v_button or Button(friendly_name)
-        assert isinstance(
-            v_button, Button
-        ), f"Bad value : {v_button} of type {type(v_button)}"
+        if not isinstance(v_button, Button):
+            raise TypeError(
+                f'"v_button" must be an instance of Button, not {type(v_button)}'
+            )
         self._set_message_handler(
             self._root_topic, self.__class__._decode_value_pl, v_button
         )
@@ -342,15 +363,18 @@ class MotionOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :type base_topic: Optional[str]
         :param v_motion: An instance of `Motion`. If not provided, a new instance is created.
         :type v_motion: Optional[Motion]
-        :raises AssertionError: If v_motion is not an instance of `Motion`.
+        :raises TypeError: If v_motion is not an instance of `Motion`.
         """
-        super().__init__(device_name, base_topic)
-
         friendly_name = friendly_name or device_name
+        super().__init__(device_name=device_name,
+                         friendly_name=friendly_name,
+                         base_topic=base_topic)
+
         v_motion = v_motion or Motion(friendly_name)
-        assert isinstance(
-            v_motion, Motion
-        ), f"Bad value : {v_motion} of type {type(v_motion)}"
+        if not isinstance(v_motion, Motion):
+            raise TypeError(
+                f'"v_motion" must be an instance of Motion, not {type(v_motion)}'
+            )
         self._set_message_handler(
             self._root_topic, self.__class__._decode_value_pl, v_motion
         )
@@ -402,9 +426,11 @@ class AlarmOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :type v_alarm: Optional[Alarm]
         :raises ValueError: If encoder is not an instance of `IEncoder` or v_alarm is not an instance of `Alarm`.
         """
-        super().__init__(device_name, base_topic)
-
         friendly_name = friendly_name or device_name
+        super().__init__(device_name=device_name,
+                         friendly_name=friendly_name,
+                         base_topic=base_topic)
+
         v_alarm = v_alarm or Alarm(friendly_name)
         if not isinstance(encoder, IEncoder):
             raise ValueError(f"Bad value : {encoder} of type {type(encoder)}")
@@ -435,7 +461,7 @@ class NeoNasAB02B2(AlarmOnZigbee):
         v_alarm: Optional[Alarm] = None,
     ) -> None:
         super().__init__(
-            NeoNasAB02B2Encoder(get_root_topic(device_name, base_topic)),
+            encoder=NeoNasAB02B2Encoder(get_root_topic(device_name, base_topic)),
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
@@ -547,9 +573,11 @@ class SwitchDecoder(DecoderOnZigbee2MQTT):
         :type v_switch1: Optional[Switch1]
         :raises ValueError: If encoder is not an instance of `IEncoder`, v_switch0 is not an instance of `Switch0`, or v_switch1 is not an instance of `Switch1`.
         """
-        super().__init__(device_name, base_topic)
-
         friendly_name = friendly_name or device_name
+        super().__init__(device_name=device_name,
+                         friendly_name=friendly_name,
+                         base_topic=base_topic)
+
         if not isinstance(encoder, IEncoder):
             raise TypeError(f"Bad type for {encoder} of type {type(encoder)}")
         if v_switch is not None:
@@ -672,7 +700,7 @@ class SonoffZbminiL(SwitchDecoder):
         if not isinstance(v_switch, Switch):
             raise TypeError(f"Bad type for {v_switch} of type {type(v_switch)}")
         super().__init__(
-            SwitchEncoder(get_root_topic(device_name, base_topic)),
+            encoder=SwitchEncoder(get_root_topic(device_name, base_topic)),
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
@@ -699,8 +727,8 @@ class TuYaTS0002(SwitchDecoder):
         if not isinstance(v_switch1, Switch1):
             raise TypeError(f"Bad type for {v_switch1} of type {type(v_switch1)}")
         super().__init__(
-            SwitchEncoder(get_root_topic(device_name, base_topic)),
-            device_name,
+            encoder=SwitchEncoder(get_root_topic(device_name, base_topic)),
+            device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
             v_switch0=v_switch0,

@@ -32,7 +32,10 @@ class Codec(ICodec):
     which are functions that handle messages received on specific MQTT topics.
     """
 
-    def __init__(self, device_name: str, base_topic: str) -> None:
+    def __init__(self,
+                 device_name: str,
+                 friendly_name: str,
+                 base_topic: str) -> None:
         """
         Initializes a new instance of the Codec class.
 
@@ -41,10 +44,13 @@ class Codec(ICodec):
 
         :param device_name: The name of the device.
         :type device_name: str
+        :param friendly_name: The friendly name to be used for the device.
+        :type friendly_name: str
         :param base_topic: The base topic for MQTT communication.
         :type base_topic: str
         """
         self.device_name = device_name
+        self.friendly_name = friendly_name
         self.base_topic = base_topic
         self._managed_virtual_devices: list[IVirtualDevice] = []
         self._message_handler_dict: HandlersListType = defaultdict(list)

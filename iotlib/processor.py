@@ -285,9 +285,9 @@ class AvailabilityPublisher(IAvailabilityProcessor):
 
     def attach(self, bridge: IMQTTBridge) -> None:
         # Implement the abstract method from IAvailabilityProcessor
-        _device_name = bridge.codec.device_name
+        _friendly_name = bridge.codec.friendly_name
         self._mqtt_service = bridge.mqtt_service
-        self._state_topic = f"{self._publish_topic_base}/device/{_device_name}/$state"
+        self._state_topic = f"{self._publish_topic_base}/device/{_friendly_name}/$state"
         _client = self._mqtt_service.mqtt_client
         _client.will_set(self._state_topic, "lost", qos=1, retain=True)
 

@@ -70,16 +70,22 @@ class DecoderOnTasmota(Codec):
     def __init__(
         self,
         device_name: str,
-        friendly_name: Optional[str] = None,
+        friendly_name: Optional[str] = str,
         base_topic: Optional[str] = None,
     ) -> None:
         if not isinstance(device_name, str):
             raise TypeError(
                 f'"device_name" must be an instance of str, not {type(device_name)}'
             )
-        super().__init__(device_name, base_topic)
-
+        if not isinstance(friendly_name, str):
+            raise TypeError(
+                f'"friendly_name" must be an instance of str, not {type(friendly_name)}'
+            )
         friendly_name = friendly_name or device_name
+        super().__init__(device_name=device_name, 
+                         friendly_name=friendly_name, 
+                         base_topic=base_topic)
+
 
         _root_topic = f"{base_topic}/" if base_topic is not None else ""
         self._stat_power_topic = f"{_root_topic}stat/{device_name}/POWER"
@@ -290,24 +296,27 @@ class TasmotaPlugS(DecoderOnTasmota):
         v_temp: Optional[TemperatureSensor] = None,
         v_adc: Optional[ADC] = None,
     ) -> None:
+        friendly_name = friendly_name or device_name
         super().__init__(
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
         )
-        friendly_name = friendly_name or device_name
         v_switch0 = v_switch0 or Switch(friendly_name)
         v_temp = v_temp or TemperatureSensor(friendly_name)
         v_adc = v_adc or ADC(friendly_name)
-        assert issubclass(
-            type(v_switch0), Switch
-        ), f"Bad value : {v_switch0} of type {type(v_switch0)}"
-        assert issubclass(
-            type(v_temp), TemperatureSensor
-        ), f"Bad value : {v_temp} of type {type(v_temp)}"
-        assert issubclass(
-            type(v_adc), ADC
-        ), f"Bad value : {v_adc} of type {type(v_adc)}"
+        if not isinstance(v_switch0, Switch):
+            raise TypeError(
+                f'"v_switch0" must be an instance of Switch, not {type(v_switch0)}'
+            )
+        if not isinstance(v_temp, TemperatureSensor):
+            raise TypeError(
+                f'"v_temp" must be an instance of TemperatureSensor, not {type(v_temp)}'
+            )
+        if not isinstance(v_adc, ADC):
+            raise TypeError(
+                f'"v_temp" must be an instance of ADC, not {type(v_adc)}'
+            )
 
         _encoder = TasmotaPlugSEncoder(
             device_name=device_name,
@@ -393,25 +402,27 @@ class TasmotaUni(DecoderOnTasmota):
         v_switch1: Optional[Switch1] = None,
         v_adc: Optional[ADC] = None,
     ) -> None:
+        friendly_name = friendly_name or device_name
         super().__init__(
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
         )
-        friendly_name = friendly_name or device_name
         v_switch0 = v_switch0 or Switch(friendly_name)
         v_switch1 = v_switch1 or Switch(friendly_name)
         v_adc = v_adc or ADC(friendly_name)
-
-        assert issubclass(
-            type(v_switch0), Switch0
-        ), f"Bad value : {v_switch0} of type {type(v_switch0)}"
-        assert issubclass(
-            type(v_switch1), Switch1
-        ), f"Bad value : {v_switch1} of type {type(v_switch1)}"
-        assert issubclass(
-            type(v_adc), ADC
-        ), f"Bad value : {v_adc} of type {type(v_adc)}"
+        if not isinstance(v_switch0, Switch0):
+            raise TypeError(
+                f'"v_switch0" must be an instance of Switch0, not {type(v_switch0)}'
+            )
+        if not isinstance(v_switch1, Switch1):
+            raise TypeError(
+                f'"v_switch1" must be an instance of Switch1, not {type(v_switch1)}'
+            )
+        if not isinstance(v_adc, ADC):
+            raise TypeError(
+                f'"v_temp" must be an instance of ADC, not {type(v_adc)}'
+            )
 
         _encoder = TasmotaUniEncoder(
             device_name=device_name,
