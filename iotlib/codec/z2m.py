@@ -89,37 +89,34 @@ class DecoderOnZigbee2MQTT(Codec):
     #    └── <device_name>                                     <== self._root_topic
     #        └── availability : "online" | "offline" | None    <== self._availability_topic
 
-    def __init__(self,
-                 device_name: str,
-                 friendly_name: Optional[str] = None,
-                 base_topic: Optional[str] = None):
+    def __init__(
+        self,
+        encoder: Optional[IEncoder],
+        device_name: str,
+        friendly_name: Optional[str] = None,
+        base_topic: Optional[str] = None,
+    ):
         """
         Initializes a new instance of the class.
 
         This method initializes a new instance of the class with a given device name and an optional
         base topic for MQTT communication.
 
+        :param encoder: The encoder to be used by the codec.
+        :type encoder: Optional[IEncoder]
         :param device_name: The name of the device.
         :type device_name: str
         :param friendly_name: The friendly name to be used for the device.
         :type friendly_name: str
         :param base_topic: The base topic for MQTT communication. If not provided, it defaults to None.
         :type base_topic: Optional[str]
-        :raises TypeError: If device_name or friendly_name is not a string.
         """
-        friendly_name = friendly_name or device_name
-        if not isinstance(device_name, str):
-            raise TypeError(
-                f'"device_name" must be an instance of str, not {type(device_name)}'
-            )
-        if not isinstance(friendly_name, str):
-            raise TypeError(
-                f'"friendly_name" must be an instance of str, not {type(friendly_name)}'
-            )
-
-        super().__init__(device_name=device_name,
-                         friendly_name=friendly_name,
-                         base_topic=base_topic)
+        super().__init__(
+            encoder=encoder,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         _root_topic = get_root_topic(device_name, base_topic)
         self._root_topic = _root_topic
@@ -201,9 +198,12 @@ class SensorOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :raises TypeError: If v_temp is not an instance of `TemperatureSensor` or v_humi is not an instance of `HumiditySensor`.
         """
         friendly_name = friendly_name or device_name
-        super().__init__(device_name=device_name,
-                         friendly_name=friendly_name,
-                         base_topic=base_topic)
+        super().__init__(
+            encoder=None,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         v_temp = v_temp or TemperatureSensor(friendly_name)
         if not isinstance(v_temp, TemperatureSensor):
@@ -295,9 +295,12 @@ class ButtonOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :raises TypeError: If v_button is not an instance of `Button`.
         """
         friendly_name = friendly_name or device_name
-        super().__init__(device_name=device_name,
-                         friendly_name=friendly_name,
-                         base_topic=base_topic)
+        super().__init__(
+            encoder=None,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         v_button = v_button or Button(friendly_name)
         if not isinstance(v_button, Button):
@@ -366,9 +369,12 @@ class MotionOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :raises TypeError: If v_motion is not an instance of `Motion`.
         """
         friendly_name = friendly_name or device_name
-        super().__init__(device_name=device_name,
-                         friendly_name=friendly_name,
-                         base_topic=base_topic)
+        super().__init__(
+            encoder=None,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         v_motion = v_motion or Motion(friendly_name)
         if not isinstance(v_motion, Motion):
@@ -427,9 +433,12 @@ class AlarmOnZigbee(DecoderOnZigbee2MQTT, metaclass=ABCMeta):
         :raises ValueError: If encoder is not an instance of `IEncoder` or v_alarm is not an instance of `Alarm`.
         """
         friendly_name = friendly_name or device_name
-        super().__init__(device_name=device_name,
-                         friendly_name=friendly_name,
-                         base_topic=base_topic)
+        super().__init__(
+            encoder=encoder,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         v_alarm = v_alarm or Alarm(friendly_name)
         if not isinstance(encoder, IEncoder):
@@ -460,8 +469,9 @@ class NeoNasAB02B2(AlarmOnZigbee):
         base_topic: Optional[str] = None,
         v_alarm: Optional[Alarm] = None,
     ) -> None:
+        _encoder = NeoNasAB02B2Encoder(get_root_topic(device_name, base_topic))
         super().__init__(
-            encoder=NeoNasAB02B2Encoder(get_root_topic(device_name, base_topic)),
+            encoder=_encoder,
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
@@ -532,7 +542,7 @@ class NeoNasAB02B2Encoder(IEncoder):
         iotlib_logger.debug("Encode payload : %s", _set)
         return f"{self._root_topic}/set", json.dumps(_set)
 
-    def device_configure_message(self) -> Optional[tuple[str, str]]:
+    def get_device_config_message(self) -> Optional[tuple[str, str]]:
         return None
 
 
@@ -574,9 +584,12 @@ class SwitchDecoder(DecoderOnZigbee2MQTT):
         :raises ValueError: If encoder is not an instance of `IEncoder`, v_switch0 is not an instance of `Switch0`, or v_switch1 is not an instance of `Switch1`.
         """
         friendly_name = friendly_name or device_name
-        super().__init__(device_name=device_name,
-                         friendly_name=friendly_name,
-                         base_topic=base_topic)
+        super().__init__(
+            encoder=encoder,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         if not isinstance(encoder, IEncoder):
             raise TypeError(f"Bad type for {encoder} of type {type(encoder)}")
@@ -642,6 +655,7 @@ class SwitchDecoder(DecoderOnZigbee2MQTT):
 class SwitchEncoder(IEncoder):
     def __init__(self, root_topic: str) -> None:
         self._root_topic = root_topic
+        super().__init__()
 
     def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
         # Implement abstract method
@@ -680,7 +694,7 @@ class SwitchEncoder(IEncoder):
         _payload = json.dumps(_json_pl)
         return _topic, _payload
 
-    def device_configure_message(self) -> Optional[tuple[str, str]]:
+    def get_device_config_message(self) -> Optional[tuple[str, str]]:
         return None
 
 
@@ -699,8 +713,9 @@ class SonoffZbminiL(SwitchDecoder):
         v_switch = v_switch or Switch(friendly_name)
         if not isinstance(v_switch, Switch):
             raise TypeError(f"Bad type for {v_switch} of type {type(v_switch)}")
+        _encoder = SwitchEncoder(get_root_topic(device_name, base_topic))
         super().__init__(
-            encoder=SwitchEncoder(get_root_topic(device_name, base_topic)),
+            encoder=_encoder,
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
@@ -726,8 +741,9 @@ class TuYaTS0002(SwitchDecoder):
             raise TypeError(f"Bad type for {v_switch0} of type {type(v_switch0)}")
         if not isinstance(v_switch1, Switch1):
             raise TypeError(f"Bad type for {v_switch1} of type {type(v_switch1)}")
+        _encoder = SwitchEncoder(get_root_topic(device_name, base_topic))
         super().__init__(
-            encoder=SwitchEncoder(get_root_topic(device_name, base_topic)),
+            encoder=_encoder,
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,

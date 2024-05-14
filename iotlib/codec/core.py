@@ -15,9 +15,9 @@ To handle each protocol effectively and ensure accurate and efficient communicat
 """
 
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple, TypeAlias
+from typing import Any, Callable, Dict, Optional, Tuple, TypeAlias
 
-from iotlib.abstracts import ICodec, IVirtualDevice
+from iotlib.abstracts import ICodec, IEncoder, IVirtualDevice
 
 MessageHandlerType: TypeAlias = Tuple[Callable[..., Any], IVirtualDevice]
 HandlersListType: TypeAlias = Dict[str, MessageHandlerType]
@@ -32,23 +32,40 @@ class Codec(ICodec):
     which are functions that handle messages received on specific MQTT topics.
     """
 
-    def __init__(self,
-                 device_name: str,
-                 friendly_name: str,
-                 base_topic: str) -> None:
+    def __init__(
+        self,
+        encoder: Optional[IEncoder],
+        device_name: str,
+        friendly_name: str,
+        base_topic: str,
+    ) -> None:
         """
         Initializes a new instance of the Codec class.
 
         This method initializes a new instance of the Codec class with a given device
         name and a base topic for MQTT communication.
 
+        :param encoder: The encoder to be used by the codec.
+        :type encoder: Optional[IEncoder]
         :param device_name: The name of the device.
         :type device_name: str
         :param friendly_name: The friendly name to be used for the device.
         :type friendly_name: str
         :param base_topic: The base topic for MQTT communication.
         :type base_topic: str
+        :raises TypeError: If device_name or friendly_name is not a string.
         """
+        friendly_name = friendly_name or device_name
+        if not isinstance(device_name, str):
+            raise TypeError(
+                f'"device_name" must be an instance of str, not {type(device_name)}'
+            )
+        if not isinstance(friendly_name, str):
+            raise TypeError(
+                f'"friendly_name" must be an instance of str, not {type(friendly_name)}'
+            )
+
+        self._encoder = encoder
         self.device_name = device_name
         self.friendly_name = friendly_name
         self.base_topic = base_topic
@@ -66,6 +83,11 @@ class Codec(ICodec):
     def __str__(self) -> str:
         _dev = self.device_name if hasattr(self, "device_name") else "UNSET"
         return f'{self.__class__.__name__} ("{_dev}")'
+
+    @property
+    def encoder(self):
+        """Returns the encoder used by the codec."""
+        return self._encoder
 
     def get_managed_virtual_devices(self) -> list[IVirtualDevice]:
         """Return the list of virtual devices managed by the codec."""

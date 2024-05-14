@@ -197,26 +197,28 @@ class MQTTBridge(IMQTTBridge):
 
     def _on_subscribe_callback(  # pylint: disable=too-many-arguments
         self,
-        client: mqtt.Client, # pylint: disable=unused-argument
-        userdata: Any, # pylint: disable=unused-argument
-        mid: int, # pylint: disable=unused-argument
-        reason_code_list: List[mqtt.ReasonCode], # pylint: disable=unused-argument
-        properties: mqtt.Properties, # pylint: disable=unused-argument
+        client: mqtt.Client,  # pylint: disable=unused-argument
+        userdata: Any,  # pylint: disable=unused-argument
+        mid: int,  # pylint: disable=unused-argument
+        reason_code_list: List[mqtt.ReasonCode],  # pylint: disable=unused-argument
+        properties: mqtt.Properties,  # pylint: disable=unused-argument
     ) -> None:
         """Callback function for handling subscribe messages."""
 
-        def _configure_device(vdev: IVirtualDevice) -> None:
+        def _configure_device(codec: ICodec) -> None:
             """Configures the virtual device."""
-            _configure_message = vdev.encoder.device_configure_message()
+            _encoder = codec.encoder
+            if _encoder is None:
+                return
+            _configure_message = codec.encoder.get_device_config_message()
             if _configure_message is not None:
                 iotlib_logger.debug("%s", _configure_message)
                 _topic, _request = _configure_message
                 self.mqtt_service.mqtt_client.publish(_topic, _request)
 
+        _configure_device(self.codec)
         for _vdev in self.codec.get_managed_virtual_devices():
             if _vdev.encoder is not None:
-                _configure_device(_vdev)
-
                 iotlib_logger.debug("[%s] Get virtual device state", self)
                 _vdev.trigger_get_state(self.mqtt_service, _vdev.device_id)
             else:

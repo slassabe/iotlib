@@ -51,7 +51,7 @@ _AVAILABILITY_VALUES = [avail.value for avail in Availability]
 
 
 class DecoderOnTasmota(Codec):
-    """Tasmota device implementation"""
+    """Tasmota Codec implementation"""
 
     # sub-topic `tele` reports telemetry info on the device
     #    <base_topic>
@@ -69,23 +69,17 @@ class DecoderOnTasmota(Codec):
 
     def __init__(
         self,
+        encoder: Optional[IEncoder],
         device_name: str,
         friendly_name: Optional[str] = str,
         base_topic: Optional[str] = None,
     ) -> None:
-        if not isinstance(device_name, str):
-            raise TypeError(
-                f'"device_name" must be an instance of str, not {type(device_name)}'
-            )
-        if not isinstance(friendly_name, str):
-            raise TypeError(
-                f'"friendly_name" must be an instance of str, not {type(friendly_name)}'
-            )
-        friendly_name = friendly_name or device_name
-        super().__init__(device_name=device_name, 
-                         friendly_name=friendly_name, 
-                         base_topic=base_topic)
-
+        super().__init__(
+            encoder=encoder,
+            device_name=device_name,
+            friendly_name=friendly_name,
+            base_topic=base_topic,
+        )
 
         _root_topic = f"{base_topic}/" if base_topic is not None else ""
         self._stat_power_topic = f"{_root_topic}stat/{device_name}/POWER"
@@ -190,6 +184,15 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
         self._cmnd_backlog_topic = f"{self._base_cmd_topic}/Backlog"
         super().__init__()
 
+    def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
+        # Implement abstract method
+        # cmnd/tasmota_switch/Power : an empty message/payload sends a status query
+        _topic = self._cmnd_power_topic
+        if device_id is not None:
+            _topic += f"{device_id}"
+        _pl = ""
+        return _topic, _pl
+
     def change_state_request(
         self,
         is_on: bool,
@@ -251,18 +254,8 @@ class EncoderOnTasmota(IEncoder, metaclass=ABCMeta):
         )
         return _topic, _payload
 
-    def get_state_request(self, device_id: Optional[int] = None) -> tuple[str, str]:
-        # Implement abstract method
-        # cmnd/tasmota_switch/Power : an empty message/payload sends a status query
-
-        _topic = self._cmnd_power_topic
-        if device_id is not None:
-            _topic += f"{device_id}"
-        _pl = ""
-        return _topic, _pl
-
     @abstractmethod
-    def device_configure_message(self) -> tuple[str, str]:
+    def get_device_config_message(self) -> tuple[str, str]:
         """Configure the device."""
 
 
@@ -297,7 +290,12 @@ class TasmotaPlugS(DecoderOnTasmota):
         v_adc: Optional[ADC] = None,
     ) -> None:
         friendly_name = friendly_name or device_name
+        _encoder = TasmotaPlugSEncoder(
+            device_name=device_name,
+            base_topic=base_topic,
+        )
         super().__init__(
+            encoder=_encoder,
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
@@ -314,14 +312,8 @@ class TasmotaPlugS(DecoderOnTasmota):
                 f'"v_temp" must be an instance of TemperatureSensor, not {type(v_temp)}'
             )
         if not isinstance(v_adc, ADC):
-            raise TypeError(
-                f'"v_temp" must be an instance of ADC, not {type(v_adc)}'
-            )
+            raise TypeError(f'"v_temp" must be an instance of ADC, not {type(v_adc)}')
 
-        _encoder = TasmotaPlugSEncoder(
-            device_name=device_name,
-            base_topic=base_topic,
-        )
         v_switch0.encoder = _encoder
         self._set_message_handler(
             self._stat_power_topic, self.__class__._decode_state_pl, v_switch0
@@ -364,7 +356,7 @@ class TasmotaPlugS(DecoderOnTasmota):
 
 class TasmotaPlugSEncoder(EncoderOnTasmota):
 
-    def device_configure_message(self) -> tuple[str, str]:
+    def get_device_config_message(self) -> tuple[str, str]:
         # Implement IEncoder interface method
         return self.format_backlog_cmnd("PulseTime 0")  # Reset pulseTime
 
@@ -403,7 +395,12 @@ class TasmotaUni(DecoderOnTasmota):
         v_adc: Optional[ADC] = None,
     ) -> None:
         friendly_name = friendly_name or device_name
+        _encoder = TasmotaUniEncoder(
+            device_name=device_name,
+            base_topic=base_topic,
+        )
         super().__init__(
+            encoder=_encoder,
             device_name=device_name,
             friendly_name=friendly_name,
             base_topic=base_topic,
@@ -420,14 +417,8 @@ class TasmotaUni(DecoderOnTasmota):
                 f'"v_switch1" must be an instance of Switch1, not {type(v_switch1)}'
             )
         if not isinstance(v_adc, ADC):
-            raise TypeError(
-                f'"v_temp" must be an instance of ADC, not {type(v_adc)}'
-            )
+            raise TypeError(f'"v_temp" must be an instance of ADC, not {type(v_adc)}')
 
-        _encoder = TasmotaUniEncoder(
-            device_name=device_name,
-            base_topic=base_topic,
-        )
         for _v_switch in [v_switch0, v_switch1]:
             _v_switch.encoder = _encoder
             self._set_message_handler(
@@ -439,8 +430,6 @@ class TasmotaUni(DecoderOnTasmota):
         self._set_message_handler(
             self._tele_sensors_topic, self.__class__._decode_voltage_pl, v_adc
         )
-        # self.ask_for_state()
-        iotlib_logger.warning("%s : unable to ask state", self)
 
     def _decode_voltage_pl(self, topic: str, payload: str) -> float:
         """Decode voltage payload from Tasmota device.
@@ -461,7 +450,7 @@ class TasmotaUni(DecoderOnTasmota):
 
 class TasmotaUniEncoder(EncoderOnTasmota):
 
-    def device_configure_message(self) -> tuple[str, str]:
+    def get_device_config_message(self) -> tuple[str, str]:
         # Implement IEncoder interface method
         # Reset pulseTime and set AdcParam
         return self.format_backlog_cmnd("PulseTime 0; AdcParam 6,0,71,0,100")

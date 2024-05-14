@@ -37,6 +37,7 @@ from iotlib.virtualdev import Button, Motion, VirtualDevice
 
 PUBLISH_TOPIC_BASE = "canonical"
 
+
 class VirtualDeviceProcessor(IVirtualDeviceProcessor):
     def compatible_with_device(
         self, v_dev: any
@@ -50,6 +51,7 @@ class VirtualDeviceProcessor(IVirtualDeviceProcessor):
         :rtype: bool
         """
         return False
+
 
 class VirtualDeviceLogger(VirtualDeviceProcessor):
     """

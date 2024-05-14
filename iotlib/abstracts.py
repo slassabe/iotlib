@@ -116,7 +116,7 @@ class IEncoder(ABC):
         """
 
     @abstractmethod
-    def device_configure_message(self) -> Optional[tuple[str, str]]:
+    def get_device_config_message(self) -> Optional[tuple[str, str]]:
         """Configure the device before using it
 
         :return: A tuple containing the backlog command and topic
@@ -165,6 +165,7 @@ class IMQTTBridge:
         :return: True if the bridge is available, False otherwise.
         :rtype: bool
         """
+
 
 class IDiscoveryProcessor(ABC):
     """
