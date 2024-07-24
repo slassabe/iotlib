@@ -1,7 +1,7 @@
 
 # iotlib
 
-"Less is More - Powering Your IoT Solutions with MQTT integration"
+***This project is archived.*** Consider using [iot2mqtt](https://github.com/slassabe/iot2mqtt) instead.
 
 ## Description
 
